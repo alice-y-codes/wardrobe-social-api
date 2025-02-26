@@ -40,6 +40,9 @@ public class UserControllerTest {
         user = new User();
         user.setUsername("alice");
         user.setPassword("password");
+        user.setProfilePicture("https://example.com/alice-profile.jpg");
+        user.setEmail("alice@example.com");
+        user.setProvider("google");
     }
 
     @Test
@@ -50,11 +53,14 @@ public class UserControllerTest {
         // Act & Assert
         mockMvc.perform(post("/api/users/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(user))) // Convert user object to JSON
+                        .content(objectMapper.writeValueAsString(user)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("alice"));
+                .andExpect(jsonPath("$.username").value("alice"))
+                .andExpect(jsonPath("$.profilePicture").value("https://example.com/alice-profile.jpg"))
+                .andExpect(jsonPath("$.email").value("alice@example.com"))
+                .andExpect(jsonPath("$.provider").value("google"));
 
-        // Verify that service method was called once
+
         Mockito.verify(userService, Mockito.times(1)).registerUser(any(User.class));
     }
 }
