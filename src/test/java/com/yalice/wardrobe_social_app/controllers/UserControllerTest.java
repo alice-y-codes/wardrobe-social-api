@@ -34,13 +34,13 @@ public class UserControllerTest {
         @Mock
         private UserService userService;
 
-        @InjectMocks
         private UserController userController;
 
         private User user;
 
         @BeforeEach
         public void setup() {
+                userController = new UserController(userService);
                 MockitoAnnotations.openMocks(this);
 
                 mockMvc = MockMvcBuilders.standaloneSetup(userController)

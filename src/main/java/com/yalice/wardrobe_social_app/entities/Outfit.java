@@ -1,11 +1,15 @@
 package com.yalice.wardrobe_social_app.entities;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
 @Entity
 @Table(name = "outfits")
+@Getter
+@Setter
 public class Outfit {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

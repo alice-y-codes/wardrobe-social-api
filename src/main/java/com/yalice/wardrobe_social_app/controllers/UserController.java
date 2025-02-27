@@ -4,7 +4,6 @@ import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.UserRegistrationException;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
