@@ -14,6 +14,23 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
+    # Add PostgreSQL service with secrets
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: ${{ secrets.TEST_DB_NAME || 'wardrobe_test' }}
+          POSTGRES_USER: ${{ secrets.TEST_DB_USER || 'postgres' }}
+          POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD || 'postgres' }}
+        ports:
+          - 5432:5432
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Check out the code
         uses: actions/checkout@v4
@@ -31,15 +48,30 @@ jobs:
       - name: Verify Maven wrapper is working
         run: ./mvnw --version
 
+      # Create application-test.properties for CI environment using secrets
+      - name: Create test properties
+        run: |
+          mkdir -p src/test/resources
+          cat > src/test/resources/application-test.properties << EOF
+          spring.datasource.url=jdbc:postgresql://localhost:5432/${{ secrets.TEST_DB_NAME || 'wardrobe_test' }}
+          spring.datasource.username=${{ secrets.TEST_DB_USER || 'postgres' }}
+          spring.datasource.password=${{ secrets.TEST_DB_PASSWORD || 'postgres' }}
+          spring.datasource.driver-class-name=org.postgresql.Driver
+          spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+          spring.jpa.hibernate.ddl-auto=create-drop
+          spring.jpa.show-sql=true
+          EOF
+
+      # Set the active profile to test
       - name: Build with Maven
-        run: mvn clean package -DskipTests
+        run: mvn clean package -DskipTests -Dspring.profiles.active=test
 
       - name: List target directory
         run: ls -la target/
         continue-on-error: true
 
       - name: Run tests
-        run: mvn test
+        run: mvn test -Dspring.profiles.active=test
 
       - name: List surefire reports directory
         run: ls -la target/surefire-reports/
