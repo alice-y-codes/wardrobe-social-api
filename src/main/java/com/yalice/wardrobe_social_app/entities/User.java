@@ -31,4 +31,15 @@ public class User {
     @Column
     private String profilePicture;
 
+
+    // private string Bio
+    // private List<String> socialMediaLinks
+
+    // Size-related fields
+//    private String bodyType; // e.g., "petite", "athletic", "plus-size"
+//    private double height; // Height in centimeters or inches
+//    private double weight; // Weight in kilograms or pounds
+//    private String shoeSize; // Shoe size, could be a String for various sizing systems
+//    private String clothingSize; // Clothing size, e.g., "S", "M", "L", or specific measurements
+
 }
