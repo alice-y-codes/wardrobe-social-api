@@ -1,24 +1,22 @@
 package com.yalice.wardrobe_social_app.services.itemServiceTests;
 
+import static java.lang.Long.valueOf;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
 import com.yalice.wardrobe_social_app.entities.Item;
 import com.yalice.wardrobe_social_app.entities.User;
-import com.yalice.wardrobe_social_app.interfaces.ItemService;
 import com.yalice.wardrobe_social_app.repositories.ItemRepository;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
 import com.yalice.wardrobe_social_app.services.ItemServiceImpl;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-import static java.lang.Long.valueOf;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
 public class GetItemServiceTest {
 
@@ -93,28 +91,28 @@ public class GetItemServiceTest {
     public void shouldReturnItem_WhenItemExistsByName() {
         // Arrange
         String itemName = "Test name";
-        when(itemRepository.findByItemName(itemName)).thenReturn(Optional.of(item));
+        when(itemRepository.findByName(itemName)).thenReturn(Optional.of(item));
 
         // Act
         Optional<Item> foundItem = itemService.getItemByName(itemName);
 
         // Assert
         assertThat(foundItem).isPresent().contains(item);
-        verify(itemRepository).findByItemName(itemName);
+        verify(itemRepository).findByName(itemName);
     }
 
     @Test
     public void shouldReturnEmpty_WhenItemDoesNotExistByName() {
         // Arrange
         String itemName = "Nonexistent Item";
-        when(itemRepository.findByItemName(itemName)).thenReturn(Optional.empty());
+        when(itemRepository.findByName(itemName)).thenReturn(Optional.empty());
 
         // Act
         Optional<Item> foundItem = itemService.getItemByName(itemName);
 
         // Assert
         assertThat(foundItem).isNotPresent();
-        verify(itemRepository).findByItemName(itemName);
+        verify(itemRepository).findByName(itemName);
     }
 
     @Test
@@ -172,7 +170,7 @@ public class GetItemServiceTest {
 
         // Assert
         assertThat(foundItem).isNotPresent();
-        verify(itemRepository, never()).findByItemName(any());
+        verify(itemRepository, never()).findByName(any());
     }
 
     @Test
@@ -182,7 +180,7 @@ public class GetItemServiceTest {
 
         // Assert
         assertThat(foundItem).isNotPresent();
-        verify(itemRepository, never()).findByItemName(any());
+        verify(itemRepository, never()).findByName(any());
     }
 
 

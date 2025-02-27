@@ -38,7 +38,8 @@ public class CreateItemServiceTest {
     public void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        user = new User(valueOf(456), "alice", "alice@testemail.com", "123password", "google", "profilepic.jpeg", new ArrayList<>(), new ArrayList<>());
+        user = new User(valueOf(456), "alice", "alice@testemail.com", "123password", "google", "profilepic.jpeg",
+                new ArrayList<>(), new ArrayList<>());
 
         item = new Item();
         item.setUserId(valueOf(456));
@@ -50,10 +51,11 @@ public class CreateItemServiceTest {
     @Test
     public void shouldCreateItem() {
         // Arrange
+        when(itemRepository.findByName("Test name")).thenReturn(Optional.empty());
         when(itemRepository.save(any(Item.class))).thenReturn(item);
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenReturn(user);
         Long userId = valueOf(456);
-
 
         // Act
         Optional<Item> createdItem = itemService.createItem(userId, item);
@@ -63,8 +65,10 @@ public class CreateItemServiceTest {
         assertThat(createdItem.get().getName()).isEqualTo("Test name");
         assertThat(createdItem.get().getCategory()).isEqualTo("Test category");
         assertThat(createdItem.get().getImageUrl()).isEqualTo("Test image url");
+        assertThat(createdItem.get().getUserId()).isEqualTo(userId);
 
         verify(itemRepository).save(any(Item.class));
+        verify(userRepository).save(any(User.class));
     }
 
     @Test
@@ -83,7 +87,8 @@ public class CreateItemServiceTest {
     @Test
     public void shouldSaveUser_WhenCreatingItem() {
         // Arrange
-        when(userRepository.save(user)).thenReturn(user);
+        when(itemRepository.findByName("Test name")).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenReturn(user);
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(itemRepository.save(any(Item.class))).thenReturn(item);
         Long userId = valueOf(456);
@@ -95,16 +100,16 @@ public class CreateItemServiceTest {
         assertThat(createdItem).isPresent();
         assertThat(createdItem.get().getName()).isEqualTo("Test name");
         assertThat(createdItem.get().getCategory()).isEqualTo("Test category");
+        assertThat(createdItem.get().getUserId()).isEqualTo(userId);
 
-        verify(userRepository).save(user);
+        verify(userRepository).save(any(User.class));
         verify(itemRepository).save(any(Item.class));
     }
 
     @Test
     public void shouldNotCreateItem_WhenItemAlreadyExists() {
         // Arrange
-        when(itemRepository.save(any(Item.class))).thenReturn(item);
-        when(itemRepository.findByItemName("Test name")).thenReturn(Optional.of(item));
+        when(itemRepository.findByName("Test name")).thenReturn(Optional.of(item));
         Long userId = valueOf(456);
 
         // Act

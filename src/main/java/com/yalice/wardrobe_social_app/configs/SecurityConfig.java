@@ -3,6 +3,7 @@ package com.yalice.wardrobe_social_app.configs;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -22,6 +23,7 @@ import com.yalice.wardrobe_social_app.utilities.JwtRequestFilter;
 public class SecurityConfig {
 
     @Autowired
+    @Lazy
     private UserDetailsServiceImpl userDetailsService;
 
     @Autowired

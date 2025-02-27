@@ -16,7 +16,7 @@ public class Item {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @JoinColumn(name = "user_id", nullable = false)
+    @Column(name = "user_id", nullable = false)
     private Long userId; // Owner of the item
 
     @Column(nullable = false)
@@ -38,11 +38,11 @@ public class Item {
     private String imageUrl;
 
     // Additional features
-//    private String visibility; // e.g., "public", "private", "friends"
-//    private LocalDateTime createdDate;
-//    private LocalDateTime lastUpdatedDate;
-//    @ElementCollection
-//    private List<String> tags; // A list of tags that describe the outfit for better categorization and searching.
-
+    // private String visibility; // e.g., "public", "private", "friends"
+    // private LocalDateTime createdDate;
+    // private LocalDateTime lastUpdatedDate;
+    // @ElementCollection
+    // private List<String> tags; // A list of tags that describe the outfit for
+    // better categorization and searching.
 
 }

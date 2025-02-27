@@ -34,21 +34,23 @@ public class User {
     @Column
     private String profilePicture;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
     private List<Item> items = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Outfit> outfits = new ArrayList<>();
 
-
     // private string Bio
     // private List<String> socialMediaLinks
 
     // Size-related fields
-//    private String bodyType; // e.g., "petite", "athletic", "plus-size"
-//    private double height; // Height in centimeters or inches
-//    private double weight; // Weight in kilograms or pounds
-//    private String shoeSize; // Shoe size, could be a String for various sizing systems
-//    private String clothingSize; // Clothing size, e.g., "S", "M", "L", or specific measurements
+    // private String bodyType; // e.g., "petite", "athletic", "plus-size"
+    // private double height; // Height in centimeters or inches
+    // private double weight; // Weight in kilograms or pounds
+    // private String shoeSize; // Shoe size, could be a String for various sizing
+    // systems
+    // private String clothingSize; // Clothing size, e.g., "S", "M", "L", or
+    // specific measurements
 
 }

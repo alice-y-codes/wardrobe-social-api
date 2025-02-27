@@ -1,18 +1,18 @@
 package com.yalice.wardrobe_social_app.services.itemServiceTests;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
 import com.yalice.wardrobe_social_app.entities.Item;
 import com.yalice.wardrobe_social_app.repositories.ItemRepository;
+import com.yalice.wardrobe_social_app.repositories.UserRepository;
 import com.yalice.wardrobe_social_app.services.ItemServiceImpl;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
 public class UpdateItemServiceTest {
 
@@ -22,6 +22,9 @@ public class UpdateItemServiceTest {
     @Mock
     private ItemRepository itemRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     private Item existingItem;
 
     @BeforeEach
@@ -29,6 +32,7 @@ public class UpdateItemServiceTest {
         MockitoAnnotations.openMocks(this);
         existingItem = new Item();
         existingItem.setId(1L);
+        existingItem.setUserId(1L);
         existingItem.setName("Old Name");
         existingItem.setCategory("Old Category");
         existingItem.setImageUrl("old-image.jpg");
@@ -38,13 +42,19 @@ public class UpdateItemServiceTest {
     public void shouldUpdateItem_WhenItemExists() {
         // Arrange
         Long itemId = 1L;
+
         Item updatedItem = new Item();
         updatedItem.setId(itemId);
+        updatedItem.setUserId(1L);
         updatedItem.setName("New Name");
         updatedItem.setCategory("New Category");
         updatedItem.setImageUrl("new-image.jpg");
 
-        when(itemRepository.saveAndFlush(updatedItem)).thenReturn(updatedItem);
+        // Ensure findById returns a non-empty Optional
+        when(itemRepository.findById(eq(itemId))).thenReturn(Optional.of(existingItem));
+
+        // Ensure saveAndFlush returns the actual updated item
+        when(itemRepository.saveAndFlush(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         Item result = itemService.updateItem(itemId, updatedItem);
@@ -54,9 +64,13 @@ public class UpdateItemServiceTest {
         assertThat(result.getName()).isEqualTo("New Name");
         assertThat(result.getCategory()).isEqualTo("New Category");
         assertThat(result.getImageUrl()).isEqualTo("new-image.jpg");
+        assertThat(result.getUserId()).isEqualTo(1L); // Ensure userId is preserved
 
-        verify(itemRepository).saveAndFlush(updatedItem);
+        // Verify interactions
+        verify(itemRepository).findById(eq(itemId));
+        verify(itemRepository).saveAndFlush(any(Item.class));
     }
+
 
     @Test
     public void shouldReturnExistingItem_WhenItemIsNull() {
