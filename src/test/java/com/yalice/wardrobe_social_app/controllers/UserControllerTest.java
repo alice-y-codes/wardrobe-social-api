@@ -1,19 +1,16 @@
 package com.yalice.wardrobe_social_app.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yalice.wardrobe_social_app.configs.TestSecurityConfig;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 import com.yalice.wardrobe_social_app.exceptions.UserRegistrationException;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -22,6 +19,8 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -31,10 +30,9 @@ public class UserControllerTest {
 
         private MockMvc mockMvc;
 
+        private final ObjectMapper objectMapper = new ObjectMapper();
         @Mock
         private UserService userService;
-
-        private final ObjectMapper objectMapper = new ObjectMapper();
 
         @InjectMocks
         private UserController userController;
@@ -43,21 +41,19 @@ public class UserControllerTest {
 
         @BeforeEach
         public void setup() {
-                MockitoAnnotations.openMocks(this); // Initialize mocks
+                MockitoAnnotations.openMocks(this);
 
-                // Setup UserController with dependencies
                 mockMvc = MockMvcBuilders.standaloneSetup(userController)
                         .setControllerAdvice(new GlobalExceptionHandler())
                         .build();
 
-                // Initialize a sample user for testing
                 initializeTestUser();
         }
 
         private void initializeTestUser() {
                 user = new User();
                 user.setUsername("alice");
-                user.setPassword("password123"); // Ensure password meets length requirement
+                user.setPassword("password123");
                 user.setProfilePicture("https://example.com/alice-profile.jpg");
                 user.setEmail("alice@example.com");
                 user.setProvider("google");
@@ -66,7 +62,7 @@ public class UserControllerTest {
         @Test
         public void shouldRegisterUser() throws Exception {
                 // Arrange
-                Mockito.when(userService.registerUser(any(User.class))).thenReturn(Optional.of(user));
+                when(userService.registerUser(any(User.class))).thenReturn(Optional.of(user));
 
                 // Act & Assert
                 mockMvc.perform(post("/api/users/register")
@@ -78,21 +74,21 @@ public class UserControllerTest {
                                 .andExpect(jsonPath("$.email").value("alice@example.com"))
                                 .andExpect(jsonPath("$.provider").value("google"));
 
-                Mockito.verify(userService, Mockito.times(1)).registerUser(any(User.class));
+                verify(userService, Mockito.times(1)).registerUser(any(User.class));
         }
 
         @Test
         public void shouldReturnBadRequestWhenRegisteringUserWithMissingFields() throws Exception {
                 User incompleteUser = new User();
                 incompleteUser.setUsername("alice");
-                incompleteUser.setPassword("password123"); // Missing email and provider
+                incompleteUser.setPassword("password123");
 
                 mockMvc.perform(post("/api/users/register")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(incompleteUser)))
                                 .andExpect(status().isBadRequest());
 
-                Mockito.verify(userService, Mockito.never()).registerUser(any(User.class));
+                verify(userService, Mockito.never()).registerUser(any(User.class));
         }
 
         @Test
@@ -109,7 +105,7 @@ public class UserControllerTest {
                                 .content(objectMapper.writeValueAsString(userWithEmptyEmail)))
                                 .andExpect(status().isBadRequest());
 
-                Mockito.verify(userService, Mockito.never()).registerUser(any(User.class));
+                verify(userService, Mockito.never()).registerUser(any(User.class));
         }
 
         @Test
@@ -126,7 +122,7 @@ public class UserControllerTest {
                                 .content(objectMapper.writeValueAsString(userWithEmptyProvider)))
                                 .andExpect(status().isBadRequest());
 
-                Mockito.verify(userService, Mockito.never()).registerUser(any(User.class));
+                verify(userService, Mockito.never()).registerUser(any(User.class));
         }
 
         @Test
@@ -139,7 +135,7 @@ public class UserControllerTest {
                 userWithShortPassword.setProvider("google");
 
                 // Service will throw exception for business rule violation
-                Mockito.when(userService.registerUser(any(User.class)))
+                when(userService.registerUser(any(User.class)))
                                 .thenThrow(new UserRegistrationException(
                                                 "Password must be at least 8 characters long"));
 
@@ -149,7 +145,7 @@ public class UserControllerTest {
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.message").value("Password must be at least 8 characters long"));
 
-                Mockito.verify(userService, Mockito.times(1)).registerUser(any(User.class));
+                verify(userService, Mockito.times(1)).registerUser(any(User.class));
         }
 
         @Test
@@ -162,7 +158,7 @@ public class UserControllerTest {
                 userWithInvalidProvider.setProvider("invalid_provider");
 
                 // Service will throw exception for business rule violation
-                Mockito.when(userService.registerUser(any(User.class)))
+                when(userService.registerUser(any(User.class)))
                                 .thenThrow(new UserRegistrationException("Provider is not valid"));
 
                 mockMvc.perform(post("/api/users/register")
@@ -171,13 +167,13 @@ public class UserControllerTest {
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.message").value("Provider is not valid"));
 
-                Mockito.verify(userService, Mockito.times(1)).registerUser(any(User.class));
+                verify(userService, Mockito.times(1)).registerUser(any(User.class));
         }
 
         @Test
         public void shouldReturnConflictWhenUsernameIsTaken() throws Exception {
                 // Service returns empty Optional to indicate username is taken
-                Mockito.when(userService.registerUser(any(User.class))).thenReturn(Optional.empty());
+                when(userService.registerUser(any(User.class))).thenReturn(Optional.empty());
 
                 mockMvc.perform(post("/api/users/register")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -185,13 +181,13 @@ public class UserControllerTest {
                                 .andExpect(status().isConflict())
                                 .andExpect(jsonPath("$.message").value("Username already taken"));
 
-                Mockito.verify(userService, Mockito.times(1)).registerUser(any(User.class));
+                verify(userService, Mockito.times(1)).registerUser(any(User.class));
         }
 
         @Test
         public void shouldFindUser() throws Exception {
                 // Arrange
-                Mockito.when(userService.findUserByUsername(eq("alice"))).thenReturn(Optional.of(user));
+                when(userService.findUserByUsername(eq("alice"))).thenReturn(Optional.of(user));
 
                 // Act & Assert
                 mockMvc.perform(get("/api/users/findByUsername")
@@ -206,7 +202,7 @@ public class UserControllerTest {
         @Test
         public void shouldReturnNotFoundWhenUserDoesNotExist() throws Exception {
                 // Arrange
-                Mockito.when(userService.findUserByUsername(eq("nonexistent"))).thenReturn(Optional.empty());
+                when(userService.findUserByUsername(eq("nonexistent"))).thenReturn(Optional.empty());
 
                 // Act & Assert
                 mockMvc.perform(get("/api/users/findByUsername")
