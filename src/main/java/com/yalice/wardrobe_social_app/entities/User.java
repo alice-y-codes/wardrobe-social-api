@@ -3,6 +3,9 @@ package com.yalice.wardrobe_social_app.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -30,6 +33,12 @@ public class User {
 
     @Column
     private String profilePicture;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Item> items = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Outfit> outfits = new ArrayList<>();
 
 
     // private string Bio

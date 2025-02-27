@@ -3,13 +3,16 @@ package com.yalice.wardrobe_social_app.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yalice.wardrobe_social_app.configs.TestSecurityConfig;
 import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 import com.yalice.wardrobe_social_app.exceptions.UserRegistrationException;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -24,7 +27,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
 public class UserControllerTest {
 
         private MockMvc mockMvc;
@@ -32,21 +34,27 @@ public class UserControllerTest {
         @Mock
         private UserService userService;
 
-        private ObjectMapper objectMapper = new ObjectMapper();
+        private final ObjectMapper objectMapper = new ObjectMapper();
 
+        @InjectMocks
         private UserController userController;
 
         private User user;
 
         @BeforeEach
         public void setup() {
-                userController = new UserController();
-                userController.userService = userService;
-                mockMvc = MockMvcBuilders.standaloneSetup(userController)
-                                .setControllerAdvice(
-                                                new com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler())
-                                .build();
+                MockitoAnnotations.openMocks(this); // Initialize mocks
 
+                // Setup UserController with dependencies
+                mockMvc = MockMvcBuilders.standaloneSetup(userController)
+                        .setControllerAdvice(new GlobalExceptionHandler())
+                        .build();
+
+                // Initialize a sample user for testing
+                initializeTestUser();
+        }
+
+        private void initializeTestUser() {
                 user = new User();
                 user.setUsername("alice");
                 user.setPassword("password123"); // Ensure password meets length requirement
