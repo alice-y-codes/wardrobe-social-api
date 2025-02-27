@@ -11,6 +11,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.yalice.wardrobe_social_app.services.UserDetailsServiceImpl;
 
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -63,6 +66,14 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 logger.warn("Unable to get JWT Token");
             } catch (ExpiredJwtException e) {
                 logger.warn("JWT Token has expired");
+            } catch (SignatureException e) {
+                logger.warn("Invalid JWT signature");
+            } catch (MalformedJwtException e) {
+                logger.warn("Invalid JWT token");
+            } catch (UnsupportedJwtException e) {
+                logger.warn("Unsupported JWT token");
+            } catch (Exception e) {
+                logger.warn("JWT token error: " + e.getMessage());
             }
         }
 

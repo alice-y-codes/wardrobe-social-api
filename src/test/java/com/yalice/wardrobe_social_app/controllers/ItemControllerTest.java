@@ -2,9 +2,11 @@ package com.yalice.wardrobe_social_app.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yalice.wardrobe_social_app.entities.Item;
+import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 import com.yalice.wardrobe_social_app.interfaces.ItemService;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,14 +14,21 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -50,26 +59,81 @@ public class ItemControllerTest {
                 .build();
     }
 
+    @AfterEach
+    public void tearDown() {
+        // Clear the security context after each test
+        SecurityContextHolder.clearContext();
+    }
+
     @Test
     public void shouldCreateItem() throws Exception {
         // Arrange
+        // 1. Create a real authentication token instead of a mock
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken("testuser", null,
+                new ArrayList<>());
+
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        // 2. Mock the user service to return a user
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("testuser");
+        when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
+
+        // 3. Mock the item service
         Item item = new Item();
         item.setName("Test name");
-        item.setUserId(1L);
         item.setCategory("Test category");
         item.setImageUrl("Test image url");
-        when(itemService.createItem(any(Long.class), any(Item.class))).thenReturn(Optional.of(item));
+        when(itemService.createItem(eq(1L), any(Item.class))).thenReturn(Optional.of(item));
 
         // Act & Assert
         mockMvc.perform(post("/api/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(item)))
-                .andExpect(status().isCreated())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(item)))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Test name"))
                 .andExpect(jsonPath("$.category").value("Test category"))
                 .andExpect(jsonPath("$.imageUrl").value("Test image url"));
 
-        verify(itemService).createItem(any(Long.class), any(Item.class));
+        // Verify that the service methods were called with the correct parameters
+        verify(userService).findUserByUsername("testuser");
+        verify(itemService).createItem(eq(1L), any(Item.class));
+    }
+
+    // Add a test for the new my-items endpoint
+    @Test
+    public void shouldGetMyItems() throws Exception {
+        // Arrange
+        // 1. Create a real authentication token instead of a mock
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken("testuser", null,
+                new ArrayList<>());
+
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        // 2. Mock the user service to return a user
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("testuser");
+        when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
+
+        // 3. Mock the item service
+        Item item = new Item();
+        item.setName("Test name");
+        when(itemService.getAllItems(1L)).thenReturn(Collections.singletonList(item));
+
+        // Act & Assert
+        mockMvc.perform(get("/api/items/my-items")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Test name"));
+
+        verify(userService).findUserByUsername("testuser");
+        verify(itemService).getAllItems(1L);
     }
 
     @Test
@@ -168,5 +232,48 @@ public class ItemControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(itemService, Mockito.times(1)).deleteItem(itemId);
+    }
+
+    @Test
+    public void shouldReturnBadRequestWhenUserNotAuthenticated() throws Exception {
+        // Arrange - no authentication setup
+        // SecurityContextHolder is empty by default
+
+        Item item = new Item();
+        item.setName("Test name");
+        item.setCategory("Test category");
+
+        // Act & Assert
+        mockMvc.perform(post("/api/items")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(item)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void shouldReturnBadRequestWhenUserNotFound() throws Exception {
+        // Arrange
+        // 1. Create a real authentication token instead of a mock
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken("testuser", null,
+                new ArrayList<>());
+
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        // 2. Mock the user service to return empty (user not found)
+        when(userService.findUserByUsername("testuser")).thenReturn(Optional.empty());
+
+        Item item = new Item();
+        item.setName("Test name");
+        item.setCategory("Test category");
+
+        // Act & Assert
+        mockMvc.perform(post("/api/items")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(item)))
+                .andExpect(status().isBadRequest());
+
+        verify(userService).findUserByUsername("testuser");
     }
 }
