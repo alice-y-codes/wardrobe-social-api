@@ -31,21 +31,24 @@ public class UserControllerTest {
         private MockMvc mockMvc;
 
         private final ObjectMapper objectMapper = new ObjectMapper();
+
         @Mock
         private UserService userService;
 
+        @InjectMocks
         private UserController userController;
 
         private User user;
 
         @BeforeEach
         public void setup() {
-                userController = new UserController(userService);
+                // Initialize mocks first
                 MockitoAnnotations.openMocks(this);
 
+                // Then set up the controller with the mocks
                 mockMvc = MockMvcBuilders.standaloneSetup(userController)
-                        .setControllerAdvice(new GlobalExceptionHandler())
-                        .build();
+                                .setControllerAdvice(new GlobalExceptionHandler())
+                                .build();
 
                 initializeTestUser();
         }
