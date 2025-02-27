@@ -148,4 +148,9 @@ public class UserServiceTest {
         assertThat(thrown.getMessage()).isEqualTo("Password must be at least 8 characters long");
     }
 
+    // Here you could add tests for more business validations:
+    // - Email format validation
+    // - Password complexity rules
+    // - Username format rules
+    // - etc.
 }
