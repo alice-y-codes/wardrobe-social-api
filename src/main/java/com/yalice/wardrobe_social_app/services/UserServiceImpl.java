@@ -38,12 +38,10 @@ public class UserServiceImpl implements UserService {
     }
 
     private void validateBusinessRules(User user) {
-        // Password strength validation
         if (user.getPassword().length() < MIN_PASSWORD_LENGTH) {
             throw new UserRegistrationException("Password must be at least 8 characters long");
         }
 
-        // Provider validation
         if (!VALID_PROVIDERS.contains(user.getProvider())) {
             throw new UserRegistrationException("Provider is not valid");
         }
