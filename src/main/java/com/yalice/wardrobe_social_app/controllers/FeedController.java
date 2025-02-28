@@ -30,10 +30,6 @@ public class FeedController {
         this.userService = userService;
     }
 
-    @GetMapping("/testpageable")
-    public String testPageable(Pageable pageable) {
-        return "Page: " + pageable.getPageNumber() + ", Size: " + pageable.getPageSize();
-    }
     @GetMapping
     public ResponseEntity<?> getUserFeed(Pageable pageable) {
         Optional<User> currentUserOptional = getCurrentUser();
@@ -48,7 +44,7 @@ public class FeedController {
 
     @GetMapping("/users/{userId}")
     public ResponseEntity<?> getUserPosts(@PathVariable Long userId,
-            @PageableDefault(page = 0, size = 20) Pageable pageable) {
+            @PageableDefault(size = 20) Pageable pageable) {
         Optional<User> currentUserOptional = getCurrentUser();
         if (currentUserOptional.isEmpty()) {
             return ResponseEntity.status(401).body("Unauthorized");
@@ -134,7 +130,7 @@ public class FeedController {
 
     @GetMapping("/{postId}/comments")
     public ResponseEntity<?> getPostComments(@PathVariable Long postId,
-            @PageableDefault(page = 0, size = 20) Pageable pageable) {
+            @PageableDefault(size = 20) Pageable pageable) {
         Page<Comment> comments = feedService.getPostComments(postId, pageable);
         return ResponseEntity.ok(comments);
     }
