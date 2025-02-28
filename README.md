@@ -12,6 +12,9 @@ A Spring Boot application for managing your wardrobe and creating outfits.
   - [Users](#users)
   - [Items](#items)
   - [Outfits](#outfits)
+  - [Feed](#feed)
+  - [Friendship](#friendship)
+  - [Profile](#profile)
 - [Setup and Installation](#setup-and-installation)
 - [Running Tests](#running-tests)
 - [Code Quality](#code-quality)
@@ -267,6 +270,188 @@ Wardrobe Social App is a platform that allows users to digitize their wardrobe, 
 - **Path Parameters**: `occasion=string`
 - **Response**: List of outfits
 - **Description**: Gets outfits filtered by occasion
+
+### Feed
+
+#### Get User Feed
+
+- **URL**: `/api/feed`
+- **Method**: `GET`
+- **Query Parameters**: Supports pagination with `page`, `size`, and `sort` parameters
+- **Response**: Page of posts
+- **Description**: Gets the feed of posts for the authenticated user
+
+#### Get User Posts
+
+- **URL**: `/api/feed/users/{userId}`
+- **Method**: `GET`
+- **Path Parameters**: `userId=number`
+- **Query Parameters**: Supports pagination with `page`, `size`, and `sort` parameters
+- **Response**: Page of posts
+- **Description**: Gets posts created by a specific user
+
+#### Create Post
+
+- **URL**: `/api/feed/post`
+- **Method**: `POST`
+- **Request Body**:
+  ```json
+  {
+    "content": "string",
+    "outfitId": "number",
+    "visibility": "string"
+  }
+  ```
+- **Response**: The created post
+- **Description**: Creates a new post, optionally linked to an outfit
+
+#### Delete Post
+
+- **URL**: `/api/feed/{postId}`
+- **Method**: `DELETE`
+- **Path Parameters**: `postId=number`
+- **Response**: Success message
+- **Description**: Deletes a post created by the authenticated user
+
+#### Like Post
+
+- **URL**: `/api/feed/{postId}/like`
+- **Method**: `POST`
+- **Path Parameters**: `postId=number`
+- **Response**: Success message
+- **Description**: Likes a post
+
+#### Unlike Post
+
+- **URL**: `/api/feed/{postId}/like`
+- **Method**: `DELETE`
+- **Path Parameters**: `postId=number`
+- **Response**: Success message
+- **Description**: Removes a like from a post
+
+#### Add Comment
+
+- **URL**: `/api/feed/{postId}/comment`
+- **Method**: `POST`
+- **Path Parameters**: `postId=number`
+- **Request Body**:
+  ```json
+  {
+    "content": "string"
+  }
+  ```
+- **Response**: The created comment
+- **Description**: Adds a comment to a post
+
+#### Delete Comment
+
+- **URL**: `/api/feed/comments/{commentId}`
+- **Method**: `DELETE`
+- **Path Parameters**: `commentId=number`
+- **Response**: Success message
+- **Description**: Deletes a comment created by the authenticated user
+
+#### Get Post Comments
+
+- **URL**: `/api/feed/{postId}/comments`
+- **Method**: `GET`
+- **Path Parameters**: `postId=number`
+- **Query Parameters**: Supports pagination with `page`, `size`, and `sort` parameters
+- **Response**: Page of comments
+- **Description**: Gets comments for a specific post
+
+### Friendship
+
+#### Send Friend Request
+
+- **URL**: `/api/friends/request`
+- **Method**: `POST`
+- **Request Body**:
+  ```json
+  {
+    "recipientId": "number"
+  }
+  ```
+- **Response**: The created friendship
+- **Description**: Sends a friend request to another user
+
+#### Accept Friend Request
+
+- **URL**: `/api/friends/accept`
+- **Method**: `POST`
+- **Request Body**:
+  ```json
+  {
+    "requestId": "number"
+  }
+  ```
+- **Response**: The updated friendship
+- **Description**: Accepts a pending friend request
+
+#### Reject Friend Request
+
+- **URL**: `/api/friends/reject`
+- **Method**: `POST`
+- **Request Body**:
+  ```json
+  {
+    "requestId": "number"
+  }
+  ```
+- **Response**: Success message
+- **Description**: Rejects a pending friend request
+
+#### Remove Friend
+
+- **URL**: `/api/friends/remove`
+- **Method**: `DELETE`
+- **Request Body**:
+  ```json
+  {
+    "friendId": "number"
+  }
+  ```
+- **Response**: Success message
+- **Description**: Removes a user from friends list
+
+#### Get Friends
+
+- **URL**: `/api/friends`
+- **Method**: `GET`
+- **Response**: List of users
+- **Description**: Gets all friends of the authenticated user
+
+#### Get Pending Friend Requests
+
+- **URL**: `/api/friends/pending`
+- **Method**: `GET`
+- **Response**: List of pending friendship requests
+- **Description**: Gets all pending friend requests for the authenticated user
+
+### Profile
+
+#### Get User Profile
+
+- **URL**: `/api/users/{userId}/profile`
+- **Method**: `GET`
+- **Path Parameters**: `userId=number`
+- **Response**: Profile details
+- **Description**: Gets a user's profile if accessible to the authenticated user
+
+#### Update Profile
+
+- **URL**: `/api/users/{userId}/profile`
+- **Method**: `PUT`
+- **Path Parameters**: `userId=number`
+- **Request Body**:
+  ```json
+  {
+    "bio": "string",
+    "visibility": "string"
+  }
+  ```
+- **Response**: The updated profile
+- **Description**: Updates the authenticated user's profile
 
 ## Setup and Installation
 
