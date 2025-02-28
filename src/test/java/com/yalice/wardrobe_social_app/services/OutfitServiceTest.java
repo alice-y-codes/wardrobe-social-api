@@ -46,40 +46,45 @@ class OutfitServiceTest {
         MockitoAnnotations.openMocks(this);
 
         // Setup test user
-        testUser = new User();
-        testUser.setId(1L);
-        testUser.setUsername("testuser");
-        testUser.setEmail("test@example.com");
+        testUser = User.builder()
+                .id(1L)
+                .username("testuser")
+                .email("test@example.com")
+                .build();
 
         // Setup test item
-        testItem = new Item();
-        testItem.setId(1L);
-        testItem.setName("Test Item");
-        testItem.setCategory("Tops");
-        testItem.setUserId(1L);
-        testItem.setImageUrl("http://example.com/image.jpg");
+        testItem = Item.builder()
+                .id(1L)
+                .name("Test Item")
+                .category("Tops")
+                .userId(1L)
+                .imageUrl("http://example.com/image.jpg")
+                .build();
 
         // Setup test outfit
-        testOutfit = new Outfit();
-        testOutfit.setId(1L);
-        testOutfit.setName("Test Outfit");
-        testOutfit.setDescription("A test outfit");
-        testOutfit.setOccasion("Casual");
-        testOutfit.setUser(testUser);
-        testOutfit.setCreatedAt(LocalDateTime.now());
-        testOutfit.setUpdatedAt(LocalDateTime.now());
         Set<Item> items = new HashSet<>();
         items.add(testItem);
-        testOutfit.setItems(items);
+
+        testOutfit = Outfit.builder()
+                .id(1L)
+                .name("Test Outfit")
+                .description("A test outfit")
+                .occasion("Casual")
+                .user(testUser)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .items(items)
+                .build();
     }
 
     @Test
     void createOutfit_Success() {
         // Arrange
-        Outfit outfitToCreate = new Outfit();
-        outfitToCreate.setName("New Outfit");
-        outfitToCreate.setDescription("A new outfit");
-        outfitToCreate.setOccasion("Formal");
+        Outfit outfitToCreate = Outfit.builder()
+                .name("New Outfit")
+                .description("A new outfit")
+                .occasion("Formal")
+                .build();
 
         // Use UserRepository instead of UserService
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
@@ -157,10 +162,11 @@ class OutfitServiceTest {
     @Test
     void updateOutfit_Success() {
         // Arrange
-        Outfit outfitToUpdate = new Outfit();
-        outfitToUpdate.setName("Updated Outfit");
-        outfitToUpdate.setDescription("Updated description");
-        outfitToUpdate.setOccasion("Business");
+        Outfit outfitToUpdate = Outfit.builder()
+                .name("Updated Outfit")
+                .description("Updated description")
+                .occasion("Business")
+                .build();
 
         when(outfitRepository.findById(1L)).thenReturn(Optional.of(testOutfit));
         when(outfitRepository.save(any(Outfit.class))).thenReturn(testOutfit);
@@ -179,8 +185,9 @@ class OutfitServiceTest {
     @Test
     void updateOutfit_NotFound() {
         // Arrange
-        Outfit outfitToUpdate = new Outfit();
-        outfitToUpdate.setName("Updated Outfit");
+        Outfit outfitToUpdate = Outfit.builder()
+                .name("Updated Outfit")
+                .build();
         when(outfitRepository.findById(99L)).thenReturn(Optional.empty());
 
         // Act

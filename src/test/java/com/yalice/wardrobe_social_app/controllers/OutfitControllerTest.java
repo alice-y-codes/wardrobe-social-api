@@ -64,40 +64,45 @@ class OutfitControllerTest {
         when(authentication.isAuthenticated()).thenReturn(true);
 
         // Setup test user
-        testUser = new User();
-        testUser.setId(1L);
-        testUser.setUsername("testuser");
-        testUser.setEmail("test@example.com");
+        testUser = User.builder()
+                .id(1L)
+                .username("testuser")
+                .email("test@example.com")
+                .build();
         when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
 
         // Setup test item
-        testItem = new Item();
-        testItem.setId(1L);
-        testItem.setName("Test Item");
-        testItem.setCategory("Tops");
-        testItem.setUserId(1L);
-        testItem.setImageUrl("http://example.com/image.jpg");
+        testItem = Item.builder()
+                .id(1L)
+                .name("Test Item")
+                .category("Tops")
+                .userId(1L)
+                .imageUrl("http://example.com/image.jpg")
+                .build();
 
         // Setup test outfit
-        testOutfit = new Outfit();
-        testOutfit.setId(1L);
-        testOutfit.setName("Test Outfit");
-        testOutfit.setDescription("A test outfit");
-        testOutfit.setOccasion("Casual");
-        testOutfit.setUser(testUser);
-        testOutfit.setCreatedAt(LocalDateTime.now());
-        testOutfit.setUpdatedAt(LocalDateTime.now());
         Set<Item> items = new HashSet<>();
         items.add(testItem);
-        testOutfit.setItems(items);
+
+        testOutfit = Outfit.builder()
+                .id(1L)
+                .name("Test Outfit")
+                .description("A test outfit")
+                .occasion("Casual")
+                .user(testUser)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .items(items)
+                .build();
     }
 
     @Test
     void createOutfit_Success() throws Exception {
-        Outfit outfitToCreate = new Outfit();
-        outfitToCreate.setName("New Outfit");
-        outfitToCreate.setDescription("A new outfit");
-        outfitToCreate.setOccasion("Formal");
+        Outfit outfitToCreate = Outfit.builder()
+                .name("New Outfit")
+                .description("A new outfit")
+                .occasion("Formal")
+                .build();
 
         when(outfitService.createOutfit(eq(1L), any(Outfit.class))).thenReturn(Optional.of(testOutfit));
 
@@ -165,10 +170,11 @@ class OutfitControllerTest {
 
     @Test
     void updateOutfit_Success() throws Exception {
-        Outfit outfitToUpdate = new Outfit();
-        outfitToUpdate.setName("Updated Outfit");
-        outfitToUpdate.setDescription("An updated outfit");
-        outfitToUpdate.setOccasion("Business");
+        Outfit outfitToUpdate = Outfit.builder()
+                .name("Updated Outfit")
+                .description("An updated outfit")
+                .occasion("Business")
+                .build();
 
         when(outfitService.getOutfit(1L)).thenReturn(Optional.of(testOutfit));
         when(outfitService.updateOutfit(eq(1L), any(Outfit.class))).thenReturn(testOutfit);
@@ -185,8 +191,9 @@ class OutfitControllerTest {
 
     @Test
     void updateOutfit_NotFound() throws Exception {
-        Outfit outfitToUpdate = new Outfit();
-        outfitToUpdate.setName("Updated Outfit");
+        Outfit outfitToUpdate = Outfit.builder()
+                .name("Updated Outfit")
+                .build();
 
         when(outfitService.getOutfit(99L)).thenReturn(Optional.empty());
 

@@ -1,10 +1,19 @@
 package com.yalice.wardrobe_social_app.controllers;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
-import com.yalice.wardrobe_social_app.exceptions.UserRegistrationException;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -14,17 +23,6 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import java.util.Optional;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class UserControllerTest {
 
@@ -54,12 +52,13 @@ public class UserControllerTest {
         }
 
         private void initializeTestUser() {
-                user = new User();
-                user.setUsername("alice");
-                user.setPassword("password123");
-                user.setProfilePicture("https://example.com/alice-profile.jpg");
-                user.setEmail("alice@example.com");
-                user.setProvider("google");
+                user = User.builder()
+                                .username("alice")
+                                .password("password123")
+                                .profilePicture("https://example.com/alice-profile.jpg")
+                                .email("alice@example.com")
+                                .provider(User.Provider.GOOGLE)
+                                .build();
         }
 
         @Test
@@ -75,16 +74,17 @@ public class UserControllerTest {
                                 .andExpect(jsonPath("$.username").value("alice"))
                                 .andExpect(jsonPath("$.profilePicture").value("https://example.com/alice-profile.jpg"))
                                 .andExpect(jsonPath("$.email").value("alice@example.com"))
-                                .andExpect(jsonPath("$.provider").value("google"));
+                                .andExpect(jsonPath("$.provider").value("GOOGLE"));
 
                 verify(userService, Mockito.times(1)).registerUser(any(User.class));
         }
 
         @Test
         public void shouldReturnBadRequestWhenRegisteringUserWithMissingFields() throws Exception {
-                User incompleteUser = new User();
-                incompleteUser.setUsername("alice");
-                incompleteUser.setPassword("password123");
+                User incompleteUser = User.builder()
+                                .username("alice")
+                                .password("password123")
+                                .build();
 
                 mockMvc.perform(post("/api/users/register")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -96,12 +96,12 @@ public class UserControllerTest {
 
         @Test
         public void shouldReturnBadRequestWhenEmailIsEmpty() throws Exception {
-                User userWithEmptyEmail = new User();
-                userWithEmptyEmail.setUsername("alice");
-                userWithEmptyEmail.setPassword("password123");
-                userWithEmptyEmail.setProfilePicture("https://example.com/alice-profile.jpg");
-                userWithEmptyEmail.setEmail("");
-                userWithEmptyEmail.setProvider("google");
+                User userWithEmptyEmail = User.builder()
+                                .username("alice")
+                                .password("password123")
+                                .provider(User.Provider.GOOGLE)
+                                .email("")
+                                .build();
 
                 mockMvc.perform(post("/api/users/register")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -113,12 +113,12 @@ public class UserControllerTest {
 
         @Test
         public void shouldReturnBadRequestWhenProviderIsEmpty() throws Exception {
-                User userWithEmptyProvider = new User();
-                userWithEmptyProvider.setUsername("alice");
-                userWithEmptyProvider.setPassword("password123");
-                userWithEmptyProvider.setProfilePicture("https://example.com/alice-profile.jpg");
-                userWithEmptyProvider.setEmail("alice@testmail.com");
-                userWithEmptyProvider.setProvider("");
+                User userWithEmptyProvider = User.builder()
+                                .username("alice")
+                                .password("password123")
+                                .email("alice@example.com")
+                                .provider(null)
+                                .build();
 
                 mockMvc.perform(post("/api/users/register")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -130,52 +130,23 @@ public class UserControllerTest {
 
         @Test
         public void shouldReturnBadRequestWhenPasswordTooShort() throws Exception {
-                User userWithShortPassword = new User();
-                userWithShortPassword.setUsername("alice");
-                userWithShortPassword.setPassword("short"); // Less than 8 characters
-                userWithShortPassword.setProfilePicture("https://example.com/alice-profile.jpg");
-                userWithShortPassword.setEmail("alice@testmail.com");
-                userWithShortPassword.setProvider("google");
-
-                // Service will throw exception for business rule violation
-                when(userService.registerUser(any(User.class)))
-                                .thenThrow(new UserRegistrationException(
-                                                "Password must be at least 8 characters long"));
+                User userWithShortPassword = User.builder()
+                                .username("alice")
+                                .password("short")
+                                .email("alice@example.com")
+                                .provider(User.Provider.GOOGLE)
+                                .build();
 
                 mockMvc.perform(post("/api/users/register")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(userWithShortPassword)))
-                                .andExpect(status().isBadRequest())
-                                .andExpect(jsonPath("$.message").value("Password must be at least 8 characters long"));
+                                .andExpect(status().isBadRequest());
 
-                verify(userService, Mockito.times(1)).registerUser(any(User.class));
-        }
-
-        @Test
-        public void shouldReturnBadRequestWhenProviderIsInvalid() throws Exception {
-                User userWithInvalidProvider = new User();
-                userWithInvalidProvider.setUsername("alice");
-                userWithInvalidProvider.setPassword("password123");
-                userWithInvalidProvider.setProfilePicture("https://example.com/alice-profile.jpg");
-                userWithInvalidProvider.setEmail("alice@testmail.com");
-                userWithInvalidProvider.setProvider("invalid_provider");
-
-                // Service will throw exception for business rule violation
-                when(userService.registerUser(any(User.class)))
-                                .thenThrow(new UserRegistrationException("Provider is not valid"));
-
-                mockMvc.perform(post("/api/users/register")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(userWithInvalidProvider)))
-                                .andExpect(status().isBadRequest())
-                                .andExpect(jsonPath("$.message").value("Provider is not valid"));
-
-                verify(userService, Mockito.times(1)).registerUser(any(User.class));
+                verify(userService, Mockito.never()).registerUser(any(User.class));
         }
 
         @Test
         public void shouldReturnConflictWhenUsernameIsTaken() throws Exception {
-                // Service returns empty Optional to indicate username is taken
                 when(userService.registerUser(any(User.class))).thenReturn(Optional.empty());
 
                 mockMvc.perform(post("/api/users/register")
@@ -199,7 +170,7 @@ public class UserControllerTest {
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.username").value("alice"))
                                 .andExpect(jsonPath("$.email").value("alice@example.com"))
-                                .andExpect(jsonPath("$.provider").value("google"));
+                                .andExpect(jsonPath("$.provider").value("GOOGLE"));
         }
 
         @Test

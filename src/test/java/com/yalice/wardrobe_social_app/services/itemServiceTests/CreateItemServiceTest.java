@@ -38,14 +38,23 @@ public class CreateItemServiceTest {
     public void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        user = new User(valueOf(456), "alice", "alice@testemail.com", "123password", "google", "profilepic.jpeg",
-                new ArrayList<>(), new ArrayList<>());
+        user = User.builder()
+                .id(valueOf(456))
+                .username("alice")
+                .email("alice@testemail.com")
+                .password("123password")
+                .provider(User.Provider.GOOGLE)
+                .profilePicture("profilepic.jpeg")
+                .items(new ArrayList<>())
+                .outfits(new ArrayList<>())
+                .build();
 
-        item = new Item();
-        item.setUserId(valueOf(456));
-        item.setName("Test name");
-        item.setCategory("Test category");
-        item.setImageUrl("Test image url");
+        item = Item.builder()
+                .userId(valueOf(456))
+                .name("Test name")
+                .category("Test category")
+                .imageUrl("Test image url")
+                .build();
     }
 
     @Test

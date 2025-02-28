@@ -3,11 +3,10 @@ package com.yalice.wardrobe_social_app.controllers;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.UserRegistrationException;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
-
+import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
@@ -15,13 +14,14 @@ public class UserController {
 
     UserService userService;
 
+    @Autowired
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
-        validateRequest(user);
+        validateUser(user);
 
         Optional<User> registeredUser = userService.registerUser(user);
 
@@ -30,24 +30,6 @@ public class UserController {
         }
 
         return ResponseEntity.ok(registeredUser.get());
-    }
-
-    private void validateRequest(User user) {
-        if (user == null) {
-            throw new UserRegistrationException("User data cannot be null");
-        }
-        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
-            throw new UserRegistrationException("Username cannot be null or empty");
-        }
-        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-            throw new UserRegistrationException("Email cannot be null or empty");
-        }
-        if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
-            throw new UserRegistrationException("Password cannot be null or empty");
-        }
-        if (user.getProvider() == null || user.getProvider().trim().isEmpty()) {
-            throw new UserRegistrationException("Provider cannot be null or empty");
-        }
     }
 
     @GetMapping("/findByUsername")
@@ -77,4 +59,29 @@ public class UserController {
     // request) {
     // // Change password logic
     // }
+
+    private static void validateUser(User user) {
+        // Validate the username
+        if (user.getUsername() == null || user.getUsername().isEmpty()) {
+            throw new UserRegistrationException("Username is required");
+        }
+
+        // Validate the password
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            throw new UserRegistrationException("Password is required");
+        }
+        if (user.getPassword().length() < 8) {
+            throw new UserRegistrationException("Password must be at least 8 characters");
+        }
+
+        // Validate the email
+        if (user.getEmail() == null || user.getEmail().isEmpty()) {
+            throw new UserRegistrationException("Email is required");
+        }
+
+        // Validate the provider
+        if (user.getProvider() == null) {
+            throw new UserRegistrationException("Provider is required");
+        }
+    }
 }

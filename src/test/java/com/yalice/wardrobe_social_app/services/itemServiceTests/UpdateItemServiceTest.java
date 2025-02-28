@@ -1,18 +1,20 @@
 package com.yalice.wardrobe_social_app.services.itemServiceTests;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
-
 import com.yalice.wardrobe_social_app.entities.Item;
 import com.yalice.wardrobe_social_app.repositories.ItemRepository;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
 import com.yalice.wardrobe_social_app.services.ItemServiceImpl;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
 
 public class UpdateItemServiceTest {
 
@@ -70,7 +72,6 @@ public class UpdateItemServiceTest {
         verify(itemRepository).findById(eq(itemId));
         verify(itemRepository).saveAndFlush(any(Item.class));
     }
-
 
     @Test
     public void shouldReturnExistingItem_WhenItemIsNull() {

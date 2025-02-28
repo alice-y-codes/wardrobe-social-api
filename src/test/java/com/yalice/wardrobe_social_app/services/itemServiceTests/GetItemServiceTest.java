@@ -35,14 +35,24 @@ public class GetItemServiceTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        user = new User(valueOf(123), "alice", "alice@testemail.com", "123password", "google", "profilepic.jpeg", new ArrayList<>(), new ArrayList<>());
+        user = User.builder()
+                .id(valueOf(123))
+                .username("alice")
+                .email("alice@testemail.com")
+                .password("123password")
+                .provider(User.Provider.GOOGLE)
+                .profilePicture("profilepic.jpeg")
+                .items(new ArrayList<>())
+                .outfits(new ArrayList<>())
+                .build();
 
-        item = new Item();
-        item.setId(1L);
-        item.setUserId(valueOf(123));
-        item.setName("Test name");
-        item.setCategory("Test category");
-        item.setImageUrl("Test image url");
+        item = Item.builder()
+                .id(1L)
+                .userId(valueOf(123))
+                .name("Test name")
+                .category("Test category")
+                .imageUrl("Test image url")
+                .build();
     }
 
     // ==============================
@@ -137,31 +147,31 @@ public class GetItemServiceTest {
     }
 
     private static List<Item> getItems(Long userId) {
-        Item testItem1 = new Item();
-        testItem1.setUserId(userId);
-        testItem1.setName("T-Shirt");
-        testItem1.setCategory("Test category 1");
-        testItem1.setImageUrl("Test image url 1");
+        Item testItem1 = Item.builder()
+                .userId(userId)
+                .name("T-Shirt")
+                .category("Test category 1")
+                .imageUrl("Test image url 1")
+                .build();
 
-        Item testItem2 = new Item();
-        testItem2.setUserId(userId);
-        testItem2.setName("Jeans");
-        testItem2.setCategory("Test category 2");
-        testItem2.setImageUrl("Test image url 2");
+        Item testItem2 = Item.builder()
+                .userId(userId)
+                .name("Jeans")
+                .category("Test category 2")
+                .imageUrl("Test image url 2")
+                .build();
 
-        Item testItem3 = new Item();
-        testItem3.setUserId(userId);
-        testItem3.setName("Shoes");
-        testItem3.setCategory("Test category 3");
-        testItem3.setImageUrl("Test image url 3");
-
+        Item testItem3 = Item.builder()
+                .userId(userId)
+                .name("Shoes")
+                .category("Test category 3")
+                .imageUrl("Test image url 3")
+                .build();
 
         List<Item> mockItems = List.of(
-                testItem1, testItem2, testItem3
-        );
+                testItem1, testItem2, testItem3);
         return mockItems;
     }
-
 
     @Test
     public void shouldReturnEmpty_WhenItemNameIsNull() {
@@ -182,6 +192,5 @@ public class GetItemServiceTest {
         assertThat(foundItem).isNotPresent();
         verify(itemRepository, never()).findByName(any());
     }
-
 
 }

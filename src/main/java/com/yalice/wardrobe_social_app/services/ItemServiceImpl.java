@@ -80,32 +80,24 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public Item updateItem(Long itemId, Item item) {
-        System.out.println("updateItem called with itemId: " + itemId);
-
         if (itemId == null) {
-            System.out.println("itemId is null, returning null");
             return null;
         }
 
         if (item == null) {
-            System.out.println("item is null, returning existing item");
             return itemRepository.findById(itemId).orElse(null);
         }
 
-        System.out.println("Finding item with id: " + itemId);
         Optional<Item> existingItemOptional = itemRepository.findById(itemId);
 
         if (existingItemOptional.isEmpty()) {
-            System.out.println("No item found with id: " + itemId);
             return null;
         }
 
-        System.out.println("Found item: " + existingItemOptional.get());
         Item existingItem = existingItemOptional.get();
 
         // Update fields but preserve the userId
-        Long userId = existingItem.getUserId(); // Explicitly save the userId
-        System.out.println("Preserving userId: " + userId);
+        Long userId = existingItem.getUserId();
 
         existingItem.setName(item.getName());
         existingItem.setBrand(item.getBrand());
@@ -115,14 +107,9 @@ public class ItemServiceImpl implements ItemService {
         existingItem.setImageUrl(item.getImageUrl());
         existingItem.setUserId(userId); // Explicitly set the userId back
 
-        System.out.println("Saving updated item: " + existingItem);
         Item savedItem = itemRepository.saveAndFlush(existingItem);
-        System.out.println("Saved item: " + savedItem);
 
-        // In test environment, savedItem might be null even though the mock is set up
-        // In that case, return the existingItem that we've already updated
         if (savedItem == null) {
-            System.out.println("savedItem is null, returning existingItem instead");
             return existingItem;
         }
 

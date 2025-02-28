@@ -34,12 +34,13 @@ public class UserServiceTest {
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
-        user = new User();
-        user.setUsername("testUser");
-        user.setEmail("test@example.com");
-        user.setProvider("google");
-        user.setProfilePicture("https://example.com/profile.jpg");
-        user.setPassword("password");
+        user = User.builder()
+                .username("testUser")
+                .email("test@example.com")
+                .provider(User.Provider.GOOGLE)
+                .profilePicture("https://example.com/profile.jpg")
+                .password("password")
+                .build();
     }
 
     @Test
@@ -111,34 +112,16 @@ public class UserServiceTest {
     }
 
     @Test
-    public void shouldThrowInvalidProvider_WhenProviderIsInvalid() {
-        // Arrange
-        user = new User();
-        user.setUsername("testUser");
-        user.setEmail("test@example.com");
-        user.setProvider(""); // Invalid provider
-        user.setProfilePicture("https://example.com/profile.jpg");
-        user.setPassword("password123");
-        when(userRepository.save(user)).thenThrow(new UserRegistrationException("Provider is not valid"));
-
-        // Act & Assert
-        Exception thrown = assertThrows(UserRegistrationException.class, () -> {
-            userService.registerUser(user);
-        });
-
-        assertThat(thrown.getMessage()).isEqualTo("Provider is not valid");
-    }
-
-    @Test
     public void shouldThrowInvalidPassword_WhenPasswordIsInvalid() {
         // Arrange
         user = new User();
         user.setUsername("testUser");
         user.setEmail("test@example.com");
-        user.setProvider("google");
+        user.setProvider(User.Provider.GOOGLE);
         user.setProfilePicture("https://example.com/profile.jpg");
         user.setPassword("password");
-        when(userRepository.save(user)).thenThrow(new UserRegistrationException("Password must be at least 8 characters long"));
+        when(userRepository.save(user))
+                .thenThrow(new UserRegistrationException("Password must be at least 8 characters long"));
 
         // Act & Assert
         Exception thrown = assertThrows(UserRegistrationException.class, () -> {
