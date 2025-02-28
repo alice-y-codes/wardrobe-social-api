@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Clothing Items Images ###
+/src/uploads
+
+### Application Properties ###
+src/test/resources/application-test.properties
+src/main/resources/application-dev.properties
+src/main/resources/application-prod.properties
