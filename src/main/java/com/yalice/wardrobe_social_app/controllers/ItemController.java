@@ -6,6 +6,7 @@ import com.yalice.wardrobe_social_app.interfaces.ItemService;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +19,7 @@ public class ItemController {
     private final ItemService itemService;
     private final UserService userService;
 
+    @Autowired
     public ItemController(ItemService itemService, UserService userService) {
         this.itemService = itemService;
         this.userService = userService;

@@ -78,17 +78,19 @@ public class ItemControllerTest {
                 SecurityContextHolder.setContext(securityContext);
 
                 // 2. Mock the user service to return a user
-                User user = new User();
-                user.setId(1L);
-                user.setUsername("testuser");
+                User user = User.builder()
+                                .id(1L)
+                                .username("testuser")
+                                .build();
                 when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
 
                 // 3. Mock the item service
-                Item item = new Item();
-                item.setUserId(1L);
-                item.setName("Test name");
-                item.setCategory("Test category");
-                item.setImageUrl("Test image url");
+                Item item = Item.builder()
+                                .userId(1L)
+                                .name("Test name")
+                                .category("Test category")
+                                .imageUrl("Test image url")
+                                .build();
                 when(itemService.createItem(eq(1L), any(Item.class))).thenReturn(Optional.of(item));
 
                 // Act & Assert
@@ -119,15 +121,17 @@ public class ItemControllerTest {
                 SecurityContextHolder.setContext(securityContext);
 
                 // 2. Mock the user service to return a user
-                User user = new User();
-                user.setId(1L);
-                user.setUsername("testuser");
+                User user = User.builder()
+                                .id(1L)
+                                .username("testuser")
+                                .build();
                 when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
 
                 // 3. Mock the item service
-                Item item = new Item();
-                item.setUserId(1L);
-                item.setName("Test name");
+                Item item = Item.builder()
+                                .userId(1L)
+                                .name("Test name")
+                                .build();
                 when(itemService.getAllItems(1L)).thenReturn(Collections.singletonList(item));
 
                 // Act & Assert
@@ -143,9 +147,10 @@ public class ItemControllerTest {
         @Test
         public void shouldGetAllItems() throws Exception {
                 // Arrange
-                Item item = new Item();
-                item.setUserId(1L);
-                item.setName("Test name");
+                Item item = Item.builder()
+                                .userId(1L)
+                                .name("Test name")
+                                .build();
                 when(itemService.getAllItems(1L)).thenReturn(Collections.singletonList(item));
 
                 // Act & Assert
@@ -160,10 +165,11 @@ public class ItemControllerTest {
         @Test
         public void shouldGetItemById() throws Exception {
                 // Arrange
-                Item item = new Item();
-                item.setId(1L);
-                item.setUserId(1L);
-                item.setName("Test name");
+                Item item = Item.builder()
+                                .id(1L)
+                                .userId(1L)
+                                .name("Test name")
+                                .build();
                 when(itemService.getItem(1L)).thenReturn(Optional.of(item));
 
                 // Act & Assert
@@ -191,9 +197,10 @@ public class ItemControllerTest {
         @Test
         public void shouldGetItemByName() throws Exception {
                 // Arrange
-                Item item = new Item();
-                item.setUserId(1L);
-                item.setName("Test name");
+                Item item = Item.builder()
+                                .userId(1L)
+                                .name("Test name")
+                                .build();
                 when(itemService.getItemByName("Test name")).thenReturn(Optional.of(item));
 
                 // Act & Assert
@@ -208,15 +215,17 @@ public class ItemControllerTest {
         @Test
         public void shouldUpdateItem() throws Exception {
                 // Arrange
-                Item existingItem = new Item();
-                existingItem.setId(1L);
-                existingItem.setUserId(1L);
-                existingItem.setName("Old name");
+                Item existingItem = Item.builder()
+                                .id(1L)
+                                .userId(1L)
+                                .name("Old name")
+                                .build();
 
-                Item updatedItem = new Item();
-                updatedItem.setId(1L);
-                updatedItem.setUserId(1L);
-                updatedItem.setName("Updated name");
+                Item updatedItem = Item.builder()
+                                .id(1L)
+                                .userId(1L)
+                                .name("Updated name")
+                                .build();
 
                 when(itemService.updateItem(eq(1L), any(Item.class))).thenReturn(updatedItem);
 
@@ -248,9 +257,10 @@ public class ItemControllerTest {
                 // Arrange - no authentication setup
                 // SecurityContextHolder is empty by default
 
-                Item item = new Item();
-                item.setName("Test name");
-                item.setCategory("Test category");
+                Item item = Item.builder()
+                                .name("Test name")
+                                .category("Test category")
+                                .build();
 
                 // Act & Assert
                 mockMvc.perform(post("/api/items")
@@ -274,9 +284,10 @@ public class ItemControllerTest {
                 // 2. Mock the user service to return empty (user not found)
                 when(userService.findUserByUsername("testuser")).thenReturn(Optional.empty());
 
-                Item item = new Item();
-                item.setName("Test name");
-                item.setCategory("Test category");
+                Item item = Item.builder()
+                                .name("Test name")
+                                .category("Test category")
+                                .build();
 
                 // Act & Assert
                 mockMvc.perform(post("/api/items")

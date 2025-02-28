@@ -28,8 +28,9 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Column
-    private String provider;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Provider provider;
 
     @Column
     private String profilePicture;
@@ -40,6 +41,28 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Outfit> outfits = new ArrayList<>();
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private Profile profile;
+
+    @OneToMany(mappedBy = "requester", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Friendship> sentFriendRequests = new ArrayList<>();
+
+    @OneToMany(mappedBy = "recipient", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Friendship> receivedFriendRequests = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Post> posts = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Comment> comments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Like> likes = new ArrayList<>();
+
+    public enum Provider {
+        FACEBOOK, GOOGLE, APPLE, LOCAL
+    }
 
     // private string Bio
     // private List<String> socialMediaLinks
