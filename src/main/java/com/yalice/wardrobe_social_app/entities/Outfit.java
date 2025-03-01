@@ -36,9 +36,11 @@ public class Outfit {
     private String season;
 
     @Column(name = "is_favorite")
+    @Builder.Default
     private boolean isFavorite = false;
 
     @Column(name = "is_public")
+    @Builder.Default
     private boolean isPublic = false;
 
     @Column(name = "created_at")
@@ -54,6 +56,7 @@ public class Outfit {
 
     @ManyToMany
     @JoinTable(name = "outfit_items", joinColumns = @JoinColumn(name = "outfit_id"), inverseJoinColumns = @JoinColumn(name = "item_id"))
+    @Builder.Default
     private Set<Item> items = new HashSet<>();
 
     // Helper methods for managing items
