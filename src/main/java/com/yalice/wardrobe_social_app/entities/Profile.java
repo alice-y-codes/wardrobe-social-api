@@ -27,6 +27,7 @@ public class Profile {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private ProfileVisibility visibility = ProfileVisibility.PRIVATE;
 
     @Column(name = "created_at")

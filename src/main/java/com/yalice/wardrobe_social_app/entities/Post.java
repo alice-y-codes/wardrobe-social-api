@@ -33,12 +33,15 @@ public class Post {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private PostVisibility visibility = PostVisibility.FRIENDS_ONLY;
 
     @Column(name = "like_count")
+    @Builder.Default
     private int likeCount = 0;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<Comment> comments = new ArrayList<>();
 
     @Column(name = "created_at")

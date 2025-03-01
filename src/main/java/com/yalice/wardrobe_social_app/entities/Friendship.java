@@ -28,6 +28,7 @@ public class Friendship {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private FriendshipStatus status = FriendshipStatus.PENDING;
 
     @Column(name = "created_at")
