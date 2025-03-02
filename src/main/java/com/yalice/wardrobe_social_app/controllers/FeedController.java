@@ -17,6 +17,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Controller responsible for handling feed-related operations.
+ * Provides endpoints for posts, comments, and likes management.
+ */
 @RestController
 @RequestMapping("/api/feed")
 public class FeedController {
@@ -24,6 +28,12 @@ public class FeedController {
     private final FeedService feedService;
     private final UserService userService;
 
+    /**
+     * Constructor for FeedController.
+     *
+     * @param feedService Service for feed-related operations
+     * @param userService Service for user-related operations
+     */
     @Autowired
     public FeedController(FeedService feedService, UserService userService) {
         this.feedService = feedService;

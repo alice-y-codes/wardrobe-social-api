@@ -8,17 +8,33 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Controller responsible for handling user-related operations.
+ * Provides endpoints for user registration and retrieval.
+ */
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
-    UserService userService;
+    private final UserService userService;
 
+    /**
+     * Constructor for UserController.
+     *
+     * @param userService Service for user-related operations
+     */
     @Autowired
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
+    /**
+     * Registers a new user in the system.
+     *
+     * @param user User object containing registration details
+     * @return ResponseEntity with the registered user or error message
+     * @throws UserRegistrationException If registration validation fails
+     */
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         validateUser(user);
@@ -32,6 +48,12 @@ public class UserController {
         return ResponseEntity.ok(registeredUser.get());
     }
 
+    /**
+     * Finds a user by their username.
+     *
+     * @param username Username to search for
+     * @return ResponseEntity with the found user or 404 if not found
+     */
     @GetMapping("/findByUsername")
     public ResponseEntity<User> findUserByUsername(@RequestParam String username) {
         Optional<User> foundUser = userService.findUserByUsername(username);
@@ -60,6 +82,13 @@ public class UserController {
     // // Change password logic
     // }
 
+    /**
+     * Validates user registration data.
+     * Checks for required fields and password strength.
+     *
+     * @param user User object to validate
+     * @throws UserRegistrationException If validation fails
+     */
     private static void validateUser(User user) {
         // Validate the username
         if (user.getUsername() == null || user.getUsername().isEmpty()) {
