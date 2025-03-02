@@ -10,12 +10,13 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * Controller responsible for handling user-related operations.
- * Provides endpoints for user registration and retrieval.
+ * Provides endpoints for user registration, retrieval, and management.
  */
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
+    /** Service for user-related operations. */
     private final UserService userService;
 
     /**
@@ -24,7 +25,7 @@ public class UserController {
      * @param userService Service for user-related operations
      */
     @Autowired
-    public UserController(UserService userService) {
+    public UserController(final UserService userService) {
         this.userService = userService;
     }
 
@@ -36,10 +37,10 @@ public class UserController {
      * @throws UserRegistrationException If registration validation fails
      */
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody User user) {
+    public ResponseEntity<?> registerUser(@RequestBody final User user) {
         validateUser(user);
 
-        Optional<User> registeredUser = userService.registerUser(user);
+        final Optional<User> registeredUser = userService.registerUser(user);
 
         if (registeredUser.isEmpty()) {
             throw new UserRegistrationException("Username already taken");
@@ -55,27 +56,28 @@ public class UserController {
      * @return ResponseEntity with the found user or 404 if not found
      */
     @GetMapping("/findByUsername")
-    public ResponseEntity<User> findUserByUsername(@RequestParam String username) {
-        Optional<User> foundUser = userService.findUserByUsername(username);
+    public ResponseEntity<User> findUserByUsername(@RequestParam final String username) {
+        final Optional<User> foundUser = userService.findUserByUsername(username);
         return foundUser.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // TODO: Implement user management endpoints
     // @GetMapping("/me")
     // public ResponseEntity<?> getCurrentUser() {
     // // Get current authenticated user
     // }
-
+    //
     // @DeleteMapping("/{userId}")
     // public ResponseEntity<?> deleteUser(@PathVariable Long userId) {
     // // Delete logic
     // }
-
+    //
     // @PutMapping("/update")
     // public ResponseEntity<?> updateUser(@RequestBody User user) {
     // // Validate, then update
     // }
-
+    //
     // @PostMapping("/password/change")
     // public ResponseEntity<?> changePassword(@RequestBody PasswordChangeRequest
     // request) {
@@ -89,7 +91,7 @@ public class UserController {
      * @param user User object to validate
      * @throws UserRegistrationException If validation fails
      */
-    private static void validateUser(User user) {
+    private static void validateUser(final User user) {
         // Validate the username
         if (user.getUsername() == null || user.getUsername().isEmpty()) {
             throw new UserRegistrationException("Username is required");
@@ -100,7 +102,8 @@ public class UserController {
             throw new UserRegistrationException("Password is required");
         }
         if (user.getPassword().length() < 8) {
-            throw new UserRegistrationException("Password must be at least 8 characters");
+            throw new UserRegistrationException(
+                    "Password must be at least 8 characters");
         }
 
         // Validate the email
