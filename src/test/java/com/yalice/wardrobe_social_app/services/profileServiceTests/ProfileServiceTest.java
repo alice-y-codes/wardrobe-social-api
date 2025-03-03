@@ -1,4 +1,4 @@
-package com.yalice.wardrobe_social_app.services;
+package com.yalice.wardrobe_social_app.services.profileServiceTests;
 
 import com.yalice.wardrobe_social_app.entities.Profile;
 import com.yalice.wardrobe_social_app.entities.Profile.ProfileVisibility;
@@ -6,6 +6,7 @@ import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
+import com.yalice.wardrobe_social_app.services.ProfileServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

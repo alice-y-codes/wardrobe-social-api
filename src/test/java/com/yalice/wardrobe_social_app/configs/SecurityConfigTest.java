@@ -6,11 +6,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
 @TestConfiguration
-public class TestSecurityConfig {
+public class SecurityConfigTest {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // 🔥 Disables CSRF protection for test requests
+                .csrf(csrf -> csrf.disable()) // Disables CSRF protection for test requests
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll()); // Allow all requests
         return http.build();
     }

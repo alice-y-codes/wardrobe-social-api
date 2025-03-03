@@ -1,10 +1,11 @@
-package com.yalice.wardrobe_social_app.services;
+package com.yalice.wardrobe_social_app.services.friendshipServicesTests;
 
 import com.yalice.wardrobe_social_app.entities.Friendship;
 import com.yalice.wardrobe_social_app.entities.Friendship.FriendshipStatus;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
 import com.yalice.wardrobe_social_app.repositories.FriendshipRepository;
+import com.yalice.wardrobe_social_app.services.FriendshipServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

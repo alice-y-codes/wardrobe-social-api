@@ -149,6 +149,32 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles resource not found exceptions.
+     *
+     * @param ex The ResourceNotFound that was thrown
+     * @return ResponseEntity containing the error message
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<?> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("Resource not found", ex.getMessage()));
+    }
+
+    /**
+     * Handles unauthorized access exceptions.
+     *
+     * @param ex The UnauthorizedException that was thrown
+     * @return ResponseEntity containing the error message
+     */
+    @ExceptionHandler(UnauthorizedAccessException.class)
+    public ResponseEntity<String> handleUnauthorizedAccess(UnauthorizedAccessException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.UNAUTHORIZED);
+    }
+
+
+
+
+    /**
      * Handles all other exceptions that are not handled by specific handlers.
      *
      * @param ex The Exception that was thrown

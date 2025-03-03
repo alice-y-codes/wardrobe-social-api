@@ -1,5 +1,6 @@
 package com.yalice.wardrobe_social_app.entities;
 
+import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import jakarta.persistence.*;
 import lombok.*;
 
