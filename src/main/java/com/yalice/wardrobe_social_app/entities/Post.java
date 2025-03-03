@@ -25,6 +25,12 @@ public class Post {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(length = 100)
+    private String title;
+
+    @Column
+    private String featureImage;
+
     @Column(length = 1000)
     private String content;
 

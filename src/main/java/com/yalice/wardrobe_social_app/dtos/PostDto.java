@@ -1,15 +1,18 @@
 package com.yalice.wardrobe_social_app.dtos;
 
-import com.yalice.wardrobe_social_app.enums.PostVisibility;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Setter
+@Getter
+@Builder
 public class PostDto {
+
+    private String title;
+    private String featureImage;
     private String content;
     private Long outfitId;
-    private PostVisibility visibility;
+    private String visibility;
+
 }

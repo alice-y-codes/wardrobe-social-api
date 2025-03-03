@@ -1,14 +1,19 @@
 package com.yalice.wardrobe_social_app.controllers;
 
 import com.yalice.wardrobe_social_app.dtos.PostDto;
-import com.yalice.wardrobe_social_app.entities.Post;
+import com.yalice.wardrobe_social_app.dtos.PostResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.exceptions.PostNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.PostService;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
 import com.yalice.wardrobe_social_app.utilities.CurrentUser;
+import com.yalice.wardrobe_social_app.utilities.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controller responsible for handling post-related operations.
@@ -18,19 +23,19 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/feed")
 public class PostController {
 
+    private static final Logger logger = LoggerFactory.getLogger(PostController.class);
+
     private final PostService postService;
     private final CurrentUser currentUser;
 
-    /**
-     * Constructor for PostController.
-     *
-     * @param postService Service for post-related operations
-     * @param userService Service for user-related operations
-     */
     @Autowired
     public PostController(PostService postService, UserService userService) {
         this.postService = postService;
         this.currentUser = new CurrentUser(userService);
+    }
+
+    private User getCurrentUser() {
+        return currentUser.getCurrentUserOrElseThrow();
     }
 
     /**
@@ -40,12 +45,25 @@ public class PostController {
      * @return ResponseEntity containing the created post
      */
     @PostMapping("/post")
-    public ResponseEntity<?> createPost(@RequestBody PostDto postDto) {
-        User user = currentUser.getCurrentUserOrElseThrow();
+    public ResponseEntity<ApiResponse<PostResponseDto>> createPost(@RequestBody PostDto postDto) {
+        User user = getCurrentUser();
+        logger.info("User {} is creating a new post.", user.getUsername());
+        PostResponseDto createdPost = postService.createPost(user.getId(), postDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>(true, "Post created successfully", createdPost));
+    }
 
-        Long currentUserId = user.getId();
-        Post post = postService.createPost(currentUserId, postDto.getContent(), postDto.getOutfitId(), postDto.getVisibility());
-        return ResponseEntity.ok(post);
+    /**
+     * Get a specific post by its ID.
+     *
+     * @param postId the ID of the post to get
+     * @return ResponseEntity with the post
+     */
+    @GetMapping("/{postId}")
+    public ResponseEntity<ApiResponse<PostResponseDto>> getPost(@PathVariable Long postId) {
+        User user = getCurrentUser();
+        logger.info("User {} is requesting post with ID {}.", user.getUsername(), postId);
+        PostResponseDto post = postService.getPost(postId, user.getId());
+        return ResponseEntity.ok(new ApiResponse<>(true, "Post retrieved successfully", post));
     }
 
     /**
@@ -55,16 +73,27 @@ public class PostController {
      * @return ResponseEntity with a success message
      */
     @DeleteMapping("/{postId}")
-    public ResponseEntity<?> deletePost(@PathVariable Long postId) {
-        // Get the current authenticated user or throw UnauthorizedAccessException
-        User user = currentUser.getCurrentUserOrElseThrow();
-
-        Long currentUserId = user.getId();
-        postService.deletePost(postId, currentUserId);
-        return ResponseEntity.ok("Post deleted");
+    public ResponseEntity<ApiResponse<String>> deletePost(@PathVariable Long postId) {
+        User user = getCurrentUser();
+        logger.info("User {} is deleting post with ID {}.", user.getUsername(), postId);
+        postService.deletePost(postId, user.getId());
+        return ResponseEntity.ok(new ApiResponse<>(true, "Post deleted successfully", "Post deleted"));
     }
 
-    /* TODO - updatePost */
+    /**
+     * Update a specific post by its ID.
+     *
+     * @param postId the ID of the post to update
+     * @param postDto the updated post details
+     * @return ResponseEntity with the updated post
+     */
+    @PutMapping("/{postId}")
+    public ResponseEntity<ApiResponse<PostResponseDto>> updatePost(@PathVariable Long postId, @RequestBody PostDto postDto) {
+        User user = getCurrentUser();
+        logger.info("User {} is updating post with ID {}.", user.getUsername(), postId);
+        PostResponseDto updatedPost = postService.updatePost(postId, user.getId(), postDto);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Post updated successfully", updatedPost));
+    }
 
     /**
      * Likes a specific post.
@@ -73,13 +102,11 @@ public class PostController {
      * @return ResponseEntity with a success or failure message
      */
     @PostMapping("/{postId}/like")
-    public ResponseEntity<?> likePost(@PathVariable Long postId) {
-        // Get the current authenticated user or throw UnauthorizedAccessException
-        User user = currentUser.getCurrentUserOrElseThrow();
-
-        Long currentUserId = user.getId();
-        boolean liked = postService.likePost(postId, currentUserId);
-        return ResponseEntity.ok(liked ? "Post liked" : "Post already liked");
+    public ResponseEntity<ApiResponse<String>> likePost(@PathVariable Long postId) {
+        User user = getCurrentUser();
+        logger.info("User {} is liking post with ID {}.", user.getUsername(), postId);
+        boolean liked = postService.likePost(postId, user.getId());
+        return ResponseEntity.ok(new ApiResponse<>(true, liked ? "Post liked successfully" : "Post already liked", liked ? "Post liked" : "Post already liked"));
     }
 
     /**
@@ -89,12 +116,16 @@ public class PostController {
      * @return ResponseEntity with a success or failure message
      */
     @DeleteMapping("/{postId}/like")
-    public ResponseEntity<?> unlikePost(@PathVariable Long postId) {
-        // Get the current authenticated user or throw UnauthorizedAccessException
-        User user = currentUser.getCurrentUserOrElseThrow();
+    public ResponseEntity<ApiResponse<String>> unlikePost(@PathVariable Long postId) {
+        User user = getCurrentUser();
+        logger.info("User {} is unliking post with ID {}.", user.getUsername(), postId);
+        boolean unliked = postService.unlikePost(postId, user.getId());
+        return ResponseEntity.ok(new ApiResponse<>(true, unliked ? "Post unliked successfully" : "Post was not liked", unliked ? "Post unliked" : "Post was not liked"));
+    }
 
-        Long currentUserId = user.getId();
-        boolean unliked = postService.unlikePost(postId, currentUserId);
-        return ResponseEntity.ok(unliked ? "Post unliked" : "Post was not liked");
+    // Global exception handler for PostNotFoundException
+    @ExceptionHandler(PostNotFoundException.class)
+    public ResponseEntity<ApiResponse<String>> handlePostNotFoundException(PostNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse<>(false, ex.getMessage(), null));
     }
 }
