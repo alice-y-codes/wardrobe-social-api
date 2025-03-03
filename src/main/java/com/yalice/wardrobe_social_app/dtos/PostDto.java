@@ -1,6 +1,6 @@
 package com.yalice.wardrobe_social_app.dtos;
 
-import com.yalice.wardrobe_social_app.entities.PostVisibility;
+import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
