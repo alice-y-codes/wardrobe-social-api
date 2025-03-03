@@ -1,10 +1,11 @@
 package com.yalice.wardrobe_social_app.services.postServiceTests;
 
-import com.yalice.wardrobe_social_app.entities.*;
+import com.yalice.wardrobe_social_app.entities.Like;
+import com.yalice.wardrobe_social_app.entities.Outfit;
+import com.yalice.wardrobe_social_app.entities.Post;
+import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
-import com.yalice.wardrobe_social_app.repositories.CommentRepository;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.PostServiceImpl;
@@ -16,36 +17,29 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class PostServiceTest {
+public class UpdatePostServiceTest {
     @Mock
     private PostRepository postRepository;
-
-    @Mock
-    private CommentRepository commentRepository;
 
     @Mock
     private LikeRepository likeRepository;
 
     @Mock
     private UserService userService;
-
-    @Mock
-    private FriendshipService friendshipService;
-
+    
     @InjectMocks
     private PostServiceImpl postService;
 
     private User user1;
     private User user2;
     private Post post;
-    private Comment comment;
     private Like like;
     private Outfit outfit;
 
@@ -87,47 +81,35 @@ public class PostServiceTest {
     }
 
     @Test
-    void createPost_createsAndReturnsPost() {
+    void updatePost_updatesPost() {
         // Arrange
-        when(userService.findById(anyLong())).thenReturn(Optional.of(user1));
-        when(postRepository.save(any(Post.class))).thenReturn(post);
+        Long postId = 1L;
+
+        Post updatedPost = Post.builder()
+                .id(postId)
+                .user(user1)
+                .content("updated test post comment")
+                .outfit(outfit)
+                .visibility(PostVisibility.PUBLIC)
+                .build();
+
+        when(postRepository.findById(eq(postId))).thenReturn(Optional.of(post));
+        when(postRepository.saveAndFlush(any(Post.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        Post result = postService.createPost(1L, "Test post content", 1L, PostVisibility.PUBLIC);
+        Post result = postService.updatePost(postId, updatedPost);
 
         // Assert
         assertNotNull(result);
-        assertEquals("Test post content", result.getContent());
-        assertEquals(PostVisibility.PUBLIC, result.getVisibility());
-        verify(postRepository).save(any(Post.class));
+        assertThat(result.getContent()).isEqualTo("updated test post comment");
+        assertThat(result.getId()).isEqualTo(postId);
+
+        // Verify
+        verify(postRepository).findById(postId);
+        verify(postRepository).saveAndFlush(any(Post.class));
     }
 
-    @Test
-    void getPost_whenPostExistsAndIsAccessible_returnsPost() {
-        // Arrange
-        when(postRepository.findById(anyLong())).thenReturn(Optional.of(post));
-        when(friendshipService.areFriends(anyLong(), anyLong())).thenReturn(true);
 
-        // Act
-        Optional<Post> result = postService.getPost(1L, 2L);
-
-        // Assert
-        assertTrue(result.isPresent());
-        assertEquals(post, result.get());
-    }
-
-    @Test
-    void getPost_whenPostIsPrivateAndNotOwner_returnsEmpty() {
-        // Arrange
-        post.setVisibility(PostVisibility.PRIVATE);
-        when(postRepository.findById(anyLong())).thenReturn(Optional.of(post));
-
-        // Act
-        Optional<Post> result = postService.getPost(1L, 2L);
-
-        // Assert
-        assertFalse(result.isPresent());
-    }
 
     @Test
     void likePost_whenNotAlreadyLiked_createsLikeAndReturnsTrue() {

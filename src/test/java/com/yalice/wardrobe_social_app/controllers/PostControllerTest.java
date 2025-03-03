@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,6 +22,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -76,8 +78,7 @@ class PostControllerTest {
         when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
         when(postService.createPost(eq(1L), anyString(), any(), any())).thenReturn(post);
 
-        // Update the URL to match the controller's path
-        mockMvc.perform(post("/api/feed/post")  // Correct URL
+        mockMvc.perform(post("/api/feed/post")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(new ObjectMapper().writeValueAsString(postDto)))
                 .andExpect(status().isOk())
@@ -92,6 +93,8 @@ class PostControllerTest {
         // Update the URL to match the controller's path
         mockMvc.perform(delete("/api/feed/1"))  // Correct URL
                 .andExpect(status().isOk());
+
+        verify(postService, Mockito.times(1)).deletePost(post.getId(), user.getId());
     }
 
     @Test

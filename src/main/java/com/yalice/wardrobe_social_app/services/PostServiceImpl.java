@@ -4,31 +4,30 @@ import com.yalice.wardrobe_social_app.entities.Like;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
 import com.yalice.wardrobe_social_app.interfaces.PostService;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
-import com.yalice.wardrobe_social_app.repositories.CommentRepository;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
 @Service
 public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
-    private final CommentRepository commentRepository;
     private final LikeRepository likeRepository;
     private final UserService userService;
     private final FriendshipService friendshipService;
 
     @Autowired
-    public PostServiceImpl(PostRepository postRepository, CommentRepository commentRepository,
+    public PostServiceImpl(PostRepository postRepository,
                            LikeRepository likeRepository, UserService userService,
                            FriendshipService friendshipService) {
         this.postRepository = postRepository;
-        this.commentRepository = commentRepository;
         this.likeRepository = likeRepository;
         this.userService = userService;
         this.friendshipService = friendshipService;
@@ -61,7 +60,6 @@ public class PostServiceImpl implements PostService {
         }
 
         Post post = postOptional.get();
-        Long postOwnerId = post.getUser().getId();
 
         // Check if the viewer has access to the post
         if (isPostAccessibleToUser(post, viewerId)) {
@@ -72,18 +70,62 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public void deletePost(Long postId, Long userId) {
-        Optional<Post> postOptional = postRepository.findById(postId);
-        if (postOptional.isEmpty()) {
-            throw new IllegalArgumentException("Post not found with ID: " + postId);
+    @Transactional
+    public Post updatePost(Long postId, Post post) {
+        if (postId == null) {
+            throw new IllegalArgumentException("Post ID cannot be null");
         }
 
-        Post post = postOptional.get();
+        if (post == null) {
+            throw new IllegalArgumentException("Post object cannot be null");
+        }
+
+        Post existingPost = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post not found with ID: " + postId));
+
+        User user = existingPost.getUser();
+
+        boolean hasChanges = false;
+        if (!existingPost.getContent().equals(post.getContent())) {
+            existingPost.setContent(post.getContent());
+            hasChanges = true;
+        }
+        if (!existingPost.getOutfit().equals(post.getOutfit())) {
+            existingPost.setOutfit(post.getOutfit());
+            hasChanges = true;
+        }
+        if (!existingPost.getVisibility().equals(post.getVisibility())) {
+            existingPost.setVisibility(post.getVisibility());
+            hasChanges = true;
+        }
+
+
+        if (!hasChanges) {
+            return existingPost;
+        }
+
+        Post updatedPost = Post.builder()
+                .id(postId)
+                .user(user)
+                .content(post.getContent())
+                .outfit(post.getOutfit())
+                .visibility(post.getVisibility())
+                .build();
+
+        return postRepository.saveAndFlush(updatedPost);
+    }
+
+    @Override
+    @Transactional
+    public void deletePost(Long postId, Long userId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + postId));
+
         if (!post.getUser().getId().equals(userId)) {
             throw new IllegalArgumentException("Only the post owner can delete the post");
         }
 
-        postRepository.delete(post);
+        postRepository.deleteById(postId);
     }
 
     @Override

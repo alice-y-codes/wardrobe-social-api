@@ -12,6 +12,8 @@ public interface PostService {
 
     void deletePost(Long postId, Long userId);
 
+    Post updatePost(Long postId, Post updatedPost);
+
     boolean likePost(Long postId, Long userId);
 
     boolean unlikePost(Long postId, Long userId);
