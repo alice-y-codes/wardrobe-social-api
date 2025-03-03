@@ -1,10 +1,6 @@
 package com.yalice.wardrobe_social_app.services;
 
-import com.yalice.wardrobe_social_app.entities.Comment;
-import com.yalice.wardrobe_social_app.entities.Like;
-import com.yalice.wardrobe_social_app.entities.Post;
-import com.yalice.wardrobe_social_app.entities.PostVisibility;
-import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.entities.*;
 import com.yalice.wardrobe_social_app.interfaces.FeedService;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
 import com.yalice.wardrobe_social_app.interfaces.UserService;

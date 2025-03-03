@@ -4,7 +4,6 @@ import com.yalice.wardrobe_social_app.entities.Profile;
 import com.yalice.wardrobe_social_app.entities.Profile.ProfileVisibility;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
-import com.yalice.wardrobe_social_app.interfaces.ProfileService;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,7 +17,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class ProfileServiceTest {
 

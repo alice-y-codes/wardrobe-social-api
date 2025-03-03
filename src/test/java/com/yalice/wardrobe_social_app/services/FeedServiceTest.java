@@ -1,7 +1,6 @@
 package com.yalice.wardrobe_social_app.services;
 
 import com.yalice.wardrobe_social_app.entities.*;
-import com.yalice.wardrobe_social_app.entities.PostVisibility;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
 import com.yalice.wardrobe_social_app.repositories.CommentRepository;
@@ -22,7 +21,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class FeedServiceTest {
 

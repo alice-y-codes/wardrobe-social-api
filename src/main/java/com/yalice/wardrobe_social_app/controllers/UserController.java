@@ -3,10 +3,11 @@ package com.yalice.wardrobe_social_app.controllers;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.UserRegistrationException;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
-import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 /**
  * Controller responsible for handling user-related operations.

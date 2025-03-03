@@ -1,8 +1,5 @@
 package com.yalice.wardrobe_social_app.exceptions;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NoSuchElementException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +10,10 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * Global exception handler for the application that handles various types of
