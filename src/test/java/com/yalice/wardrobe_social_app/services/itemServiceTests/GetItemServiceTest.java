@@ -56,10 +56,6 @@ public class GetItemServiceTest {
                 .build();
     }
 
-    // ==============================
-    // GET ITEM BY ID TESTS
-    // ==============================
-
     @Test
     public void shouldReturnItem_WhenItemExistsById() {
         // Arrange

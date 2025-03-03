@@ -2,6 +2,7 @@ package com.yalice.wardrobe_social_app.services;
 
 import com.yalice.wardrobe_social_app.entities.Item;
 import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.ItemService;
 import com.yalice.wardrobe_social_app.repositories.ItemRepository;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
@@ -74,45 +75,38 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public void deleteItem(Long itemId) {
+        if (!itemRepository.existsById(itemId)) {
+            throw new ResourceNotFoundException("Item not found");
+        }
+
         itemRepository.deleteById(itemId);
     }
 
     @Override
     @Transactional
     public Item updateItem(Long itemId, Item item) {
-        if (itemId == null) {
+        if (itemId == null || item == null) {
             return null;
         }
 
-        if (item == null) {
-            return itemRepository.findById(itemId).orElse(null);
-        }
+        Item existingItem = itemRepository.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Item not found with ID " + itemId));
 
-        Optional<Item> existingItemOptional = itemRepository.findById(itemId);
-
-        if (existingItemOptional.isEmpty()) {
-            return null;
-        }
-
-        Item existingItem = existingItemOptional.get();
-
-        // Update fields but preserve the userId
         Long userId = existingItem.getUserId();
 
-        existingItem.setName(item.getName());
-        existingItem.setBrand(item.getBrand());
-        existingItem.setCategory(item.getCategory());
-        existingItem.setSize(item.getSize());
-        existingItem.setColor(item.getColor());
-        existingItem.setImageUrl(item.getImageUrl());
-        existingItem.setUserId(userId); // Explicitly set the userId back
+        Item updatedItem = Item.builder()
+                .id(itemId) // Use the itemId from the method parameter
+                .userId(userId) // Keep the same userId as the existing item
+                .name(item.getName())
+                .brand(item.getBrand())
+                .category(item.getCategory())
+                .size(item.getSize())
+                .color(item.getColor())
+                .imageUrl(item.getImageUrl())
+                .build();
 
-        Item savedItem = itemRepository.saveAndFlush(existingItem);
-
-        if (savedItem == null) {
-            return existingItem;
-        }
-
-        return savedItem;
+        // Save and return the updated item
+        return itemRepository.saveAndFlush(updatedItem);
     }
+
 }

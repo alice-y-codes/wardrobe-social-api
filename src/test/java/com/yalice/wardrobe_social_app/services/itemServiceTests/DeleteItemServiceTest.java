@@ -1,5 +1,6 @@
 package com.yalice.wardrobe_social_app.services.itemServiceTests;
 
+import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.repositories.ItemRepository;
 import com.yalice.wardrobe_social_app.services.ItemServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -8,8 +9,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class DeleteItemServiceTest {
 
@@ -25,9 +28,11 @@ public class DeleteItemServiceTest {
     }
 
     @Test
-    public void testDeleteItem() {
+    public void deleteItem_whenItemExists_shouldDeleteItem() {
         // Arrange
         Long itemId = 1L;
+
+        when(itemRepository.existsById(itemId)).thenReturn(true);
 
         // Act
         itemService.deleteItem(itemId);
@@ -37,14 +42,14 @@ public class DeleteItemServiceTest {
     }
 
     @Test
-    public void testDeleteNonExistentItem() {
+    public void deleteItem_whenItemDoesNotExist_shouldThrowResourceNotFoundException() {
         // Arrange
-        Long itemId = 99L; // Assume this ID does not exist
+        Long itemId = 99L;
 
-        // Act
-        itemService.deleteItem(itemId);
+        when(itemRepository.existsById(itemId)).thenReturn(false);
 
-        // Assert
-        verify(itemRepository, times(1)).deleteById(itemId);
+        // Act & Assert
+        assertThrows(ResourceNotFoundException.class, () -> itemService.deleteItem(itemId));
+        verify(itemRepository, times(0)).deleteById(itemId);
     }
 }

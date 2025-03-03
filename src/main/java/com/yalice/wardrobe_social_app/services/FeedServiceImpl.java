@@ -38,8 +38,6 @@ public class FeedServiceImpl implements FeedService {
         this.friendshipService = friendshipService;
     }
 
-
-
     @Override
     public Page<Post> getUserFeed(Long userId, Pageable pageable) {
         // Get the user's friends
@@ -57,7 +55,7 @@ public class FeedServiceImpl implements FeedService {
 
     @Override
     public Page<Post> getUserPosts(Long userId, Long viewerId, Pageable pageable) {
-        if (!userService.findById(userId).isPresent()) {
+        if (userService.findById(userId).isEmpty()) {
             throw new ResourceNotFoundException("User not found");
         }
 

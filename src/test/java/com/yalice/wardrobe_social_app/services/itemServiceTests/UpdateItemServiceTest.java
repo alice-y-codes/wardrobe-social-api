@@ -40,7 +40,7 @@ public class UpdateItemServiceTest {
     }
 
     @Test
-    public void shouldUpdateItem_WhenItemExists() {
+    public void updateItem_whenItemExists_shouldReturnUpdatedItem() {
         // Arrange
         Long itemId = 1L;
 
@@ -51,10 +51,8 @@ public class UpdateItemServiceTest {
         updatedItem.setCategory("New Category");
         updatedItem.setImageUrl("new-image.jpg");
 
-        // Ensure findById returns a non-empty Optional
         when(itemRepository.findById(eq(itemId))).thenReturn(Optional.of(existingItem));
 
-        // Ensure saveAndFlush returns the actual updated item
         when(itemRepository.saveAndFlush(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
