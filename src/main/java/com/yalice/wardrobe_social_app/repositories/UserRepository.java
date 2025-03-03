@@ -6,7 +6,18 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
+/**
+ * Repository interface for User entity operations.
+ * Provides methods for user data persistence and retrieval.
+ */
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> findByUsername(String userName);
+
+    /**
+     * Finds a user by their username.
+     *
+     * @param username The username to search for
+     * @return Optional containing the user if found, empty otherwise
+     */
+    Optional<User> findByUsername(String username);
 }

@@ -1,4 +1,4 @@
-package com.yalice.wardrobe_social_app.entities;
+package com.yalice.wardrobe_social_app.enums;
 
 /**
  * Enum representing the visibility options for posts in the social feed.

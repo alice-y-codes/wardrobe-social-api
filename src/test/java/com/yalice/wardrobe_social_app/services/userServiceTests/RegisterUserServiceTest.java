@@ -1,8 +1,9 @@
-package com.yalice.wardrobe_social_app.services;
+package com.yalice.wardrobe_social_app.services.userServiceTests;
 
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.UserRegistrationException;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
+import com.yalice.wardrobe_social_app.services.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -18,7 +19,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-public class UserServiceTest {
+public class RegisterUserServiceTest {
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -58,31 +59,6 @@ public class UserServiceTest {
         assertThat(createdUser.get().getPassword()).isEqualTo("encodedPassword");
         verify(passwordEncoder).encode(any(String.class));
         verify(userRepository).save(any(User.class));
-    }
-
-    @Test
-    public void shouldFindUserByUsername_WhenUserExists() {
-        // Arrange
-        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
-
-        // Act
-        Optional<User> foundUser = userService.findUserByUsername("testUser");
-
-        // Assert
-        assertThat(foundUser).isPresent();
-        assertThat(foundUser.get().getUsername()).isEqualTo("testUser");
-        verify(userRepository).findByUsername("testUser");
-    }
-
-    @Test
-    public void shouldNotFindUserByUsername_WhenNonExistentUser() {
-        // Arrange
-        when(userRepository.findByUsername("nonExistingUser")).thenReturn(Optional.empty());
-
-        // Act & Assert
-        Optional<User> foundUser = userService.findUserByUsername("nonExistingUser");
-        assertThat(foundUser).isEmpty();
-        verify(userRepository).findByUsername("nonExistingUser");
     }
 
     @Test

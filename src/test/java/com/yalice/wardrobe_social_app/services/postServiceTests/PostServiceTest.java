@@ -1,31 +1,29 @@
-package com.yalice.wardrobe_social_app.services;
+package com.yalice.wardrobe_social_app.services.postServiceTests;
 
 import com.yalice.wardrobe_social_app.entities.*;
-import com.yalice.wardrobe_social_app.entities.PostVisibility;
+import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
 import com.yalice.wardrobe_social_app.repositories.CommentRepository;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
+import com.yalice.wardrobe_social_app.services.PostServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-class FeedServiceTest {
-
+public class PostServiceTest {
     @Mock
     private PostRepository postRepository;
 
@@ -42,7 +40,7 @@ class FeedServiceTest {
     private FriendshipService friendshipService;
 
     @InjectMocks
-    private FeedServiceImpl feedService;
+    private PostServiceImpl postService;
 
     private User user1;
     private User user2;
@@ -81,13 +79,6 @@ class FeedServiceTest {
                 .visibility(PostVisibility.PUBLIC)
                 .build();
 
-        comment = Comment.builder()
-                .id(1L)
-                .post(post)
-                .user(user2)
-                .content("Test comment")
-                .build();
-
         like = Like.builder()
                 .id(1L)
                 .post(post)
@@ -102,7 +93,7 @@ class FeedServiceTest {
         when(postRepository.save(any(Post.class))).thenReturn(post);
 
         // Act
-        Post result = feedService.createPost(1L, "Test post content", 1L, PostVisibility.PUBLIC);
+        Post result = postService.createPost(1L, "Test post content", 1L, PostVisibility.PUBLIC);
 
         // Assert
         assertNotNull(result);
@@ -118,7 +109,7 @@ class FeedServiceTest {
         when(friendshipService.areFriends(anyLong(), anyLong())).thenReturn(true);
 
         // Act
-        Optional<Post> result = feedService.getPost(1L, 2L);
+        Optional<Post> result = postService.getPost(1L, 2L);
 
         // Assert
         assertTrue(result.isPresent());
@@ -132,26 +123,10 @@ class FeedServiceTest {
         when(postRepository.findById(anyLong())).thenReturn(Optional.of(post));
 
         // Act
-        Optional<Post> result = feedService.getPost(1L, 2L);
+        Optional<Post> result = postService.getPost(1L, 2L);
 
         // Assert
         assertFalse(result.isPresent());
-    }
-
-    @Test
-    void getUserFeed_returnsFeedPosts() {
-        // Arrange
-        List<Long> friendIds = Arrays.asList(2L, 3L);
-        when(friendshipService.getFriends(anyLong())).thenReturn(Arrays.asList(user2));
-        when(postRepository.findFeedPostsForUser(anyList(), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(Arrays.asList(post)));
-
-        // Act
-        Page<Post> result = feedService.getUserFeed(1L, Pageable.unpaged());
-
-        // Assert
-        assertEquals(1, result.getContent().size());
-        assertEquals(post, result.getContent().get(0));
     }
 
     @Test
@@ -163,7 +138,7 @@ class FeedServiceTest {
         when(likeRepository.save(any(Like.class))).thenReturn(like);
 
         // Act
-        boolean result = feedService.likePost(1L, 2L);
+        boolean result = postService.likePost(1L, 2L);
 
         // Assert
         assertTrue(result);
@@ -178,65 +153,10 @@ class FeedServiceTest {
         when(likeRepository.findByPostAndUser(any(Post.class), any(User.class))).thenReturn(Optional.of(like));
 
         // Act
-        boolean result = feedService.unlikePost(1L, 2L);
+        boolean result = postService.unlikePost(1L, 2L);
 
         // Assert
         assertTrue(result);
         verify(likeRepository).deleteByPostAndUser(post, user2);
-    }
-
-    @Test
-    void addComment_createsAndReturnsComment() {
-        // Arrange
-        when(postRepository.findById(anyLong())).thenReturn(Optional.of(post));
-        when(userService.findById(anyLong())).thenReturn(Optional.of(user2));
-        when(commentRepository.save(any(Comment.class))).thenReturn(comment);
-
-        // Act
-        Comment result = feedService.addComment(1L, 2L, "Test comment");
-
-        // Assert
-        assertNotNull(result);
-        assertEquals("Test comment", result.getContent());
-        assertEquals(user2, result.getUser());
-        assertEquals(post, result.getPost());
-        verify(commentRepository).save(any(Comment.class));
-    }
-
-    @Test
-    void getPostComments_returnsComments() {
-        // Arrange
-        when(commentRepository.findByPostIdOrderByCreatedAtAsc(anyLong())).thenReturn(Arrays.asList(comment));
-
-        // Act
-        List<Comment> result = feedService.getPostComments(1L);
-
-        // Assert
-        assertEquals(1, result.size());
-        assertEquals(comment, result.get(0));
-    }
-
-    @Test
-    void deleteComment_whenUserIsCommentOwner_deletesComment() {
-        // Arrange
-        when(commentRepository.findById(anyLong())).thenReturn(Optional.of(comment));
-
-        // Act
-        feedService.deleteComment(1L, 2L);
-
-        // Assert
-        verify(commentRepository).delete(comment);
-    }
-
-    @Test
-    void deleteComment_whenUserIsPostOwner_deletesComment() {
-        // Arrange
-        when(commentRepository.findById(anyLong())).thenReturn(Optional.of(comment));
-
-        // Act
-        feedService.deleteComment(1L, 1L);
-
-        // Assert
-        verify(commentRepository).delete(comment);
     }
 }
