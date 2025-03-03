@@ -5,10 +5,12 @@ import com.yalice.wardrobe_social_app.entities.Outfit;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
+import com.yalice.wardrobe_social_app.helpers.PostServiceHelper;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.PostServiceImpl;
+import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -17,14 +19,13 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.*;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class UpdatePostServiceTest {
+
     @Mock
     private PostRepository postRepository;
 
@@ -33,112 +34,232 @@ public class UpdatePostServiceTest {
 
     @Mock
     private UserService userService;
-    
+
+    @Mock
+    private PostServiceHelper postServiceHelper;
+
     @InjectMocks
     private PostServiceImpl postService;
 
-    private User user1;
-    private User user2;
+    private User user;
+    private Post existingPost;
+    private Post updatedPost;
     private Post post;
-    private Like like;
-    private Outfit outfit;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        user1 = User.builder()
+        // Setup user and outfit
+        user = User.builder()
                 .id(1L)
                 .username("user1")
                 .email("user1@example.com")
                 .build();
 
-        user2 = User.builder()
-                .id(2L)
-                .username("user2")
-                .email("user2@example.com")
-                .build();
-
-        outfit = Outfit.builder()
+        Outfit outfit = Outfit.builder()
                 .id(1L)
                 .name("Test Outfit")
-                .user(user1)
+                .user(user)
                 .build();
 
         post = Post.builder()
                 .id(1L)
-                .user(user1)
+                .user(user)
                 .content("Test post content")
+                .likeCount(0)
+                .build();
+
+        // Existing post setup
+        existingPost = Post.builder()
+                .id(1L)
+                .user(user)
+                .content("Old post content")
                 .outfit(outfit)
                 .visibility(PostVisibility.PUBLIC)
                 .build();
 
-        like = Like.builder()
+        // Updated post setup
+        updatedPost = Post.builder()
                 .id(1L)
-                .post(post)
-                .user(user2)
+                .user(user)
+                .content("Updated post content")
+                .outfit(outfit)
+                .visibility(PostVisibility.PRIVATE)
                 .build();
     }
 
     @Test
-    void updatePost_updatesPost() {
+    void updatePost_whenPostIdIsNull_shouldThrowIllegalArgumentException() {
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> postService.updatePost(null, updatedPost));
+        assertEquals("Post ID cannot be null", exception.getMessage());
+    }
+
+    @Test
+    void updatePost_whenPostObjectIsNull_shouldThrowIllegalArgumentException() {
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> postService.updatePost(existingPost.getId(), null));
+        assertEquals("Post object cannot be null", exception.getMessage());
+    }
+
+    @Test
+    void updatePost_whenPostExistsAndHasChanges_shouldUpdatePost() {
         // Arrange
-        Long postId = 1L;
-
-        Post updatedPost = Post.builder()
-                .id(postId)
-                .user(user1)
-                .content("updated test post comment")
-                .outfit(outfit)
-                .visibility(PostVisibility.PUBLIC)
-                .build();
-
-        when(postRepository.findById(eq(postId))).thenReturn(Optional.of(post));
-        when(postRepository.saveAndFlush(any(Post.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(postRepository.findById(existingPost.getId())).thenReturn(java.util.Optional.of(existingPost));
+        when(postRepository.saveAndFlush(any(Post.class))).thenReturn(updatedPost);
 
         // Act
-        Post result = postService.updatePost(postId, updatedPost);
+        Post result = postService.updatePost(existingPost.getId(), updatedPost);
 
         // Assert
         assertNotNull(result);
-        assertThat(result.getContent()).isEqualTo("updated test post comment");
-        assertThat(result.getId()).isEqualTo(postId);
-
-        // Verify
-        verify(postRepository).findById(postId);
-        verify(postRepository).saveAndFlush(any(Post.class));
-    }
-
-
-
-    @Test
-    void likePost_whenNotAlreadyLiked_createsLikeAndReturnsTrue() {
-        // Arrange
-        when(postRepository.findById(anyLong())).thenReturn(Optional.of(post));
-        when(userService.findById(anyLong())).thenReturn(Optional.of(user2));
-        when(likeRepository.existsByPostAndUser(any(Post.class), any(User.class))).thenReturn(false);
-        when(likeRepository.save(any(Like.class))).thenReturn(like);
-
-        // Act
-        boolean result = postService.likePost(1L, 2L);
-
-        // Assert
-        assertTrue(result);
-        verify(likeRepository).save(any(Like.class));
+        assertEquals(updatedPost.getContent(), result.getContent());
+        assertEquals(updatedPost.getVisibility(), result.getVisibility());
+        verify(postRepository, times(1)).saveAndFlush(any(Post.class));
     }
 
     @Test
-    void unlikePost_whenLikeExists_deletesLikeAndReturnsTrue() {
+    void updatePost_whenPostExistsButHasNoChanges_shouldReturnExistingPost() {
         // Arrange
-        when(postRepository.findById(anyLong())).thenReturn(Optional.of(post));
-        when(userService.findById(anyLong())).thenReturn(Optional.of(user2));
-        when(likeRepository.findByPostAndUser(any(Post.class), any(User.class))).thenReturn(Optional.of(like));
+        Post noChangesPost = Post.builder()
+                .id(existingPost.getId())
+                .user(user)
+                .content(existingPost.getContent()) // No content change
+                .outfit(existingPost.getOutfit()) // No outfit change
+                .visibility(existingPost.getVisibility()) // No visibility change
+                .build();
+
+        when(postRepository.findById(existingPost.getId())).thenReturn(java.util.Optional.of(existingPost));
 
         // Act
-        boolean result = postService.unlikePost(1L, 2L);
+        Post result = postService.updatePost(existingPost.getId(), noChangesPost);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(existingPost.getContent(), result.getContent());
+        assertEquals(existingPost.getVisibility(), result.getVisibility());
+        verify(postRepository, never()).saveAndFlush(any(Post.class));
+    }
+
+    @Test
+    void updatePost_whenPostDoesNotExist_shouldThrowResourceNotFoundException() {
+        // Arrange
+        when(postRepository.findById(anyLong())).thenReturn(java.util.Optional.empty());
+
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> postService.updatePost(existingPost.getId(), updatedPost));
+        assertEquals("Post not found with ID: 1", exception.getMessage());
+    }
+
+    @Test
+    void likePost_whenPostOrUserDoesNotExist_shouldThrowIllegalArgumentException() {
+        // Arrange
+        when(postRepository.findById(anyLong())).thenReturn(Optional.empty());
+        when(userService.findById(anyLong())).thenReturn(Optional.of(user));
+
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> postService.likePost(1L, 1L));
+        assertEquals("Post or user not found", exception.getMessage());
+
+        // Test for user not found
+        when(postRepository.findById(anyLong())).thenReturn(Optional.of(post));
+        when(userService.findById(anyLong())).thenReturn(Optional.empty());
+
+        exception = assertThrows(ResourceNotFoundException.class, () -> postService.likePost(1L, 1L));
+        assertEquals("Post or user not found", exception.getMessage());
+    }
+
+    @Test
+    void likePost_whenUserLikesPostForTheFirstTime_shouldLikePost() {
+        // Arrange
+        when(postRepository.findById(post.getId())).thenReturn(Optional.of(post));
+        when(userService.findById(user.getId())).thenReturn(Optional.of(user));
+        when(postServiceHelper.hasUserLikedPost(post.getId(), user.getId())).thenReturn(false);
+        when(likeRepository.save(any(Like.class))).thenReturn(new Like());
+        when(postRepository.save(post)).thenReturn(post);
+
+        // Act
+        boolean result = postService.likePost(post.getId(), user.getId());
 
         // Assert
         assertTrue(result);
-        verify(likeRepository).deleteByPostAndUser(post, user2);
+        assertEquals(1, post.getLikeCount());
+        verify(likeRepository, times(1)).save(any(Like.class));
+        verify(postRepository, times(1)).save(post);
+    }
+
+    @Test
+    void likePost_whenUserHasAlreadyLikedPost_shouldReturnFalse() {
+        // Arrange
+        when(postRepository.findById(post.getId())).thenReturn(Optional.of(post));
+        when(userService.findById(user.getId())).thenReturn(Optional.of(user));
+        when(postServiceHelper.hasUserLikedPost(post.getId(), user.getId())).thenReturn(true);
+
+        // Act
+        boolean result = postService.likePost(post.getId(), user.getId());
+
+        // Assert
+        assertFalse(result);
+        verify(likeRepository, never()).save(any(Like.class));
+        verify(postRepository, never()).save(post);
+    }
+
+    @Test
+    void unlikePost_whenPostOrUserDoesNotExist_shouldThrowIllegalArgumentException() {
+        // Arrange
+        when(postRepository.findById(anyLong())).thenReturn(Optional.empty());
+        when(userService.findById(anyLong())).thenReturn(Optional.of(user));
+
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> postService.unlikePost(1L, 1L));
+        assertEquals("Post or user not found", exception.getMessage());
+
+        // Test for user not found
+        when(postRepository.findById(anyLong())).thenReturn(Optional.of(post));
+        when(userService.findById(anyLong())).thenReturn(Optional.empty());
+
+        exception = assertThrows(ResourceNotFoundException.class, () -> postService.unlikePost(1L, 1L));
+        assertEquals("Post or user not found", exception.getMessage());
+    }
+
+    @Test
+    void unlikePost_whenUserUnlikesPostSuccessfully_shouldUnlikePost() {
+        // Arrange
+        Like like = Like.builder()
+                .post(post)
+                .user(user)
+                .build();
+        when(postRepository.findById(post.getId())).thenReturn(Optional.of(post));
+        when(userService.findById(user.getId())).thenReturn(Optional.of(user));
+        when(postServiceHelper.hasUserLikedPost(post.getId(), user.getId())).thenReturn(true);
+        when(likeRepository.findByPostAndUser(post, user)).thenReturn(Optional.of(like));
+//        when(likeRepository.delete(like)).thenReturn(void);
+        when(postRepository.save(post)).thenReturn(post);
+
+        // Act
+        boolean result = postService.unlikePost(post.getId(), user.getId());
+
+        // Assert
+        assertTrue(result);
+        assertEquals(-1, post.getLikeCount());
+        verify(likeRepository, times(1)).delete(like);
+        verify(postRepository, times(1)).save(post);
+    }
+
+    @Test
+    void unlikePost_whenUserHasNotLikedPostBefore_shouldReturnFalse() {
+        // Arrange
+        when(postRepository.findById(post.getId())).thenReturn(Optional.of(post));
+        when(userService.findById(user.getId())).thenReturn(Optional.of(user));
+        when(postServiceHelper.hasUserLikedPost(post.getId(), user.getId())).thenReturn(false);
+
+        // Act
+        boolean result = postService.unlikePost(post.getId(), user.getId());
+
+        // Assert
+        assertFalse(result);
+        verify(likeRepository, never()).delete(any(Like.class));
+        verify(postRepository, never()).save(post);
     }
 }

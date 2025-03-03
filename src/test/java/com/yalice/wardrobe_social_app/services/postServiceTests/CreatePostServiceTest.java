@@ -4,6 +4,8 @@ import com.yalice.wardrobe_social_app.entities.Outfit;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
+import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
+import com.yalice.wardrobe_social_app.interfaces.OutfitService;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.PostServiceImpl;
@@ -15,25 +17,26 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class CreatePostServiceTest {
+
     @Mock
     private PostRepository postRepository;
 
     @Mock
     private UserService userService;
 
+    @Mock
+    private OutfitService outfitService;
+
     @InjectMocks
     private PostServiceImpl postService;
 
     private User user1;
-    private Post post;
+    private Outfit outfit;
 
     @BeforeEach
     void setUp() {
@@ -45,34 +48,131 @@ public class CreatePostServiceTest {
                 .email("user1@example.com")
                 .build();
 
-        Outfit outfit = Outfit.builder()
+        outfit = Outfit.builder()
                 .id(1L)
                 .name("Test Outfit")
                 .user(user1)
                 .build();
-
-        post = Post.builder()
-                .id(1L)
-                .user(user1)
-                .content("Test post content")
-                .outfit(outfit)
-                .visibility(PostVisibility.PUBLIC)
-                .build();
     }
 
     @Test
-    void createPost_createsAndReturnsPost() {
+    void createPost_userNotFound_throwsResourceNotFoundException() {
         // Arrange
-        when(userService.findById(anyLong())).thenReturn(Optional.of(user1));
-        when(postRepository.save(any(Post.class))).thenReturn(post);
+        Long userId = 1L;
+        String content = "Test post content";
+        Long outfitId = 1L;
+        PostVisibility visibility = PostVisibility.PUBLIC;
+
+        when(userService.findById(userId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(ResourceNotFoundException.class, () -> postService.createPost(userId, content, outfitId, visibility));
+    }
+
+    @Test
+    void createPost_outfitNotFound_throwsResourceNotFoundException() {
+        // Arrange
+        Long userId = 1L;
+        String content = "Test post content";
+        Long outfitId = 1L;
+        PostVisibility visibility = PostVisibility.PUBLIC;
+
+        when(userService.findById(userId)).thenReturn(Optional.of(user1));
+        when(outfitService.getOutfit(outfitId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(ResourceNotFoundException.class, () -> postService.createPost(userId, content, outfitId, visibility));
+    }
+
+    @Test
+    void createPost_success_postCreated() {
+        // Arrange
+        Long userId = 1L;
+        String content = "Test post content";
+        Long outfitId = 1L;
+        PostVisibility visibility = PostVisibility.PUBLIC;
+
+        when(userService.findById(userId)).thenReturn(Optional.of(user1));
+        when(outfitService.getOutfit(outfitId)).thenReturn(Optional.of(outfit));
+        when(postRepository.save(any(Post.class))).thenReturn(Post.builder()
+                .user(user1)
+                .outfit(outfit)
+                .content(content)
+                .visibility(visibility)
+                .build());
 
         // Act
-        Post result = postService.createPost(1L, "Test post content", 1L, PostVisibility.PUBLIC);
+        Post result = postService.createPost(userId, content, outfitId, visibility);
 
         // Assert
         assertNotNull(result);
-        assertEquals("Test post content", result.getContent());
-        assertEquals(PostVisibility.PUBLIC, result.getVisibility());
-        verify(postRepository).save(any(Post.class));
+        assertEquals(content, result.getContent());
+        assertEquals(visibility, result.getVisibility());
+        assertEquals(user1, result.getUser());
+        assertEquals(outfit, result.getOutfit());
+    }
+
+    @Test
+    void createPost_userIdNull_throwsResourceNotFoundException() {
+        // Arrange
+        Long userId = null;
+        String content = "Test post content";
+        Long outfitId = 1L;
+        PostVisibility visibility = PostVisibility.PUBLIC;
+
+        // Act & Assert
+        assertThrows(ResourceNotFoundException.class, () -> postService.createPost(userId, content, outfitId, visibility));
+    }
+
+    @Test
+    void createPost_contentNull_throwsResourceNotFoundException() {
+        // Arrange
+        Long userId = 1L;
+        String content = null;  // null content
+        Long outfitId = 1L;
+        PostVisibility visibility = PostVisibility.PUBLIC;
+
+        // Act & Assert
+        assertThrows(ResourceNotFoundException.class, () -> postService.createPost(userId, content, outfitId, visibility));
+    }
+
+    @Test
+    void createPost_outfitIdNull_throwsResourceNotFoundException() {
+        // Arrange
+        Long userId = 1L;
+        String content = "Test post content";
+        Long outfitId = null;  // null outfitId
+        PostVisibility visibility = PostVisibility.PUBLIC;
+
+        // Act & Assert
+        assertThrows(ResourceNotFoundException.class, () -> postService.createPost(userId, content, outfitId, visibility));
+    }
+
+    @Test
+    void createPost_validData_postCreatedWithCorrectAttributes() {
+        // Arrange
+        Long userId = 1L;
+        String content = "Test post content";
+        Long outfitId = 1L;
+        PostVisibility visibility = PostVisibility.PUBLIC;
+
+        when(userService.findById(userId)).thenReturn(Optional.of(user1));
+        when(outfitService.getOutfit(outfitId)).thenReturn(Optional.of(outfit));
+        when(postRepository.save(any(Post.class))).thenReturn(Post.builder()
+                .user(user1)
+                .outfit(outfit)
+                .content(content)
+                .visibility(visibility)
+                .build());
+
+        // Act
+        Post result = postService.createPost(userId, content, outfitId, visibility);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(user1, result.getUser());
+        assertEquals(outfit, result.getOutfit());
+        assertEquals(content, result.getContent());
+        assertEquals(visibility, result.getVisibility());
     }
 }
