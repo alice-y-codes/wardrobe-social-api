@@ -49,7 +49,8 @@ public class PostController {
         User user = getCurrentUser();
         logger.info("User {} is creating a new post.", user.getUsername());
         PostResponseDto createdPost = postService.createPost(user.getId(), postDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>(true, "Post created successfully", createdPost));
+        ApiResponse<PostResponseDto> response = new ApiResponse<>(true, "Post created successfully", createdPost);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
@@ -63,7 +64,8 @@ public class PostController {
         User user = getCurrentUser();
         logger.info("User {} is requesting post with ID {}.", user.getUsername(), postId);
         PostResponseDto post = postService.getPost(postId, user.getId());
-        return ResponseEntity.ok(new ApiResponse<>(true, "Post retrieved successfully", post));
+        ApiResponse<PostResponseDto> response = new ApiResponse<>(true, "Post retrieved successfully", post);
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -77,7 +79,8 @@ public class PostController {
         User user = getCurrentUser();
         logger.info("User {} is deleting post with ID {}.", user.getUsername(), postId);
         postService.deletePost(postId, user.getId());
-        return ResponseEntity.ok(new ApiResponse<>(true, "Post deleted successfully", "Post deleted"));
+        ApiResponse<String> response = new ApiResponse<>(true, "Post deleted successfully", "Post deleted");
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -92,7 +95,8 @@ public class PostController {
         User user = getCurrentUser();
         logger.info("User {} is updating post with ID {}.", user.getUsername(), postId);
         PostResponseDto updatedPost = postService.updatePost(postId, user.getId(), postDto);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Post updated successfully", updatedPost));
+        ApiResponse<PostResponseDto> response = new ApiResponse<>(true, "Post updated successfully", updatedPost);
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -106,7 +110,8 @@ public class PostController {
         User user = getCurrentUser();
         logger.info("User {} is liking post with ID {}.", user.getUsername(), postId);
         boolean liked = postService.likePost(postId, user.getId());
-        return ResponseEntity.ok(new ApiResponse<>(true, liked ? "Post liked successfully" : "Post already liked", liked ? "Post liked" : "Post already liked"));
+        ApiResponse<String> response = new ApiResponse<>(true, liked ? "Post liked successfully" : "Post already liked", liked ? "Post liked" : "Post already liked");
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -120,12 +125,14 @@ public class PostController {
         User user = getCurrentUser();
         logger.info("User {} is unliking post with ID {}.", user.getUsername(), postId);
         boolean unliked = postService.unlikePost(postId, user.getId());
-        return ResponseEntity.ok(new ApiResponse<>(true, unliked ? "Post unliked successfully" : "Post was not liked", unliked ? "Post unliked" : "Post was not liked"));
+        ApiResponse<String> response = new ApiResponse<>(true, unliked ? "Post unliked successfully" : "Post was not liked", unliked ? "Post unliked" : "Post was not liked");
+        return ResponseEntity.ok(response);
     }
 
     // Global exception handler for PostNotFoundException
     @ExceptionHandler(PostNotFoundException.class)
     public ResponseEntity<ApiResponse<String>> handlePostNotFoundException(PostNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse<>(false, ex.getMessage(), null));
+        ApiResponse<String> response = new ApiResponse<>(false, ex.getMessage(), null);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 }

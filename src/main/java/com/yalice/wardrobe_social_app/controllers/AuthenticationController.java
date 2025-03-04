@@ -1,7 +1,7 @@
 package com.yalice.wardrobe_social_app.controllers;
 
-import com.yalice.wardrobe_social_app.dtos.AuthenticationRequest;
-import com.yalice.wardrobe_social_app.dtos.AuthenticationResponse;
+import com.yalice.wardrobe_social_app.dtos.authentication.AuthenticationRequest;
+import com.yalice.wardrobe_social_app.dtos.authentication.AuthenticationResponse;
 import com.yalice.wardrobe_social_app.services.UserDetailsServiceImpl;
 import com.yalice.wardrobe_social_app.utilities.JwtTokenUtil;
 import jakarta.servlet.http.Cookie;

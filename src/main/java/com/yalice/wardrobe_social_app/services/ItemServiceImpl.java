@@ -1,5 +1,7 @@
 package com.yalice.wardrobe_social_app.services;
 
+import com.yalice.wardrobe_social_app.dtos.item.ItemDto;
+import com.yalice.wardrobe_social_app.dtos.item.ItemResponseDto;
 import com.yalice.wardrobe_social_app.entities.Item;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
@@ -10,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ItemServiceImpl implements ItemService {
@@ -25,88 +27,121 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public Optional<Item> createItem(Long userId, Item item) {
-        if (item == null)
-            return Optional.empty();
+    public ItemResponseDto createItem(Long userId, ItemDto itemDto) {
+        if (itemDto == null || userId == null) {
+            throw new IllegalArgumentException("User ID and Item cannot be null");
+        }
 
-        // Check if an item with the same name already exists
-        Optional<Item> existingItem = itemRepository.findByName(item.getName());
-        if (existingItem.isPresent())
-            return Optional.empty();
+        if (itemRepository.findByName(itemDto.getName()).isPresent()) {
+            throw new IllegalStateException("Item with this name already exists");
+        }
 
-        // Verify user exists
-        Optional<User> userOptional = userRepository.findById(userId);
-        if (userOptional.isEmpty())
-            return Optional.empty();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // Set the userId and add to user's items collection
-        item.setUserId(userId);
-        User user = userOptional.get();
+        Item item = new Item();
+        item.setName(itemDto.getName());
+        item.setBrand(itemDto.getBrand());
+        item.setCategory(itemDto.getCategory());
+        item.setSize(itemDto.getSize());
+        item.setColor(itemDto.getColor());
+        item.setImageUrl(itemDto.getImageUrl());
+        item.setUser(user); // Set the full User object
+
         user.getItems().add(item);
+        userRepository.save(user); // Save the user to persist the relationship
+        item = itemRepository.save(item); // Save the item
 
-        // Save the user to persist the relationship
-        userRepository.save(user);
-
-        Item savedItem = itemRepository.save(item);
-        return Optional.of(savedItem);
+        return mapToItemResponseDto(item, user); // Return the DTO with userId
     }
 
     @Override
-    public Optional<Item> getItem(Long itemId) {
-        if (itemId == null)
-            return Optional.empty();
-        return itemRepository.findById(itemId);
+    public ItemResponseDto getItem(Long id) {
+        Item item = itemRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Item not found with ID " + id));
+
+        User user = item.getUser(); // Get the User object from Item
+
+        return mapToItemResponseDto(item, user); // Return DTO with userId
     }
 
     @Override
-    public List<Item> getAllItems(Long userId) {
-        if (userId == null)
-            return List.of();
-        return itemRepository.findByUserId(userId);
+    public List<ItemResponseDto> getAllItems(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID cannot be null");
+        }
+
+        List<Item> items = itemRepository.findByUserId(userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        return items.stream()
+                .map(item -> mapToItemResponseDto(item, user)) // Map each item to DTO with userId
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Optional<Item> getItemByName(String itemName) {
-        if (itemName == null || itemName.isEmpty())
-            return Optional.empty();
-        return itemRepository.findByName(itemName);
+    public ItemResponseDto getItemByName(String itemName) {
+        if (itemName == null || itemName.isEmpty()) {
+            throw new IllegalArgumentException("Item name cannot be null or empty");
+        }
+
+        Item item = itemRepository.findByName(itemName)
+                .orElseThrow(() -> new ResourceNotFoundException("Item not found with name " + itemName));
+
+        User user = item.getUser(); // Get the User object from Item
+
+        return mapToItemResponseDto(item, user); // Return DTO with userId
     }
 
     @Override
     @Transactional
-    public void deleteItem(Long itemId) {
-        if (!itemRepository.existsById(itemId)) {
-            throw new ResourceNotFoundException("Item not found");
+    public ItemResponseDto updateItem(Long id, ItemDto itemDto) {
+        if (id == null || itemDto == null) {
+            throw new IllegalArgumentException("Item ID and Item cannot be null");
         }
 
-        itemRepository.deleteById(itemId);
+        Item existingItem = itemRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Item not found with ID " + id));
+
+        existingItem.setName(itemDto.getName());
+        existingItem.setBrand(itemDto.getBrand());
+        existingItem.setCategory(itemDto.getCategory());
+        existingItem.setSize(itemDto.getSize());
+        existingItem.setColor(itemDto.getColor());
+        existingItem.setImageUrl(itemDto.getImageUrl());
+
+        itemRepository.saveAndFlush(existingItem); // Save the updated item
+        User user = existingItem.getUser(); // Get the User object from Item
+
+        return mapToItemResponseDto(existingItem, user); // Return updated DTO with userId
     }
 
     @Override
     @Transactional
-    public Item updateItem(Long itemId, Item item) {
-        if (itemId == null || item == null) {
-            return null;
+    public boolean deleteItem(Long id) {
+        if (!itemRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Item not found with ID " + id);
         }
 
-        Item existingItem = itemRepository.findById(itemId)
-                .orElseThrow(() -> new ResourceNotFoundException("Item not found with ID " + itemId));
+        itemRepository.deleteById(id); // Delete the item
+        return true;
+    }
 
-        Long userId = existingItem.getUserId();
-
-        Item updatedItem = Item.builder()
-                .id(itemId) // Use the itemId from the method parameter
-                .userId(userId) // Keep the same userId as the existing item
+    /**
+     * Maps an Item and User to ItemResponseDto.
+     * Here, we're mapping the userId from the User object.
+     */
+    private ItemResponseDto mapToItemResponseDto(Item item, User user) {
+        return ItemResponseDto.builder()
+                .id(item.getId())
                 .name(item.getName())
                 .brand(item.getBrand())
                 .category(item.getCategory())
                 .size(item.getSize())
                 .color(item.getColor())
                 .imageUrl(item.getImageUrl())
+                .userId(user.getId()) // Include userId instead of User object
                 .build();
-
-        // Save and return the updated item
-        return itemRepository.saveAndFlush(updatedItem);
     }
-
 }

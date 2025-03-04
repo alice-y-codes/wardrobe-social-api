@@ -1,6 +1,10 @@
 package com.yalice.wardrobe_social_app.services.itemServiceTests;
 
+import com.yalice.wardrobe_social_app.dtos.item.ItemDto;
+import com.yalice.wardrobe_social_app.dtos.item.ItemResponseDto;
 import com.yalice.wardrobe_social_app.entities.Item;
+import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.repositories.ItemRepository;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
 import com.yalice.wardrobe_social_app.services.ItemServiceImpl;
@@ -10,9 +14,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 public class UpdateItemServiceTest {
@@ -26,88 +29,113 @@ public class UpdateItemServiceTest {
     @Mock
     private UserRepository userRepository;
 
-    private Item existingItem;
+    private Item item;
+    private User user;
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        existingItem = new Item();
-        existingItem.setId(1L);
-        existingItem.setUserId(1L);
-        existingItem.setName("Old Name");
-        existingItem.setCategory("Old Category");
-        existingItem.setImageUrl("old-image.jpg");
+
+        // Initialize test user
+        user = User.builder()
+                .id(123L)
+                .username("alice")
+                .email("alice@testemail.com")
+                .password("123password")
+                .provider(User.Provider.GOOGLE)
+                .profilePicture("profilepic.jpeg")
+                .build();
+
+        // Initialize test item
+        item = Item.builder()
+                .id(1L)
+                .user(user)
+                .name("Test name")
+                .category("Test category")
+                .imageUrl("Test image url")
+                .build();
     }
 
-    @Test
-    public void updateItem_whenItemExists_shouldReturnUpdatedItem() {
-        // Arrange
-        Long itemId = 1L;
-
-        Item updatedItem = new Item();
-        updatedItem.setId(itemId);
-        updatedItem.setUserId(1L);
-        updatedItem.setName("New Name");
-        updatedItem.setCategory("New Category");
-        updatedItem.setImageUrl("new-image.jpg");
-
-        when(itemRepository.findById(eq(itemId))).thenReturn(Optional.of(existingItem));
-
-        when(itemRepository.saveAndFlush(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        // Act
-        Item result = itemService.updateItem(itemId, updatedItem);
-
-        // Assert
-        assertThat(result).isNotNull();
-        assertThat(result.getName()).isEqualTo("New Name");
-        assertThat(result.getCategory()).isEqualTo("New Category");
-        assertThat(result.getImageUrl()).isEqualTo("new-image.jpg");
-        assertThat(result.getUserId()).isEqualTo(1L); // Ensure userId is preserved
-
-        // Verify interactions
-        verify(itemRepository).findById(eq(itemId));
-        verify(itemRepository).saveAndFlush(any(Item.class));
-    }
+    // ---- Tests for updateItem ----
 
     @Test
-    public void shouldReturnExistingItem_WhenItemIsNull() {
+    public void shouldUpdateItem_WhenItemExists() {
         // Arrange
         Long itemId = 1L;
-        when(itemRepository.findById(itemId)).thenReturn(Optional.of(existingItem));
+        ItemDto itemDto = new ItemDto("Updated Name", "Updated Brand", "Updated Category", "M", "Red", "Updated Image URL");
+        when(itemRepository.findById(itemId)).thenReturn(java.util.Optional.of(item));
+        when(userRepository.findById(item.getUser().getId())).thenReturn(java.util.Optional.of(user));
 
         // Act
-        Item result = itemService.updateItem(itemId, null);
+        ItemResponseDto updatedItem = itemService.updateItem(itemId, itemDto);
 
         // Assert
-        assertThat(result).isEqualTo(existingItem);
+        assertThat(updatedItem).isNotNull();
+        assertThat(updatedItem.getName()).isEqualTo("Updated Name");
+        assertThat(updatedItem.getBrand()).isEqualTo("Updated Brand");
+        assertThat(updatedItem.getCategory()).isEqualTo("Updated Category");
+        assertThat(updatedItem.getSize()).isEqualTo("M");
+        assertThat(updatedItem.getColor()).isEqualTo("Red");
+        assertThat(updatedItem.getImageUrl()).isEqualTo("Updated Image URL");
+
         verify(itemRepository).findById(itemId);
-        verify(itemRepository, never()).saveAndFlush(any());
+        verify(itemRepository).saveAndFlush(any(Item.class)); // Verify save operation
+        verify(userRepository).findById(item.getUser().getId());
     }
 
     @Test
-    public void shouldReturnNull_WhenItemIsNullAndItemDoesNotExist() {
+    public void shouldThrowIllegalArgumentException_WhenItemIdIsNull() {
+        // Arrange
+        ItemDto itemDto = new ItemDto("Updated Name", "Updated Brand", "Updated Category", "M", "Red", "Updated Image URL");
+
+        // Act & Assert
+        assertThatThrownBy(() -> itemService.updateItem(null, itemDto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Item ID and Item cannot be null");
+
+        verify(itemRepository, never()).findById(anyLong());
+    }
+
+    @Test
+    public void shouldThrowIllegalArgumentException_WhenItemDtoIsNull() {
+        // Act & Assert
+        assertThatThrownBy(() -> itemService.updateItem(1L, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Item ID and Item cannot be null");
+
+        verify(itemRepository, never()).findById(anyLong());
+    }
+
+    @Test
+    public void shouldThrowResourceNotFoundException_WhenItemDoesNotExist() {
         // Arrange
         Long itemId = 99L;
-        when(itemRepository.findById(itemId)).thenReturn(Optional.empty());
+        ItemDto itemDto = new ItemDto("Updated Name", "Updated Brand", "Updated Category", "M", "Red", "Updated Image URL");
+        when(itemRepository.findById(itemId)).thenReturn(java.util.Optional.empty());
 
-        // Act
-        Item result = itemService.updateItem(itemId, null);
+        // Act & Assert
+        assertThatThrownBy(() -> itemService.updateItem(itemId, itemDto))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Item not found with ID");
 
-        // Assert
-        assertThat(result).isNull();
         verify(itemRepository).findById(itemId);
-        verify(itemRepository, never()).saveAndFlush(any());
+        verify(userRepository, never()).findById(anyLong());
     }
 
     @Test
-    public void shouldReturnNull_WhenItemIdIsNull() {
-        // Act
-        Item result = itemService.updateItem(null, existingItem);
+    public void shouldThrowResourceNotFoundException_WhenUserNotFound() {
+        // Arrange
+        Long itemId = 1L;
+        ItemDto itemDto = new ItemDto("Updated Name", "Updated Brand", "Updated Category", "M", "Red", "Updated Image URL");
+        when(itemRepository.findById(itemId)).thenReturn(java.util.Optional.of(item));
+        when(userRepository.findById(item.getUser().getId())).thenReturn(java.util.Optional.empty());
 
-        // Assert
-        assertThat(result).isNull();
-        verify(itemRepository, never()).findById(any());
-        verify(itemRepository, never()).saveAndFlush(any());
+        // Act & Assert
+        assertThatThrownBy(() -> itemService.updateItem(itemId, itemDto))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("User not found");
+
+        verify(itemRepository).findById(itemId);
+        verify(userRepository).findById(item.getUser().getId());
     }
 }

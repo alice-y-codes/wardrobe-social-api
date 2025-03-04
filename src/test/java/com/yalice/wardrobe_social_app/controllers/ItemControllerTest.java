@@ -1,9 +1,9 @@
 package com.yalice.wardrobe_social_app.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yalice.wardrobe_social_app.entities.Item;
+import com.yalice.wardrobe_social_app.dtos.item.ItemDto;
+import com.yalice.wardrobe_social_app.dtos.item.ItemResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
-import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 import com.yalice.wardrobe_social_app.interfaces.ItemService;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
 import org.junit.jupiter.api.AfterEach;
@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,7 +20,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -36,264 +34,249 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 public class ItemControllerTest {
 
-        private MockMvc mockMvc;
+    private MockMvc mockMvc;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-        private final ObjectMapper objectMapper = new ObjectMapper();
+    @Mock
+    private ItemService itemService;
 
-        @Mock
-        private ItemService itemService;
+    @Mock
+    private UserService userService;
 
-        @Mock
-        private UserService userService;
+    @InjectMocks
+    private ItemController itemController;
 
-        @InjectMocks
-        private ItemController itemController;
+    private User user;
+    private ItemDto itemDto;
+    private ItemResponseDto itemResponseDto;
 
-        @BeforeEach
-        public void setup() {
-                itemController = new ItemController(itemService, userService);
+    @BeforeEach
+    public void setup() {
+        // Create a new MockMvc instance for each test
+        itemController = new ItemController(itemService, userService);
+        mockMvc = MockMvcBuilders.standaloneSetup(itemController).build();
 
-                mockMvc = MockMvcBuilders.standaloneSetup(itemController)
-                                .setControllerAdvice(new GlobalExceptionHandler())
-                                .build();
-        }
+        // Set up test data
+        user = User.builder().id(1L).username("testuser").build();
+        itemDto = ItemDto.builder()
+                .name("Test name")
+                .category("Test category")
+                .imageUrl("Test image url")
+                .build();
+        itemResponseDto = ItemResponseDto.builder()
+                .id(1L)
+                .name("Test name")
+                .category("Test category")
+                .imageUrl("Test image url")
+                .build();
+    }
 
-        @AfterEach
-        public void tearDown() {
-                // Clear the security context after each test
-                SecurityContextHolder.clearContext();
-        }
+    @AfterEach
+    public void tearDown() {
+        // Clear the security context after each test
+        SecurityContextHolder.clearContext();
+    }
 
-        @Test
-        public void shouldCreateItem() throws Exception {
-                // Arrange
-                // 1. Create a real authentication token instead of a mock
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken("testuser",
-                                null,
-                                new ArrayList<>());
+    /**
+     * Sets up authentication for tests by creating a mock authentication context.
+     *
+     * @param username The username of the authenticated user.
+     */
+    public static void setupAuthentication(String username) {
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                username, null, Collections.emptyList());
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+    }
 
-                SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-                securityContext.setAuthentication(authentication);
-                SecurityContextHolder.setContext(securityContext);
+    /**
+     * Test to create an item for a user.
+     */
+    @Test
+    public void shouldCreateItem() throws Exception {
+        // Arrange
+        setupAuthentication("testuser");
+        when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
+        when(itemService.createItem(eq(1L), any(ItemDto.class))).thenReturn(itemResponseDto);
 
-                // 2. Mock the user service to return a user
-                User user = User.builder()
-                                .id(1L)
-                                .username("testuser")
-                                .build();
-                when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
+        // Act & Assert
+        mockMvc.perform(post("/api/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(itemDto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.name").value("Test name"))
+                .andExpect(jsonPath("$.data.category").value("Test category"))
+                .andExpect(jsonPath("$.data.imageUrl").value("Test image url"));
 
-                // 3. Mock the item service
-                Item item = Item.builder()
-                                .userId(1L)
-                                .name("Test name")
-                                .category("Test category")
-                                .imageUrl("Test image url")
-                                .build();
-                when(itemService.createItem(eq(1L), any(Item.class))).thenReturn(Optional.of(item));
+        verify(userService).findUserByUsername("testuser");
+        verify(itemService).createItem(eq(1L), any(ItemDto.class));
+    }
 
-                // Act & Assert
-                mockMvc.perform(post("/api/items")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(item)))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.name").value("Test name"))
-                                .andExpect(jsonPath("$.category").value("Test category"))
-                                .andExpect(jsonPath("$.imageUrl").value("Test image url"));
+    /**
+     * Test to retrieve the items belonging to the authenticated user.
+     */
+    @Test
+    public void shouldGetMyItems() throws Exception {
+        // Arrange
+        setupAuthentication("testuser");
+        when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
+        when(itemService.getAllItems(1L)).thenReturn(Collections.singletonList(itemResponseDto));
 
-                // Verify that the service methods were called with the correct parameters
-                verify(userService).findUserByUsername("testuser");
-                verify(itemService).createItem(eq(1L), any(Item.class));
-        }
+        // Act & Assert
+        mockMvc.perform(get("/api/items/my-items")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].name").value("Test name"));
 
-        // Add a test for the new my-items endpoint
-        @Test
-        public void shouldGetMyItems() throws Exception {
-                // Arrange
-                // 1. Create a real authentication token instead of a mock
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken("testuser",
-                                null,
-                                new ArrayList<>());
+        verify(userService).findUserByUsername("testuser");
+        verify(itemService).getAllItems(1L);
+    }
 
-                SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-                securityContext.setAuthentication(authentication);
-                SecurityContextHolder.setContext(securityContext);
+    /**
+     * Test to retrieve all items for a specific user by their ID.
+     */
+    @Test
+    public void shouldGetAllItems() throws Exception {
+        // Arrange
+        when(itemService.getAllItems(1L)).thenReturn(Collections.singletonList(itemResponseDto));
 
-                // 2. Mock the user service to return a user
-                User user = User.builder()
-                                .id(1L)
-                                .username("testuser")
-                                .build();
-                when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
+        // Act & Assert
+        mockMvc.perform(get("/api/items/users/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].name").value("Test name"));
 
-                // 3. Mock the item service
-                Item item = Item.builder()
-                                .userId(1L)
-                                .name("Test name")
-                                .build();
-                when(itemService.getAllItems(1L)).thenReturn(Collections.singletonList(item));
+        verify(itemService).getAllItems(1L);
+    }
 
-                // Act & Assert
-                mockMvc.perform(get("/api/items/my-items")
-                                .contentType(MediaType.APPLICATION_JSON))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$[0].name").value("Test name"));
+    /**
+     * Test to retrieve a specific item by its ID.
+     */
+    @Test
+    public void shouldGetItemById() throws Exception {
+        // Arrange
+        when(itemService.getItem(1L)).thenReturn(itemResponseDto);
 
-                verify(userService).findUserByUsername("testuser");
-                verify(itemService).getAllItems(1L);
-        }
+        // Act & Assert
+        mockMvc.perform(get("/api/items/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Test name"));
 
-        @Test
-        public void shouldGetAllItems() throws Exception {
-                // Arrange
-                Item item = Item.builder()
-                                .userId(1L)
-                                .name("Test name")
-                                .build();
-                when(itemService.getAllItems(1L)).thenReturn(Collections.singletonList(item));
+        verify(itemService).getItem(1L);
+    }
 
-                // Act & Assert
-                mockMvc.perform(get("/api/items/users/1")
-                                .contentType(MediaType.APPLICATION_JSON))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$[0].name").value("Test name"));
+    /**
+     * Test to handle when an item does not exist for the given ID.
+     */
+    @Test
+    public void shouldReturnNotFoundWhenItemByIdDoesNotExist() throws Exception {
+        // Arrange
+        when(itemService.getItem(1L)).thenReturn(null);
 
-                verify(itemService, Mockito.times(1)).getAllItems(1L);
-        }
+        // Act & Assert
+        mockMvc.perform(get("/api/items/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
 
-        @Test
-        public void shouldGetItemById() throws Exception {
-                // Arrange
-                Item item = Item.builder()
-                                .id(1L)
-                                .userId(1L)
-                                .name("Test name")
-                                .build();
-                when(itemService.getItem(1L)).thenReturn(Optional.of(item));
+        verify(itemService).getItem(1L);
+    }
 
-                // Act & Assert
-                mockMvc.perform(get("/api/items/1")
-                                .contentType(MediaType.APPLICATION_JSON))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.name").value("Test name"));
+    /**
+     * Test to retrieve an item by its name.
+     */
+    @Test
+    public void shouldGetItemByName() throws Exception {
+        // Arrange
+        when(itemService.getItemByName("Test name")).thenReturn(itemResponseDto);
 
-                verify(itemService, Mockito.times(1)).getItem(1L);
-        }
+        // Act & Assert
+        mockMvc.perform(get("/api/items/names/Test name")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Test name"));
 
-        @Test
-        public void shouldReturnNotFoundWhenItemByIdDoesNotExist() throws Exception {
-                // Arrange
-                when(itemService.getItem(1L)).thenReturn(Optional.empty());
+        verify(itemService).getItemByName("Test name");
+    }
 
-                // Act & Assert
-                mockMvc.perform(get("/api/items/1")
-                                .contentType(MediaType.APPLICATION_JSON))
-                                .andExpect(status().isNotFound());
+    /**
+     * Test to update an existing item.
+     */
+    @Test
+    public void shouldUpdateItem() throws Exception {
+        // Arrange
+        ItemDto updatedItemDto = ItemDto.builder()
+                .name("Updated name")
+                .category("Updated category")
+                .imageUrl("Updated image url")
+                .build();
+        ItemResponseDto updatedItem = ItemResponseDto.builder()
+                .id(1L)
+                .name("Updated name")
+                .category("Updated category")
+                .imageUrl("Updated image url")
+                .build();
+        when(itemService.updateItem(eq(1L), any(ItemDto.class))).thenReturn(updatedItem);
 
-                verify(itemService, Mockito.times(1)).getItem(1L);
-        }
+        // Act & Assert
+        mockMvc.perform(put("/api/items/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updatedItemDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Updated name"))
+                .andExpect(jsonPath("$.data.category").value("Updated category"));
 
-        @Test
-        public void shouldGetItemByName() throws Exception {
-                // Arrange
-                Item item = Item.builder()
-                                .userId(1L)
-                                .name("Test name")
-                                .build();
-                when(itemService.getItemByName("Test name")).thenReturn(Optional.of(item));
+        verify(itemService).updateItem(eq(1L), any(ItemDto.class));
+    }
 
-                // Act & Assert
-                mockMvc.perform(get("/api/items/names/Test name")
-                                .contentType(MediaType.APPLICATION_JSON))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.name").value("Test name"));
+    /**
+     * Test to delete an item by its ID.
+     */
+    @Test
+    public void shouldDeleteItem() throws Exception {
+        // Arrange
+        long itemId = 1L;
+        when(itemService.deleteItem(itemId)).thenReturn(true);
 
-                verify(itemService, Mockito.times(1)).getItemByName("Test name");
-        }
+        // Act & Assert
+        mockMvc.perform(delete("/api/items/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
 
-        @Test
-        public void shouldUpdateItem() throws Exception {
-                // Arrange
-                Item existingItem = Item.builder()
-                                .id(1L)
-                                .userId(1L)
-                                .name("Old name")
-                                .build();
+        verify(itemService).deleteItem(itemId);
+    }
 
-                Item updatedItem = Item.builder()
-                                .id(1L)
-                                .userId(1L)
-                                .name("Updated name")
-                                .build();
+    /**
+     * Test to return a BadRequest status when the user is not authenticated.
+     */
+    @Test
+    public void shouldReturnBadRequestWhenUserNotAuthenticated() throws Exception {
+        // Arrange - no authentication setup
+        when(userService.findUserByUsername("testuser")).thenReturn(Optional.empty());
 
-                when(itemService.updateItem(eq(1L), any(Item.class))).thenReturn(updatedItem);
+        // Act & Assert
+        mockMvc.perform(post("/api/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(itemDto)))
+                .andExpect(status().isBadRequest());
+    }
 
-                // Act & Assert
-                mockMvc.perform(put("/api/items/1")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(updatedItem)))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.name").value("Updated name"));
+    /**
+     * Test to return a BadRequest status when the user is not found.
+     */
+    @Test
+    public void shouldReturnBadRequestWhenUserNotFound() throws Exception {
+        // Arrange
+        setupAuthentication("testuser");
+        when(userService.findUserByUsername("testuser")).thenReturn(Optional.empty());
 
-                verify(itemService, Mockito.times(1)).updateItem(eq(1L), any(Item.class));
-        }
+        // Act & Assert
+        mockMvc.perform(post("/api/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(itemDto)))
+                .andExpect(status().isBadRequest());
 
-        @Test
-        public void shouldDeleteItem() throws Exception {
-                // Arrange
-                long itemId = 1L;
-
-                // Act & Assert
-                mockMvc.perform(delete("/api/items/1")
-                                .contentType(MediaType.APPLICATION_JSON))
-                                .andExpect(status().isNoContent());
-
-                verify(itemService, Mockito.times(1)).deleteItem(itemId);
-        }
-
-        @Test
-        public void shouldReturnBadRequestWhenUserNotAuthenticated() throws Exception {
-                // Arrange - no authentication setup
-                // SecurityContextHolder is empty by default
-
-                Item item = Item.builder()
-                                .name("Test name")
-                                .category("Test category")
-                                .build();
-
-                // Act & Assert
-                mockMvc.perform(post("/api/items")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(item)))
-                                .andExpect(status().isBadRequest());
-        }
-
-        @Test
-        public void shouldReturnBadRequestWhenUserNotFound() throws Exception {
-                // Arrange
-                // 1. Create a real authentication token instead of a mock
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken("testuser",
-                                null,
-                                new ArrayList<>());
-
-                SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-                securityContext.setAuthentication(authentication);
-                SecurityContextHolder.setContext(securityContext);
-
-                // 2. Mock the user service to return empty (user not found)
-                when(userService.findUserByUsername("testuser")).thenReturn(Optional.empty());
-
-                Item item = Item.builder()
-                                .name("Test name")
-                                .category("Test category")
-                                .build();
-
-                // Act & Assert
-                mockMvc.perform(post("/api/items")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(item)))
-                                .andExpect(status().isBadRequest());
-
-                verify(userService).findUserByUsername("testuser");
-        }
+        verify(userService).findUserByUsername("testuser");
+    }
 }

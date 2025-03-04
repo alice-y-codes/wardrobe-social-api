@@ -78,7 +78,7 @@ class OutfitControllerTest {
                 .id(1L)
                 .name("Test Item")
                 .category("Tops")
-                .userId(1L)
+                .user(testUser)
                 .imageUrl("http://example.com/image.jpg")
                 .build();
 

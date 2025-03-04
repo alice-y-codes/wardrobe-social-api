@@ -11,12 +11,14 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class Item {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId; // Owner of the item
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)  // Renaming the foreign key column
+    private User user; // Associated User
 
     @Column(nullable = false)
     private String name;
@@ -35,13 +37,4 @@ public class Item {
 
     @Column(nullable = false)
     private String imageUrl;
-
-    // Additional features
-    // private String visibility; // e.g., "public", "private", "friends"
-    // private LocalDateTime createdDate;
-    // private LocalDateTime lastUpdatedDate;
-    // @ElementCollection
-    // private List<String> tags; // A list of tags that describe the outfit for
-    // better categorization and searching.
-
 }
