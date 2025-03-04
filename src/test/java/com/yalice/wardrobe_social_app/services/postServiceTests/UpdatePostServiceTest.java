@@ -1,13 +1,13 @@
 package com.yalice.wardrobe_social_app.services.postServiceTests;
 
-import com.yalice.wardrobe_social_app.dtos.PostDto;
-import com.yalice.wardrobe_social_app.dtos.PostResponseDto;
+import com.yalice.wardrobe_social_app.dtos.post.PostDto;
+import com.yalice.wardrobe_social_app.dtos.post.PostResponseDto;
 import com.yalice.wardrobe_social_app.entities.Like;
 import com.yalice.wardrobe_social_app.entities.Outfit;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
-import com.yalice.wardrobe_social_app.helpers.PostServiceHelper;
+import com.yalice.wardrobe_social_app.services.helpers.PostServiceHelper;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;

@@ -1,4 +1,4 @@
-package com.yalice.wardrobe_social_app.helpers;
+package com.yalice.wardrobe_social_app.services.helpers;
 
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;

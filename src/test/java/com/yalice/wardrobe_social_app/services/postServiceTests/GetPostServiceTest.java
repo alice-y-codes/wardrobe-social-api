@@ -1,12 +1,13 @@
 package com.yalice.wardrobe_social_app.services.postServiceTests;
 
-import com.yalice.wardrobe_social_app.dtos.PostResponseDto;
+import com.yalice.wardrobe_social_app.dtos.post.PostResponseDto;
+import com.yalice.wardrobe_social_app.entities.Outfit;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import com.yalice.wardrobe_social_app.exceptions.PostAccessException;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
-import com.yalice.wardrobe_social_app.helpers.PostServiceHelper;
+import com.yalice.wardrobe_social_app.services.helpers.PostServiceHelper;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.PostServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,7 @@ public class GetPostServiceTest {
 
     private User user1;
     private User user2;
+    private Outfit outfit;
     private Post post;
 
     @BeforeEach
@@ -53,10 +55,17 @@ public class GetPostServiceTest {
                 .email("user2@example.com")
                 .build();
 
+        outfit = Outfit.builder()
+                .id(1L)
+                .name("Test Outfit")
+                .user(user1)
+                .build();
+
         post = Post.builder()
                 .id(1L)
                 .user(user1)
                 .content("Test post content")
+                .outfit(outfit)
                 .visibility(PostVisibility.PUBLIC)  // Setting it to PUBLIC for testing
                 .build();
     }
@@ -112,6 +121,7 @@ public class GetPostServiceTest {
                 .id(1L)
                 .user(user1)
                 .content("Friends-only post")
+                .outfit(outfit)
                 .visibility(PostVisibility.FRIENDS_ONLY)
                 .build();
 

@@ -1,4 +1,4 @@
-package com.yalice.wardrobe_social_app.dtos;
+package com.yalice.wardrobe_social_app.dtos.post;
 
 import lombok.Builder;
 import lombok.Getter;

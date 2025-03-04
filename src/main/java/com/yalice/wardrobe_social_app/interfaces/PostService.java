@@ -1,7 +1,7 @@
 package com.yalice.wardrobe_social_app.interfaces;
 
-import com.yalice.wardrobe_social_app.dtos.PostDto;
-import com.yalice.wardrobe_social_app.dtos.PostResponseDto;
+import com.yalice.wardrobe_social_app.dtos.post.PostDto;
+import com.yalice.wardrobe_social_app.dtos.post.PostResponseDto;
 
 public interface PostService {
     PostResponseDto createPost(Long userId, PostDto postDto);

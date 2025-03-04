@@ -5,6 +5,7 @@ import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import com.yalice.wardrobe_social_app.exceptions.PostAccessException;
+import com.yalice.wardrobe_social_app.exceptions.PostNotFoundException;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
@@ -83,7 +84,7 @@ public class DeletePostServiceTest {
         when(postRepository.findById(anyLong())).thenReturn(Optional.empty());
 
         // Act & Assert
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> postService.deletePost(post.getId(), user.getId()));
+        PostNotFoundException exception = assertThrows(PostNotFoundException.class, () -> postService.deletePost(post.getId(), user.getId()));
         assertEquals("Post not found with ID: 1", exception.getMessage());
         verify(postRepository, never()).deleteById(anyLong());
     }

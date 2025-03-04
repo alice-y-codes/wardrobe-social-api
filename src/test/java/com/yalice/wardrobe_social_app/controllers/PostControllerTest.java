@@ -1,10 +1,9 @@
 package com.yalice.wardrobe_social_app.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yalice.wardrobe_social_app.dtos.PostDto;
-import com.yalice.wardrobe_social_app.dtos.PostResponseDto;
+import com.yalice.wardrobe_social_app.dtos.post.PostDto;
+import com.yalice.wardrobe_social_app.dtos.post.PostResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
-import com.yalice.wardrobe_social_app.exceptions.ForbiddenActionException;
 import com.yalice.wardrobe_social_app.exceptions.PostNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.PostService;
 import com.yalice.wardrobe_social_app.interfaces.UserService;
