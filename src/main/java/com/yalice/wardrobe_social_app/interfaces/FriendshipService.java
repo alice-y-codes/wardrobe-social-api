@@ -4,7 +4,6 @@ import com.yalice.wardrobe_social_app.entities.Friendship;
 import com.yalice.wardrobe_social_app.entities.User;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface FriendshipService {
     Friendship sendFriendRequest(Long requesterId, Long recipientId);
@@ -21,5 +20,5 @@ public interface FriendshipService {
 
     boolean areFriends(Long userId1, Long userId2);
 
-    Optional<Friendship> getFriendshipBetweenUsers(Long userId1, Long userId2);
+    Friendship getFriendshipBetweenUsers(Long userId1, Long userId2);
 }

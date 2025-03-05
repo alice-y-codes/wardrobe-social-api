@@ -2,12 +2,10 @@ package com.yalice.wardrobe_social_app.services;
 
 import com.yalice.wardrobe_social_app.entities.Comment;
 import com.yalice.wardrobe_social_app.entities.Post;
-import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.entities.Profile;
 import com.yalice.wardrobe_social_app.interfaces.CommentService;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
-import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
+import com.yalice.wardrobe_social_app.interfaces.ProfileService;
 import com.yalice.wardrobe_social_app.repositories.CommentRepository;
-import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,44 +14,37 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class CommentServiceImpl extends BaseService implements CommentService {
 
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
-    private final LikeRepository likeRepository;
-    private final UserSearchService userSearchService;
-    private final FriendshipService friendshipService;
+    private final ProfileService profileService;
 
     @Autowired
-    public CommentServiceImpl(PostRepository postRepository, CommentRepository commentRepository,
-                           LikeRepository likeRepository, UserSearchService userSearchService,
-                           FriendshipService friendshipService) {
+    public CommentServiceImpl(PostRepository postRepository,
+                              CommentRepository commentRepository,
+                              ProfileService profileService) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
-        this.likeRepository = likeRepository;
-        this.userSearchService = userSearchService;
-        this.friendshipService = friendshipService;
+        this.profileService = profileService;
     }
 
     @Override
-    public Comment addComment(Long postId, Long userId, String content) {
-        Optional<Post> postOptional = postRepository.findById(postId);
-        Optional<User> userOptional = userSearchService.findById(userId);
+    public Comment addComment(Long postId, Long profileId, String content) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + postId));
 
-        if (postOptional.isEmpty() || userOptional.isEmpty()) {
-            throw new IllegalArgumentException("Post or user not found");
+        Profile profile = profileService.getProfileEntityById(profileId);
+
+        if (profile == null) {
+            throw new IllegalArgumentException("Profile not found with ID: " + profileId);
         }
 
-        Post post = postOptional.get();
-        User user = userOptional.get();
-
-        // Create a new comment
         Comment comment = Comment.builder()
                 .post(post)
-                .user(user)
+                .profile(profile)
                 .content(content)
                 .build();
 
@@ -61,16 +52,12 @@ public class CommentServiceImpl extends BaseService implements CommentService {
     }
 
     @Override
-    public void deleteComment(Long commentId, Long userId) {
-        Optional<Comment> commentOptional = commentRepository.findById(commentId);
-        if (commentOptional.isEmpty()) {
-            throw new IllegalArgumentException("Comment not found with ID: " + commentId);
-        }
+    public void deleteComment(Long commentId, Long profileId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("Comment not found with ID: " + commentId));
 
-        Comment comment = commentOptional.get();
-
-        // Check if the user is the comment owner or the post owner
-        if (!comment.getUser().getId().equals(userId) && !comment.getPost().getUser().getId().equals(userId)) {
+        // Check if the profile is the comment owner or the post owner
+        if (!comment.getProfile().getId().equals(profileId) && !comment.getPost().getProfile().getId().equals(profileId)) {
             throw new IllegalArgumentException("Only the comment owner or post owner can delete the comment");
         }
 

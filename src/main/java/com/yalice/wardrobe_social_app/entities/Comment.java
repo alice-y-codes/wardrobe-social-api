@@ -28,12 +28,12 @@ public class Comment {
     @EqualsAndHashCode.Exclude
     private Post post;
 
-    /** The user who made the comment. */
+    /** The profile who made the comment. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "profile_id", nullable = false)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private User user;
+    private Profile profile;
 
     /** The content of the comment. */
     @Column(nullable = false, length = 500)

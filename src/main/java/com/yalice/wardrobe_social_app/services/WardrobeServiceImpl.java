@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class WardrobeServiceImpl extends BaseService implements WardrobeService {
@@ -64,7 +63,7 @@ public class WardrobeServiceImpl extends BaseService implements WardrobeService 
         Wardrobe wardrobe = wardrobeRepository.findById(wardrobeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Wardrobe not found with ID: " + wardrobeId));
 
-        return new WardrobeResponseDto(wardrobe.getId(), wardrobe.getName(), wardrobe.getProfile().getId());
+        return convertToWardrobeResponseDto(wardrobe);
     }
 
     @Override
@@ -78,8 +77,7 @@ public class WardrobeServiceImpl extends BaseService implements WardrobeService 
         List<Wardrobe> wardrobes = wardrobeRepository.findAllByUserId(userId);
 
         return wardrobes.stream()
-                .map(wardrobe -> new WardrobeResponseDto(wardrobe.getId(), wardrobe.getName(), wardrobe.getProfile().getId()))
-                .collect(Collectors.toList());
+                .map(this::convertToWardrobeResponseDto).toList();
     }
 
     @Override
@@ -94,7 +92,7 @@ public class WardrobeServiceImpl extends BaseService implements WardrobeService 
         wardrobe = wardrobeRepository.save(wardrobe);
 
         logger.info("Wardrobe '{}' updated successfully.", wardrobe.getName());
-        return new WardrobeResponseDto(wardrobe.getId(), wardrobe.getName(), wardrobe.getProfile().getId());
+        return convertToWardrobeResponseDto(wardrobe);
     }
 
     @Override

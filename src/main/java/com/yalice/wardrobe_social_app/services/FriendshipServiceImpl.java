@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class FriendshipServiceImpl extends BaseService implements FriendshipService {
@@ -32,26 +31,17 @@ public class FriendshipServiceImpl extends BaseService implements FriendshipServ
             throw new IllegalArgumentException("Cannot send friend request to yourself");
         }
 
-        Optional<User> requesterOptional = userSearchService.findById(requesterId);
-        Optional<User> recipientOptional = userSearchService.findById(recipientId);
-
-        if (requesterOptional.isEmpty() || recipientOptional.isEmpty()) {
-            throw new IllegalArgumentException("User not found");
-        }
-
-        User requester = requesterOptional.get();
-        User recipient = recipientOptional.get();
+        // Fetch users using the correct service method
+        User requester = userSearchService.getUserEntityById(requesterId);
+        User recipient = userSearchService.getUserEntityById(recipientId);
 
         // Check if a friendship already exists
-        Optional<Friendship> existingFriendship = friendshipRepository.findByRequesterAndRecipient(requester,
-                recipient);
-        if (existingFriendship.isPresent()) {
+        if (friendshipRepository.existsByRequesterAndRecipient(requester, recipient)) {
             throw new IllegalStateException("Friend request already exists");
         }
 
         // Check if the recipient has already sent a request to the requester
-        Optional<Friendship> reverseRequest = friendshipRepository.findByRequesterAndRecipient(recipient, requester);
-        if (reverseRequest.isPresent()) {
+        if (friendshipRepository.existsByRequesterAndRecipient(recipient, requester)) {
             throw new IllegalStateException("There is already a pending request from the recipient");
         }
 
@@ -66,12 +56,8 @@ public class FriendshipServiceImpl extends BaseService implements FriendshipServ
 
     @Override
     public Friendship acceptFriendRequest(Long requestId, Long userId) {
-        Optional<Friendship> friendshipOptional = friendshipRepository.findById(requestId);
-        if (friendshipOptional.isEmpty()) {
-            throw new IllegalArgumentException("Friend request not found");
-        }
-
-        Friendship friendship = friendshipOptional.get();
+        Friendship friendship = friendshipRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Friend request not found"));
 
         // Verify that the user is the recipient of the request
         if (!friendship.getRecipient().getId().equals(userId)) {
@@ -89,12 +75,8 @@ public class FriendshipServiceImpl extends BaseService implements FriendshipServ
 
     @Override
     public void rejectFriendRequest(Long requestId, Long userId) {
-        Optional<Friendship> friendshipOptional = friendshipRepository.findById(requestId);
-        if (friendshipOptional.isEmpty()) {
-            throw new IllegalArgumentException("Friend request not found");
-        }
-
-        Friendship friendship = friendshipOptional.get();
+        Friendship friendship = friendshipRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Friend request not found"));
 
         // Verify that the user is the recipient of the request
         if (!friendship.getRecipient().getId().equals(userId)) {
@@ -112,22 +94,17 @@ public class FriendshipServiceImpl extends BaseService implements FriendshipServ
 
     @Override
     public void removeFriend(Long userId, Long friendId) {
-        Optional<User> userOptional = userSearchService.findById(userId);
-        Optional<User> friendOptional = userSearchService.findById(friendId);
+        User user = userSearchService.getUserEntityById(userId);
+        User friend = userSearchService.getUserEntityById(friendId);
 
-        if (userOptional.isEmpty() || friendOptional.isEmpty()) {
-            throw new IllegalArgumentException("User not found");
+        Friendship friendship = friendshipRepository.findFriendshipBetweenUsers(user, friend)
+                .orElseThrow(() -> new IllegalStateException("Friendship does not exist or is not accepted"));
+
+        if (friendship.getStatus() != FriendshipStatus.ACCEPTED) {
+            throw new IllegalStateException("Friendship is not accepted");
         }
 
-        User user = userOptional.get();
-        User friend = friendOptional.get();
-
-        Optional<Friendship> friendshipOptional = friendshipRepository.findFriendshipBetweenUsers(user, friend);
-        if (friendshipOptional.isEmpty() || friendshipOptional.get().getStatus() != FriendshipStatus.ACCEPTED) {
-            throw new IllegalStateException("Friendship does not exist or is not accepted");
-        }
-
-        friendshipRepository.delete(friendshipOptional.get());
+        friendshipRepository.delete(friendship);
     }
 
     @Override
@@ -145,12 +122,7 @@ public class FriendshipServiceImpl extends BaseService implements FriendshipServ
 
     @Override
     public List<Friendship> getPendingFriendRequests(Long userId) {
-        Optional<User> userOptional = userSearchService.findById(userId);
-        if (userOptional.isEmpty()) {
-            throw new IllegalArgumentException("User not found");
-        }
-
-        User user = userOptional.get();
+        User user = userSearchService.getUserEntityById(userId);
         return friendshipRepository.findByRecipientAndStatus(user, FriendshipStatus.PENDING);
     }
 
@@ -173,17 +145,11 @@ public class FriendshipServiceImpl extends BaseService implements FriendshipServ
     }
 
     @Override
-    public Optional<Friendship> getFriendshipBetweenUsers(Long userId1, Long userId2) {
-        Optional<User> user1Optional = userSearchService.findById(userId1);
-        Optional<User> user2Optional = userSearchService.findById(userId2);
+    public Friendship getFriendshipBetweenUsers(Long userId1, Long userId2) {
+        User user1 = userSearchService.getUserEntityById(userId1);
+        User user2 = userSearchService.getUserEntityById(userId2);
 
-        if (user1Optional.isEmpty() || user2Optional.isEmpty()) {
-            throw new IllegalArgumentException("User not found");
-        }
-
-        User user1 = user1Optional.get();
-        User user2 = user2Optional.get();
-
-        return friendshipRepository.findFriendshipBetweenUsers(user1, user2);
+        return friendshipRepository.findFriendshipBetweenUsers(user1, user2)
+                .orElseThrow(() -> new IllegalArgumentException("Friendship not found"));
     }
 }
