@@ -1,6 +1,6 @@
 package com.yalice.wardrobe_social_app.controllers;
 
-import com.yalice.wardrobe_social_app.dtos.CommentDto;
+import com.yalice.wardrobe_social_app.dtos.comment.CommentDto;
 import com.yalice.wardrobe_social_app.entities.Comment;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.CommentService;

@@ -6,6 +6,7 @@ import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.FriendshipRepository;
+import com.yalice.wardrobe_social_app.services.helpers.BaseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class FriendshipServiceImpl implements FriendshipService {
+public class FriendshipServiceImpl extends BaseService implements FriendshipService {
 
     private final FriendshipRepository friendshipRepository;
     private final UserSearchService userSearchService;

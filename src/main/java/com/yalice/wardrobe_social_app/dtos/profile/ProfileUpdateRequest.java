@@ -1,4 +1,4 @@
-package com.yalice.wardrobe_social_app.dtos;
+package com.yalice.wardrobe_social_app.dtos.profile;
 
 import com.yalice.wardrobe_social_app.entities.Profile.ProfileVisibility;
 import lombok.AllArgsConstructor;

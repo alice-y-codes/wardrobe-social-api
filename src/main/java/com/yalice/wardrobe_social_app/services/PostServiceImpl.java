@@ -10,6 +10,7 @@ import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import com.yalice.wardrobe_social_app.exceptions.PostAccessException;
 import com.yalice.wardrobe_social_app.exceptions.PostNotFoundException;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
+import com.yalice.wardrobe_social_app.services.helpers.BaseService;
 import com.yalice.wardrobe_social_app.services.helpers.PostServiceHelper;
 import com.yalice.wardrobe_social_app.interfaces.OutfitService;
 import com.yalice.wardrobe_social_app.interfaces.PostService;
@@ -26,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
  * This service handles the business logic for creating, retrieving, updating, deleting, liking, and unliking posts.
  */
 @Service
-public class PostServiceImpl implements PostService {
+public class PostServiceImpl extends BaseService implements PostService {
 
     private final PostRepository postRepository;
     private final LikeRepository likeRepository;
@@ -34,15 +35,6 @@ public class PostServiceImpl implements PostService {
     private final OutfitService outfitService;
     private final PostServiceHelper postServiceHelper;
 
-    /**
-     * Constructor to inject dependencies for post, like, user, and outfit services.
-     *
-     * @param postRepository the {@link PostRepository} for interacting with post data.
-     * @param likeRepository the {@link LikeRepository} for interacting with like data.
-     * @param userSearchService the {@link UserSearchService} for interacting with user data.
-     * @param outfitService the {@link OutfitService} for interacting with outfit data.
-     * @param postServiceHelper the helper class for additional post-related logic.
-     */
     @Autowired
     public PostServiceImpl(PostRepository postRepository,
                            LikeRepository likeRepository,
@@ -63,17 +55,20 @@ public class PostServiceImpl implements PostService {
      * @param postDto the {@link PostDto} containing the details of the post to create.
      * @param userId the ID of the user creating the post.
      * @return the created post wrapped in a {@link PostResponseDto}.
-     * @throws IllegalArgumentException if the user or outfit cannot be found.
      * @throws ResourceNotFoundException if the user or outfit does not exist.
      */
     @Override
     @Transactional
     public PostResponseDto createPost(Long userId, PostDto postDto) {
-        User user = userSearchService.getUserById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+        User user = userSearchService.getUserEntityById(userId);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found with ID: " + userId);
+        }
 
-        Outfit outfit = outfitService.getOutfit(postDto.getOutfitId())
-                .orElseThrow(() -> new ResourceNotFoundException("Outfit not found with ID: " + postDto.getOutfitId()));
+        Outfit outfit = outfitService.getOutfitEntityById(postDto.getOutfitId());
+        if (outfit == null) {
+            throw new ResourceNotFoundException("Outfit not found with ID: " + postDto.getOutfitId());
+        }
 
         Post post = Post.builder()
                 .user(user)
@@ -86,15 +81,7 @@ public class PostServiceImpl implements PostService {
 
         post = postRepository.save(post);
 
-        return new PostResponseDto(
-                post.getId(),
-                post.getTitle(),
-                post.getFeatureImage(),
-                post.getContent(),
-                post.getOutfit().getId(),
-                post.getVisibility().name(),
-                user.getUsername()
-        );
+        return convertToPostResponseDto(post, user);  // Use the reusable convert method
     }
 
     /**
@@ -119,15 +106,7 @@ public class PostServiceImpl implements PostService {
 
         User user = post.getUser();
 
-        return new PostResponseDto(
-                post.getId(),
-                post.getTitle(),
-                post.getFeatureImage(),
-                post.getContent(),
-                post.getOutfit().getId(),
-                post.getVisibility().name(),
-                user.getUsername()
-        );
+        return convertToPostResponseDto(post, user);  // Use the reusable convert method
     }
 
     /**
@@ -155,22 +134,16 @@ public class PostServiceImpl implements PostService {
         existingPost.setVisibility(PostVisibility.valueOf(postDto.getVisibility()));
 
         if (!existingPost.getOutfit().getId().equals(postDto.getOutfitId())) {
-            Outfit newOutfit = outfitService.getOutfit(postDto.getOutfitId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Outfit not found with ID: " + postDto.getOutfitId()));
+            Outfit newOutfit = outfitService.getOutfitEntityById(postDto.getOutfitId());
+            if (newOutfit == null) {
+                throw new ResourceNotFoundException("Outfit not found with ID: " + postDto.getOutfitId());
+            }
             existingPost.setOutfit(newOutfit);
         }
 
         Post updatedPost = postRepository.saveAndFlush(existingPost);
 
-        return new PostResponseDto(
-                updatedPost.getId(),
-                updatedPost.getTitle(),
-                updatedPost.getFeatureImage(),
-                updatedPost.getContent(),
-                updatedPost.getOutfit().getId(),
-                updatedPost.getVisibility().name(),
-                existingPost.getUser().getUsername()
-        );
+        return convertToPostResponseDto(updatedPost, existingPost.getUser());  // Use the reusable convert method
     }
 
     /**
@@ -195,67 +168,55 @@ public class PostServiceImpl implements PostService {
     }
 
     /**
-     * Likes a post, incrementing the like count and creating a Like entity.
+     * Toggles the like status of a post by the user, either liking or unliking the post.
+     * If the user likes the post, the like count is incremented and a new Like entity is created.
+     * If the user unlikes the post, the like count is decremented and the Like entity is removed.
      *
-     * @param postId the ID of the post to like.
-     * @param userId the ID of the user liking the post.
-     * @return true if the like was successful, false if the user had already liked the post.
+     * @param postId the ID of the post to toggle the like status on.
+     * @param userId the ID of the user performing the like/unlike action.
+     * @param isLike a boolean indicating whether the user wants to like (true) or unlike (false) the post.
+     * @return true if the like/unlike action was successful, false if the action had no effect (e.g., the user tries to like or unlike again).
      * @throws ResourceNotFoundException if the post or user cannot be found.
      */
     @Override
     @Transactional
-    public boolean likePost(Long postId, Long userId) {
+    public boolean toggleLikePost(Long postId, Long userId, boolean isLike) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found with ID: " + postId));
 
-        User user = userSearchService.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
-
-        if (postServiceHelper.hasUserLikedPost(postId, userId)) {
-            return false;
+        User user = userSearchService.getUserEntityById(userId);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found with ID: " + userId);
         }
 
-        Like like = Like.builder()
-                .post(post)
-                .user(user)
-                .build();
+        boolean hasUserLiked = postServiceHelper.hasUserLikedPost(postId, userId);
 
-        likeRepository.save(like);
+        // If liking the post and user hasn't liked it yet
+        if (isLike && !hasUserLiked) {
+            Like like = Like.builder()
+                    .post(post)
+                    .user(user)
+                    .build();
 
-        post.setLikeCount(post.getLikeCount() + 1);
-        postRepository.save(post);
+            likeRepository.save(like);
+            post.setLikeCount(post.getLikeCount() + 1);
+            postRepository.save(post);
 
-        return true;
-    }
+            return true;
+        }
+        // If unliking the post and the user has liked it
+        else if (!isLike && hasUserLiked) {
+            Like like = likeRepository.findByPostAndUser(post, user)
+                    .orElseThrow(() -> new ResourceNotFoundException("Like not found"));
 
-    /**
-     * Unlikes a post, decrementing the like count and removing the Like entity.
-     *
-     * @param postId the ID of the post to unlike.
-     * @param userId the ID of the user unliking the post.
-     * @return true if the unlike was successful, false if the user had not liked the post before.
-     * @throws ResourceNotFoundException if the post or user cannot be found.
-     */
-    @Override
-    @Transactional
-    public boolean unlikePost(Long postId, Long userId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new ResourceNotFoundException("Post not found with ID: " + postId));
+            likeRepository.delete(like);
+            post.setLikeCount(post.getLikeCount() - 1);
+            postRepository.save(post);
 
-        User user = userSearchService.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
-
-        if (!postServiceHelper.hasUserLikedPost(postId, userId)) {
-            return false;
+            return true;
         }
 
-        Like like = likeRepository.findByPostAndUser(post, user)
-                .orElseThrow(() -> new ResourceNotFoundException("Like not found"));
-
-        likeRepository.delete(like);
-        post.setLikeCount(post.getLikeCount() - 1);
-        postRepository.save(post);
-
-        return true;
+        // Return false if no change happened (i.e., user tries to like again or unlike again)
+        return false;
     }
 }

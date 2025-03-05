@@ -9,6 +9,7 @@ import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
 import com.yalice.wardrobe_social_app.repositories.CommentRepository;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
+import com.yalice.wardrobe_social_app.services.helpers.BaseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,7 +19,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class FeedServiceImpl implements FeedService {
+public class FeedServiceImpl extends BaseService implements FeedService {
 
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;

@@ -4,13 +4,12 @@ import lombok.*;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
+@AllArgsConstructor
 public class ItemDto {
     private String name;
     private String brand;
-    private String category; // (e.g., "Shoes", "Jacket", "Dress")
+    private String category;
     private String size;
     private String color;
     private String imageUrl;

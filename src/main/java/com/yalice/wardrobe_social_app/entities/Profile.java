@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "profiles")
@@ -35,6 +37,21 @@ public class Profile {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    // Link Profile to Wardrobe
+    @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<Wardrobe> wardrobes = new HashSet<>();
+
+    // Link Profile to Outfits
+    @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<Outfit> outfits = new HashSet<>();
+
+    // Link Profile to Posts
+    @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<Post> posts = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {

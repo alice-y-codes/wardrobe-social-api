@@ -9,8 +9,7 @@ import java.util.List;
 /**
  * Entity class representing a user in the wardrobe social application.
  * This class contains user information, authentication details, and
- * relationships
- * with other entities such as items, outfits, and social connections.
+ * relationships with other entities such as items, outfits, and social connections.
  */
 @Entity
 @Table(name = "users")
@@ -46,20 +45,9 @@ public class User {
     @Column
     private String profilePicture;
 
-    /** List of items owned by the user. */
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    @Builder.Default
-    private List<Item> items = new ArrayList<>();
-
-    /** List of outfits created by the user. */
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<Outfit> outfits = new ArrayList<>();
-
     /** User's profile information. */
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private Profile profile;
+    private Profile profile; // Profile now manages the wardrobe, outfits, and items
 
     /** List of friend requests sent by the user. */
     @OneToMany(mappedBy = "requester", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -99,15 +87,4 @@ public class User {
         /** Local authentication. */
         LOCAL
     }
-
-    // TODO: Implement additional user profile fields
-    // private String bio;
-    // private List<String> socialMediaLinks;
-    // private String bodyType; // e.g., "petite", "athletic", "plus-size"
-    // private double height; // Height in centimeters or inches
-    // private double weight; // Weight in kilograms or pounds
-    // private String shoeSize; // Shoe size, could be a String for various sizing
-    // systems
-    // private String clothingSize; // Clothing size, e.g., "S", "M", "L", or
-    // specific measurements
 }

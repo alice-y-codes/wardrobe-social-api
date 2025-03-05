@@ -1,6 +1,6 @@
 package com.yalice.wardrobe_social_app.controllers;
 
-import com.yalice.wardrobe_social_app.dtos.FriendRequestDto;
+import com.yalice.wardrobe_social_app.dtos.friendship.FriendRequestDto;
 import com.yalice.wardrobe_social_app.entities.Friendship;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;

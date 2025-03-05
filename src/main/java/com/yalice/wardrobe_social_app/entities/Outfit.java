@@ -1,13 +1,7 @@
 package com.yalice.wardrobe_social_app.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
+import lombok.*;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -22,6 +16,10 @@ public class Outfit {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id", nullable = false) // Link to Profile
+    private Profile profile; // Associated Profile
 
     @Column(nullable = false)
     private String name;
@@ -40,40 +38,18 @@ public class Outfit {
     @Builder.Default
     private boolean isPublic = false;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    @JsonIgnore
-    private User user;
-
     @ManyToMany
     @JoinTable(name = "outfit_items", joinColumns = @JoinColumn(name = "outfit_id"), inverseJoinColumns = @JoinColumn(name = "item_id"))
     @Builder.Default
     private Set<Item> items = new HashSet<>();
 
-    // Helper methods for managing items
-    public void addItem(Item item) {
-        this.items.add(item);
-    }
-
-    public void removeItem(Item item) {
-        this.items.remove(item);
-    }
-
-    // Helper methods for timestamps
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        // Implement timestamp handling if needed
     }
 
     @PreUpdate
     protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        // Implement timestamp handling if needed
     }
 }

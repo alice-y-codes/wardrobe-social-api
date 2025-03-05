@@ -20,6 +20,10 @@ public class Item {
     @JoinColumn(name = "user_id", nullable = false)  // Renaming the foreign key column
     private User user; // Associated User
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "wardrobe_id", nullable = false)  // Link to Wardrobe
+    private Wardrobe wardrobe; // Associated Wardrobe
+
     @Column(nullable = false)
     private String name;
 
@@ -37,4 +41,14 @@ public class Item {
 
     @Column(nullable = false)
     private String imageUrl;
+
+    @PrePersist
+    protected void onCreate() {
+        // Implement timestamp handling if needed
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        // Implement timestamp handling if needed
+    }
 }

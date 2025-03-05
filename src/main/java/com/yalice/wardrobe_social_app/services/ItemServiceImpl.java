@@ -4,13 +4,14 @@ import com.yalice.wardrobe_social_app.dtos.item.ItemDto;
 import com.yalice.wardrobe_social_app.dtos.item.ItemResponseDto;
 import com.yalice.wardrobe_social_app.entities.Item;
 import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.entities.Wardrobe;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.ItemService;
 import com.yalice.wardrobe_social_app.repositories.ItemRepository;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
+import com.yalice.wardrobe_social_app.repositories.WardrobeRepository;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,43 +25,53 @@ import java.util.stream.Collectors;
 @Service
 public class ItemServiceImpl extends BaseService implements ItemService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ItemServiceImpl.class);
-
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
+    private final WardrobeRepository wardrobeRepository;
 
-    public ItemServiceImpl(ItemRepository itemRepository, UserRepository userRepository) {
+    public ItemServiceImpl(ItemRepository itemRepository, UserRepository userRepository, WardrobeRepository wardrobeRepository) {
         this.itemRepository = itemRepository;
         this.userRepository = userRepository;
+        this.wardrobeRepository = wardrobeRepository;
     }
 
     /**
-     * Creates a new item for a given user.
+     * Creates a new item for a given user and links it to the specified wardrobe.
      *
      * @param userId The ID of the user creating the item.
+     * @param wardrobeId The ID of the wardrobe where the item will be added.
      * @param itemDto The item data to be created.
      * @return ItemResponseDto The response DTO containing the created item details.
      */
     @Override
     @Transactional
-    public ItemResponseDto createItem(Long userId, ItemDto itemDto) {
-        logger.info("Attempting to create item for user ID: {}", userId);
+    public ItemResponseDto createItem(Long userId, Long wardrobeId, ItemDto itemDto) {
+        logger.info("Attempting to create item for user ID: {} in wardrobe ID: {}", userId, wardrobeId);
 
-        if (itemDto == null || userId == null) {
-            throw new IllegalArgumentException("User ID and Item cannot be null");
+        if (itemDto == null || userId == null || wardrobeId == null) {
+            throw new IllegalArgumentException("User ID, Wardrobe ID, and Item cannot be null");
         }
 
-        if (itemRepository.findByName(itemDto.getName()).isPresent()) {
-            logger.warn("Item with name '{}' already exists.", itemDto.getName());
-            throw new IllegalStateException("Item with this name already exists");
-        }
-
+        // Find the user and wardrobe
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> {
                     logger.warn("User not found with ID: {}", userId);
-                    return new ResourceNotFoundException("User not found");
+                    return new ResourceNotFoundException("User not found with ID: " + userId);
                 });
 
+        Wardrobe wardrobe = wardrobeRepository.findById(wardrobeId)
+                .orElseThrow(() -> {
+                    logger.warn("Wardrobe not found with ID: {}", wardrobeId);
+                    return new ResourceNotFoundException("Wardrobe not found with ID: " + wardrobeId);
+                });
+
+        // Check if item with the same name exists within the same wardrobe
+        if (itemRepository.findByNameAndWardrobeId(itemDto.getName(), wardrobeId).isPresent()) {
+            logger.warn("Item with name '{}' already exists in the wardrobe.", itemDto.getName());
+            throw new IllegalStateException("Item with this name already exists in the wardrobe");
+        }
+
+        // Create and save the new item
         Item item = new Item();
         item.setName(itemDto.getName());
         item.setBrand(itemDto.getBrand());
@@ -68,15 +79,37 @@ public class ItemServiceImpl extends BaseService implements ItemService {
         item.setSize(itemDto.getSize());
         item.setColor(itemDto.getColor());
         item.setImageUrl(itemDto.getImageUrl());
+        item.setWardrobe(wardrobe);
         item.setUser(user);
 
-        user.getItems().add(item);
-        userRepository.save(user); // Save the user to persist the relationship
-        item = itemRepository.save(item); // Save the item
+        // Save the item
+        item = itemRepository.save(item);
 
-        logger.info("Item '{}' created successfully for user '{}'.", item.getName(), user.getUsername());
+        // Optionally, add the item to the wardrobe (if needed for other functionality)
+        wardrobe.getItems().add(item);
+        wardrobeRepository.save(wardrobe);
 
-        return convertToItemResponseDto(item, user); // Return the DTO with userId
+        logger.info("Item '{}' created successfully for user '{}' in wardrobe '{}'.", item.getName(), user.getUsername(), wardrobe.getName());
+
+        return convertToItemResponseDto(item, wardrobe, user);
+    }
+
+
+    /**
+     * Retrieves an item entity by its ID.
+     *
+     * @param id The ID of the item to retrieve.
+     * @return Item entity The response entity containing the item details.
+     */
+    @Override
+    public Item getItemEntity(Long id) {
+        logger.info("Fetching item with ID: {}", id);
+
+        return itemRepository.findById(id)
+                .orElseThrow(() -> {
+                logger.warn("Item not found with ID: {}", id);
+                return new EntityNotFoundException("Item not found with ID: " + id);
+                });
     }
 
     /**
@@ -98,7 +131,7 @@ public class ItemServiceImpl extends BaseService implements ItemService {
         User user = item.getUser(); // Get the User object from Item
         logger.info("Item '{}' found for user '{}'.", item.getName(), user.getUsername());
 
-        return convertToItemResponseDto(item, user); // Return DTO with userId
+        return convertToItemResponseDto(item, user);
     }
 
     /**
@@ -213,5 +246,4 @@ public class ItemServiceImpl extends BaseService implements ItemService {
 
         return true;
     }
-
 }

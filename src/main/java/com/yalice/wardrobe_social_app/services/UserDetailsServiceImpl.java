@@ -2,8 +2,7 @@ package com.yalice.wardrobe_social_app.services;
 
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.yalice.wardrobe_social_app.services.helpers.BaseService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -16,9 +15,7 @@ import java.util.Collections;
  * This service is responsible for loading user details during authentication.
  */
 @Service
-public class UserDetailsServiceImpl implements UserDetailsService {
-
-    private static final Logger logger = LoggerFactory.getLogger(UserDetailsServiceImpl.class);
+public class UserDetailsServiceImpl extends BaseService implements UserDetailsService  {
 
     /** Repository to fetch user authentication details. */
     private final UserRepository userRepository;

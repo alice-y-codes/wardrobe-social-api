@@ -1,6 +1,5 @@
 package com.yalice.wardrobe_social_app.entities;
 
-import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,42 +15,36 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class Post {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id", nullable = false)
+    private Profile profile; // Posts belong to a Profile
 
-    @Column(length = 100)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "outfit_id", nullable = false) // Now REQUIRED
+    private Outfit outfit; // Every post MUST be about an outfit
+
+    @Column(nullable = false, length = 100)
     private String title;
 
-    @Column
-    private String featureImage;
-
-    @Column(length = 1000)
+    @Column(nullable = false, length = 1000)
     private String content;
 
-    @ManyToOne
-    @JoinColumn(name = "outfit_id")
-    private Outfit outfit;
+    @Column
+    private String featureImage; // Optional main image for the post
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private PostVisibility visibility = PostVisibility.FRIENDS_ONLY;
-
-    @Column(name = "like_count")
-    @Builder.Default
-    private int likeCount = 0;
-
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
     private List<Comment> comments = new ArrayList<>();
 
-    @Column(name = "created_at")
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @Builder.Default
+    private List<Like> likes = new ArrayList<>();
+
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
