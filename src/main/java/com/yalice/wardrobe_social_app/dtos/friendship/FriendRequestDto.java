@@ -1,4 +1,4 @@
-package com.yalice.wardrobe_social_app.dtos;
+package com.yalice.wardrobe_social_app.dtos.friendship;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

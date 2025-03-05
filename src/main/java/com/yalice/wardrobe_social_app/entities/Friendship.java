@@ -5,6 +5,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Represents a friendship connection between two users.
+ */
 @Entity
 @Table(name = "friendships")
 @Getter
@@ -18,23 +21,32 @@ public class Friendship {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    /** The user who sent the friend request. */
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "requester_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private User requester;
 
-    @ManyToOne
+    /** The user who received the friend request. */
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "recipient_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private User recipient;
 
+    /** Status of the friendship (Pending, Accepted, Rejected). */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
     private FriendshipStatus status = FriendshipStatus.PENDING;
 
-    @Column(name = "created_at")
+    /** Timestamp when the friendship request was created. */
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    /** Timestamp when the friendship status was last updated. */
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     @PrePersist
@@ -48,6 +60,9 @@ public class Friendship {
         updatedAt = LocalDateTime.now();
     }
 
+    /**
+     * Enum representing the status of a friendship.
+     */
     public enum FriendshipStatus {
         PENDING,
         ACCEPTED,

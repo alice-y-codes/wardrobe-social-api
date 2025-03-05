@@ -17,24 +17,42 @@ public class Item {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)  // Renaming the foreign key column
-    private User user; // Associated User
+    @JoinColumn(name = "profile_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Profile profile; // Associated Profile
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "wardrobe_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Wardrobe wardrobe; // Associated Wardrobe
 
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = true)
+    @Column(nullable = true) // Optional brand
     private String brand;
 
     @Column(nullable = false)
-    private String category; // (e.g., "Shoes", "Jacket", "Dress")
+    private String category; // Required (e.g., "Shoes", "Jacket", "Dress")
 
-    @Column(nullable = true)
+    @Column(nullable = true) // Optional size
     private String size;
 
-    @Column(nullable = true)
+    @Column(nullable = true) // Optional color
     private String color;
 
-    @Column(nullable = false)
+    @Column(nullable = true) // Optional image URL (can be empty if user hasn't uploaded one yet)
     private String imageUrl;
+
+    @PrePersist
+    protected void onCreate() {
+        // Timestamp logic can be added here
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        // Timestamp logic can be added here
+    }
 }

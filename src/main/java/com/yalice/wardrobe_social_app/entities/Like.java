@@ -5,9 +5,12 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Represents a like on a post by a profile (user).
+ */
 @Entity
 @Table(name = "likes", uniqueConstraints = {
-        @UniqueConstraint(columnNames = { "post_id", "user_id" })
+        @UniqueConstraint(columnNames = { "post_id", "profile_id" })  // Prevents duplicate likes
 })
 @Getter
 @Setter
@@ -20,15 +23,22 @@ public class Like {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    /** The post that is liked. */
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Post post;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    /** The profile (user) who liked the post. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id", nullable = false)  // Changed from user_id to profile_id
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Profile profile;  // Changed from user to profile
 
-    @Column(name = "created_at")
+    /** Timestamp when the like was created. */
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist

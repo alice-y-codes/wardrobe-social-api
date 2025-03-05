@@ -6,8 +6,6 @@ import com.yalice.wardrobe_social_app.exceptions.UserNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -21,8 +19,6 @@ import java.util.stream.Collectors;
  */
 @Service
 public class UserSearchServiceImpl extends BaseService implements UserSearchService {
-
-    private static final Logger logger = LoggerFactory.getLogger(UserSearchServiceImpl.class);
 
     private final UserRepository userRepository;
 
@@ -53,7 +49,7 @@ public class UserSearchServiceImpl extends BaseService implements UserSearchServ
                 });
 
         logger.info("User '{}' found.", user.getUsername());
-        return convertToUserResponseDto(user); // Using method from BaseService
+        return convertToUserResponseDto(user);
     }
 
     /**
@@ -74,7 +70,28 @@ public class UserSearchServiceImpl extends BaseService implements UserSearchServ
                 });
 
         logger.info("User with ID '{}' found.", user.getId());
-        return convertToUserResponseDto(user); // Using method from BaseService
+        return convertToUserResponseDto(user);
+    }
+
+    /**
+     * Retrieves a user entity by their unique user ID.
+     *
+     * @param userId The ID of the user to search for.
+     * @return A User containing user details.
+     * @throws UserNotFoundException if no user is found with the provided ID.
+     */
+    @Override
+    public User getUserEntityById(Long userId) {
+        logger.info("Attempting to find user by ID: {}", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    logger.warn("User not found with ID: {}", userId);
+                    return new UserNotFoundException("User not found with ID: " + userId);
+                });
+
+        logger.info("User with ID '{}' found.", user.getId());
+        return user;
     }
 
     /**
@@ -92,7 +109,7 @@ public class UserSearchServiceImpl extends BaseService implements UserSearchServ
         logger.info("Found {} users matching the partial username '{}'.", users.size(), partialUsername);
 
         return users.stream()
-                .map(this::convertToUserResponseDto) // Using method from BaseService
+                .map(this::convertToUserResponseDto)
                 .collect(Collectors.toList());
     }
 
@@ -111,7 +128,7 @@ public class UserSearchServiceImpl extends BaseService implements UserSearchServ
         logger.info("Fetched {} users for the requested page.", userPage.getNumberOfElements());
 
         return userPage.stream()
-                .map(this::convertToUserResponseDto) // Using method from BaseService
+                .map(this::convertToUserResponseDto)
                 .collect(Collectors.toList());
     }
 }

@@ -1,6 +1,7 @@
 package com.yalice.wardrobe_social_app.interfaces;
 
 import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
+import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.UserNotFoundException;
 
 import java.util.List;
@@ -28,6 +29,15 @@ public interface UserSearchService {
      * @throws UserNotFoundException if the user is not found.
      */
     UserResponseDto getUserById(Long userId);
+
+    /**
+     * Finds a user entity by their ID.
+     *
+     * @param userId The ID of the user to find.
+     * @return The user entity
+     * @throws UserNotFoundException if the user is not found.
+     */
+    User getUserEntityById(Long userId);
 
     /**
      * Searches for users whose username contains the given partial string.

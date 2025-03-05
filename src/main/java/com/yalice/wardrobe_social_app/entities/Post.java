@@ -4,10 +4,6 @@ import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
 @Entity
 @Table(name = "posts")
 @Getter
@@ -21,50 +17,31 @@ public class Post {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Profile profile;
 
-    @Column(length = 100)
+    @Column(nullable = false)
     private String title;
 
-    @Column
-    private String featureImage;
-
-    @Column(length = 1000)
+    @Column(length = 2000)
     private String content;
 
-    @ManyToOne
-    @JoinColumn(name = "outfit_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "outfit_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Outfit outfit;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    private PostVisibility visibility;
+
+    private String featureImage;
+
+    @Column(nullable = false)
     @Builder.Default
-    private PostVisibility visibility = PostVisibility.FRIENDS_ONLY;
-
-    @Column(name = "like_count")
-    @Builder.Default
-    private int likeCount = 0;
-
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Comment> comments = new ArrayList<>();
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    private Integer likeCount = 0;
 }

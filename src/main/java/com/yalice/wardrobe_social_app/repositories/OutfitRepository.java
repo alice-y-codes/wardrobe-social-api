@@ -12,17 +12,17 @@ public interface OutfitRepository extends JpaRepository<Outfit, Long> {
     /**
      * Find all outfits for a user
      * 
-     * @param userId the ID of the user
+     * @param profileId the ID of the user
      * @return a list of outfits
      */
-    List<Outfit> findByUserId(Long userId);
+    List<Outfit> findByProfileId(Long profileId);
 
     /**
      * Find outfits by user ID and occasion
      * 
-     * @param userId   the ID of the user
-     * @param occasion the occasion to filter by
+     * @param profileId   the ID of the user
+     * @param season the occasion to filter by
      * @return a list of outfits
      */
-    List<Outfit> findByUserIdAndOccasion(Long userId, String occasion);
+    List<Outfit> findByProfileIdAndSeason(Long profileId, String season);
 }

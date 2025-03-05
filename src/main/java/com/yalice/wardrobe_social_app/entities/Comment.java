@@ -5,6 +5,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Represents a comment on a post in the wardrobe social app.
+ */
 @Entity
 @Table(name = "comments")
 @Getter
@@ -18,21 +21,30 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    /** The post this comment is associated with. */
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Post post;
 
-    @ManyToOne
+    /** The user who made the comment. */
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private User user;
 
+    /** The content of the comment. */
     @Column(nullable = false, length = 500)
     private String content;
 
-    @Column(name = "created_at")
+    /** Timestamp when the comment was created. */
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    /** Timestamp when the comment was last updated. */
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     @PrePersist

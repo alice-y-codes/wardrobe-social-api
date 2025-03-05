@@ -2,6 +2,7 @@ package com.yalice.wardrobe_social_app.interfaces;
 
 import com.yalice.wardrobe_social_app.dtos.outfit.OutfitDto;
 import com.yalice.wardrobe_social_app.dtos.outfit.OutfitResponseDto;
+import com.yalice.wardrobe_social_app.entities.Outfit;
 
 import java.util.List;
 
@@ -31,6 +32,14 @@ public interface OutfitService {
      * @return the outfit response DTO
      */
     OutfitResponseDto getOutfit(Long outfitId);
+
+    /**
+     * Get an outfit entity by ID.
+     *
+     * @param outfitId the ID of the outfit to retrieve
+     * @return the outfit entity
+     */
+    Outfit getOutfitEntityById(Long outfitId);
 
     /**
      * Update an outfit.

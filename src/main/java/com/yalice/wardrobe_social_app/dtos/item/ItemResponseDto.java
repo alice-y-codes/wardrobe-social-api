@@ -1,22 +1,25 @@
 package com.yalice.wardrobe_social_app.dtos.item;
 
 import com.yalice.wardrobe_social_app.entities.Item;
+import com.yalice.wardrobe_social_app.entities.Profile;
+import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.entities.Wardrobe;
 import lombok.*;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
+@AllArgsConstructor
 public class ItemResponseDto {
     private Long id;
     private String name;
     private String brand;
-    private String category; // (e.g., "Shoes", "Jacket", "Dress")
+    private String category;
     private String size;
     private String color;
     private String imageUrl;
-    private Long userId;
+    private Long profileId;
+    private Long wardrobeId;
 
     public ItemResponseDto(Item item) {
         this.id = item.getId();
@@ -26,8 +29,7 @@ public class ItemResponseDto {
         this.size = item.getSize();
         this.color = item.getColor();
         this.imageUrl = item.getImageUrl();
-        this.userId = item.getUser().getId(); // Assuming the Item has a 'user' field
+        this.profileId = item.getProfile().getId();
+        this.wardrobeId = item.getWardrobe().getId();
     }
-
-
 }
