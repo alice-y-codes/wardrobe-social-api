@@ -3,7 +3,7 @@ package com.yalice.wardrobe_social_app.controllers;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FeedService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.utilities.CurrentUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -30,12 +30,12 @@ public class FeedController {
      * Constructor for FeedController.
      *
      * @param feedService Service for feed-related operations
-     * @param userService Service for user-related operations
+     * @param userSearchService Service for user-related operations
      */
     @Autowired
-    public FeedController(FeedService feedService, UserService userService) {
+    public FeedController(FeedService feedService, UserSearchService userSearchService) {
         this.feedService = feedService;
-        this.currentUser = new CurrentUser(userService);
+        this.currentUser = new CurrentUser(userSearchService);
     }
 
     /**

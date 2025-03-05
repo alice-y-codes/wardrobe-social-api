@@ -5,7 +5,7 @@ import com.yalice.wardrobe_social_app.entities.Profile.ProfileVisibility;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
 import com.yalice.wardrobe_social_app.interfaces.ProfileService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,14 +16,14 @@ import java.util.Optional;
 public class ProfileServiceImpl implements ProfileService {
 
     private final ProfileRepository profileRepository;
-    private final UserService userService;
+    private final UserSearchService userSearchService;
     private final FriendshipService friendshipService;
 
     @Autowired
-    public ProfileServiceImpl(ProfileRepository profileRepository, UserService userService,
+    public ProfileServiceImpl(ProfileRepository profileRepository, UserSearchService userSearchService,
             FriendshipService friendshipService) {
         this.profileRepository = profileRepository;
-        this.userService = userService;
+        this.userSearchService = userSearchService;
         this.friendshipService = friendshipService;
     }
 
@@ -34,7 +34,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public Profile createProfile(Long userId, String bio, ProfileVisibility visibility) {
-        Optional<User> userOptional = userService.findById(userId);
+        Optional<User> userOptional = userSearchService.findById(userId);
         if (userOptional.isEmpty()) {
             throw new IllegalArgumentException("User not found with ID: " + userId);
         }

@@ -2,7 +2,7 @@ package com.yalice.wardrobe_social_app.utilities;
 
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.UnauthorizedAccessException;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -10,10 +10,10 @@ import java.util.Optional;
 
 public class CurrentUser {
 
-    private final UserService userService;
+    private final UserSearchService userSearchService;
 
-    public CurrentUser(UserService userService) {
-        this.userService = userService;
+    public CurrentUser(UserSearchService userSearchService) {
+        this.userSearchService = userSearchService;
     }
 
     /**
@@ -26,7 +26,7 @@ public class CurrentUser {
         }
 
         String username = authentication.getName();
-        return userService.findUserByUsername(username);
+        return userSearchService.findUserByUsername(username);
     }
 
     /**

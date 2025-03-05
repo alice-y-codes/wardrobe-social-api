@@ -3,7 +3,7 @@ package com.yalice.wardrobe_social_app.controllers;
 import com.yalice.wardrobe_social_app.entities.Outfit;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.OutfitService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,12 +18,12 @@ import java.util.Optional;
 public class OutfitController {
 
     private final OutfitService outfitService;
-    private final UserService userService;
+    private final UserSearchService userSearchService;
 
     @Autowired
-    public OutfitController(OutfitService outfitService, UserService userService) {
+    public OutfitController(OutfitService outfitService, UserSearchService userSearchService) {
         this.outfitService = outfitService;
-        this.userService = userService;
+        this.userSearchService = userSearchService;
     }
 
     /**
@@ -197,6 +197,6 @@ public class OutfitController {
         }
 
         String username = authentication.getName();
-        return userService.findUserByUsername(username);
+        return userSearchService.findUserByUsername(username);
     }
 }

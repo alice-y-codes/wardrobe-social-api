@@ -6,8 +6,7 @@ import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import com.yalice.wardrobe_social_app.exceptions.PostAccessException;
 import com.yalice.wardrobe_social_app.exceptions.PostNotFoundException;
-import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.PostServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +28,7 @@ public class DeletePostServiceTest {
     private PostRepository postRepository;
 
     @Mock
-    private UserService userService;
+    private UserSearchService userSearchService;
 
     @InjectMocks
     private PostServiceImpl postService;
@@ -68,7 +67,7 @@ public class DeletePostServiceTest {
     @Test
     void deletePost_whenPostExistsAndUserIsOwner_shouldDeletePost() {
         // Arrange
-        when(userService.findById(anyLong())).thenReturn(Optional.of(user));
+        when(userSearchService.findById(anyLong())).thenReturn(Optional.of(user));
         when(postRepository.findById(anyLong())).thenReturn(Optional.of(post));
 
         // Act

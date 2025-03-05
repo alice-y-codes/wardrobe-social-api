@@ -5,7 +5,7 @@ import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.CommentService;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.CommentRepository;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
@@ -23,24 +23,24 @@ public class CommentServiceImpl implements CommentService {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final LikeRepository likeRepository;
-    private final UserService userService;
+    private final UserSearchService userSearchService;
     private final FriendshipService friendshipService;
 
     @Autowired
     public CommentServiceImpl(PostRepository postRepository, CommentRepository commentRepository,
-                           LikeRepository likeRepository, UserService userService,
+                           LikeRepository likeRepository, UserSearchService userSearchService,
                            FriendshipService friendshipService) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.likeRepository = likeRepository;
-        this.userService = userService;
+        this.userSearchService = userSearchService;
         this.friendshipService = friendshipService;
     }
 
     @Override
     public Comment addComment(Long postId, Long userId, String content) {
         Optional<Post> postOptional = postRepository.findById(postId);
-        Optional<User> userOptional = userService.findById(userId);
+        Optional<User> userOptional = userSearchService.findById(userId);
 
         if (postOptional.isEmpty() || userOptional.isEmpty()) {
             throw new IllegalArgumentException("Post or user not found");

@@ -3,7 +3,7 @@ package com.yalice.wardrobe_social_app.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -32,7 +32,7 @@ public class UserControllerTest {
         private final ObjectMapper objectMapper = new ObjectMapper();
 
         @Mock
-        private UserService userService;
+        private UserSearchService userSearchService;
 
         @InjectMocks
         private UserController userController;
@@ -65,7 +65,7 @@ public class UserControllerTest {
         @Test
         public void shouldRegisterUser() throws Exception {
                 // Arrange
-                when(userService.registerUser(any(User.class))).thenReturn(Optional.of(user));
+                when(userSearchService.registerUser(any(User.class))).thenReturn(Optional.of(user));
 
                 // Act & Assert
                 mockMvc.perform(post("/api/users/register")
@@ -77,7 +77,7 @@ public class UserControllerTest {
                                 .andExpect(jsonPath("$.email").value("alice@example.com"))
                                 .andExpect(jsonPath("$.provider").value("GOOGLE"));
 
-                verify(userService, Mockito.times(1)).registerUser(any(User.class));
+                verify(userSearchService, Mockito.times(1)).registerUser(any(User.class));
         }
 
         @Test
@@ -92,7 +92,7 @@ public class UserControllerTest {
                                 .content(objectMapper.writeValueAsString(incompleteUser)))
                                 .andExpect(status().isBadRequest());
 
-                verify(userService, Mockito.never()).registerUser(any(User.class));
+                verify(userSearchService, Mockito.never()).registerUser(any(User.class));
         }
 
         @Test
@@ -109,7 +109,7 @@ public class UserControllerTest {
                                 .content(objectMapper.writeValueAsString(userWithEmptyEmail)))
                                 .andExpect(status().isBadRequest());
 
-                verify(userService, Mockito.never()).registerUser(any(User.class));
+                verify(userSearchService, Mockito.never()).registerUser(any(User.class));
         }
 
         @Test
@@ -126,7 +126,7 @@ public class UserControllerTest {
                                 .content(objectMapper.writeValueAsString(userWithEmptyProvider)))
                                 .andExpect(status().isBadRequest());
 
-                verify(userService, Mockito.never()).registerUser(any(User.class));
+                verify(userSearchService, Mockito.never()).registerUser(any(User.class));
         }
 
         @Test
@@ -143,12 +143,12 @@ public class UserControllerTest {
                                 .content(objectMapper.writeValueAsString(userWithShortPassword)))
                                 .andExpect(status().isBadRequest());
 
-                verify(userService, Mockito.never()).registerUser(any(User.class));
+                verify(userSearchService, Mockito.never()).registerUser(any(User.class));
         }
 
         @Test
         public void shouldReturnConflictWhenUsernameIsTaken() throws Exception {
-                when(userService.registerUser(any(User.class))).thenReturn(Optional.empty());
+                when(userSearchService.registerUser(any(User.class))).thenReturn(Optional.empty());
 
                 mockMvc.perform(post("/api/users/register")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -156,13 +156,13 @@ public class UserControllerTest {
                                 .andExpect(status().isConflict())
                                 .andExpect(jsonPath("$.message").value("Username already taken"));
 
-                verify(userService, Mockito.times(1)).registerUser(any(User.class));
+                verify(userSearchService, Mockito.times(1)).registerUser(any(User.class));
         }
 
         @Test
         public void shouldFindUser() throws Exception {
                 // Arrange
-                when(userService.findUserByUsername(eq("alice"))).thenReturn(Optional.of(user));
+                when(userSearchService.findUserByUsername(eq("alice"))).thenReturn(Optional.of(user));
 
                 // Act & Assert
                 mockMvc.perform(get("/api/users/findByUsername")
@@ -177,7 +177,7 @@ public class UserControllerTest {
         @Test
         public void shouldReturnNotFoundWhenUserDoesNotExist() throws Exception {
                 // Arrange
-                when(userService.findUserByUsername(eq("nonexistent"))).thenReturn(Optional.empty());
+                when(userSearchService.findUserByUsername(eq("nonexistent"))).thenReturn(Optional.empty());
 
                 // Act & Assert
                 mockMvc.perform(get("/api/users/findByUsername")

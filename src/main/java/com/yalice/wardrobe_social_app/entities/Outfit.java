@@ -29,9 +29,6 @@ public class Outfit {
     @Column(length = 1000)
     private String description;
 
-    @Column(name = "occasion")
-    private String occasion;
-
     @Column(name = "season")
     private String season;
 

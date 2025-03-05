@@ -2,7 +2,7 @@ package com.yalice.wardrobe_social_app.services.commentServiceTests;
 
 import com.yalice.wardrobe_social_app.entities.*;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.CommentRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.CommentServiceImpl;
@@ -32,7 +32,7 @@ public class CommentServiceTest {
     private CommentRepository commentRepository;
 
     @Mock
-    private UserService userService;
+    private UserSearchService userSearchService;
 
     @InjectMocks
     private CommentServiceImpl commentService;
@@ -79,7 +79,7 @@ public class CommentServiceTest {
     void addComment_createsAndReturnsComment() {
         // Arrange
         when(postRepository.findById(anyLong())).thenReturn(Optional.of(post));
-        when(userService.findById(anyLong())).thenReturn(Optional.of(user));
+        when(userSearchService.findById(anyLong())).thenReturn(Optional.of(user));
         when(commentRepository.save(any(Comment.class))).thenReturn(comment);
 
         // Act

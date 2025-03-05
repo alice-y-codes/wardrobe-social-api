@@ -6,7 +6,7 @@ import com.yalice.wardrobe_social_app.dtos.post.PostResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.PostNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.PostService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.utilities.CurrentUser;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +44,7 @@ class PostControllerTest {
     private CurrentUser currentUser;
 
     @Mock
-    private UserService userService;
+    private UserSearchService userSearchService;
 
     @InjectMocks
     private PostController postController;
@@ -96,7 +96,7 @@ class PostControllerTest {
     @Test
     void createPost_shouldReturnCreatedPost() throws Exception {
         when(currentUser.getCurrentUserOrElseThrow()).thenReturn(mockUser);
-        when(userService.findUserByUsername("testUser")).thenReturn(Optional.of(mockUser));
+        when(userSearchService.findUserByUsername("testUser")).thenReturn(Optional.of(mockUser));
         when(postService.createPost(anyLong(), any(PostDto.class))).thenReturn(postResponseDto);
 
         setupAuthentication("testUser");
@@ -118,7 +118,7 @@ class PostControllerTest {
     @Test
     void getPost_shouldReturnPost() throws Exception {
         when(currentUser.getCurrentUserOrElseThrow()).thenReturn(mockUser);
-        when(userService.findUserByUsername("testUser")).thenReturn(Optional.of(mockUser));
+        when(userSearchService.findUserByUsername("testUser")).thenReturn(Optional.of(mockUser));
         when(postService.getPost(anyLong(), anyLong())).thenReturn(postResponseDto);
 
         setupAuthentication("testUser");
@@ -138,7 +138,7 @@ class PostControllerTest {
     @Test
     void updatePost_shouldReturnUpdatedPost() throws Exception {
         when(currentUser.getCurrentUserOrElseThrow()).thenReturn(mockUser);
-        when(userService.findUserByUsername("testUser")).thenReturn(Optional.of(mockUser));
+        when(userSearchService.findUserByUsername("testUser")).thenReturn(Optional.of(mockUser));
         when(postService.updatePost(anyLong(), anyLong(), any(PostDto.class))).thenReturn(postResponseDto);
 
         setupAuthentication("testUser");
@@ -160,7 +160,7 @@ class PostControllerTest {
     @Test
     void deletePost_shouldReturnSuccessMessage() throws Exception {
         when(currentUser.getCurrentUserOrElseThrow()).thenReturn(mockUser);
-        when(userService.findUserByUsername("testUser")).thenReturn(Optional.of(mockUser));
+        when(userSearchService.findUserByUsername("testUser")).thenReturn(Optional.of(mockUser));
         doNothing().when(postService).deletePost(anyLong(), anyLong());
 
         setupAuthentication("testUser");
@@ -180,7 +180,7 @@ class PostControllerTest {
     @Test
     void likePost_shouldReturnSuccessMessage() throws Exception {
         when(currentUser.getCurrentUserOrElseThrow()).thenReturn(mockUser);
-        when(userService.findUserByUsername("testUser")).thenReturn(Optional.of(mockUser));
+        when(userSearchService.findUserByUsername("testUser")).thenReturn(Optional.of(mockUser));
         when(postService.likePost(anyLong(), anyLong())).thenReturn(true);
 
         setupAuthentication("testUser");
@@ -200,7 +200,7 @@ class PostControllerTest {
     @Test
     void unlikePost_shouldReturnSuccessMessage() throws Exception {
         when(currentUser.getCurrentUserOrElseThrow()).thenReturn(mockUser);
-        when(userService.findUserByUsername("testUser")).thenReturn(Optional.of(mockUser));
+        when(userSearchService.findUserByUsername("testUser")).thenReturn(Optional.of(mockUser));
         when(postService.unlikePost(anyLong(), anyLong())).thenReturn(true);
 
         setupAuthentication("testUser");
@@ -220,7 +220,7 @@ class PostControllerTest {
     @Test
     void getPost_whenPostNotFound_shouldReturnNotFound() throws Exception {
         when(currentUser.getCurrentUserOrElseThrow()).thenReturn(mockUser);
-        when(userService.findUserByUsername("testUser")).thenReturn(Optional.of(mockUser));
+        when(userSearchService.findUserByUsername("testUser")).thenReturn(Optional.of(mockUser));
         when(postService.getPost(anyLong(), anyLong())).thenThrow(new PostNotFoundException("Post not found"));
 
         setupAuthentication("testUser");

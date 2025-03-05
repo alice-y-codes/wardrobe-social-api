@@ -7,7 +7,7 @@ import com.yalice.wardrobe_social_app.entities.Friendship.FriendshipStatus;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ class FriendshipControllerTest {
         private FriendshipService friendshipService;
 
         @Mock
-        private UserService userService;
+        private UserSearchService userSearchService;
 
         @InjectMocks
         private FriendshipController friendshipController;
@@ -100,7 +100,7 @@ class FriendshipControllerTest {
                 // Setup authentication
                 setupAuthentication("user1");
 
-                when(userService.findUserByUsername("user1")).thenReturn(Optional.of(user1));
+                when(userSearchService.findUserByUsername("user1")).thenReturn(Optional.of(user1));
                 when(friendshipService.sendFriendRequest(1L, 2L)).thenReturn(pendingFriendship);
 
                 mockMvc.perform(post("/api/friends/request")
@@ -116,7 +116,7 @@ class FriendshipControllerTest {
                 // Setup authentication
                 setupAuthentication("user2");
 
-                when(userService.findUserByUsername("user2")).thenReturn(Optional.of(user2));
+                when(userSearchService.findUserByUsername("user2")).thenReturn(Optional.of(user2));
                 when(friendshipService.acceptFriendRequest(1L, 2L)).thenReturn(acceptedFriendship);
 
                 mockMvc.perform(post("/api/friends/accept")
@@ -132,7 +132,7 @@ class FriendshipControllerTest {
                 // Setup authentication
                 setupAuthentication("user2");
 
-                when(userService.findUserByUsername("user2")).thenReturn(Optional.of(user2));
+                when(userSearchService.findUserByUsername("user2")).thenReturn(Optional.of(user2));
 
                 mockMvc.perform(post("/api/friends/reject")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -145,7 +145,7 @@ class FriendshipControllerTest {
                 // Setup authentication
                 setupAuthentication("user1");
 
-                when(userService.findUserByUsername("user1")).thenReturn(Optional.of(user1));
+                when(userSearchService.findUserByUsername("user1")).thenReturn(Optional.of(user1));
 
                 mockMvc.perform(delete("/api/friends/remove")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -158,7 +158,7 @@ class FriendshipControllerTest {
                 // Setup authentication
                 setupAuthentication("user1");
 
-                when(userService.findUserByUsername("user1")).thenReturn(Optional.of(user1));
+                when(userSearchService.findUserByUsername("user1")).thenReturn(Optional.of(user1));
                 when(friendshipService.getFriends(1L)).thenReturn(Arrays.asList(user2));
 
                 mockMvc.perform(get("/api/friends"))
@@ -172,7 +172,7 @@ class FriendshipControllerTest {
                 // Setup authentication
                 setupAuthentication("user2");
 
-                when(userService.findUserByUsername("user2")).thenReturn(Optional.of(user2));
+                when(userSearchService.findUserByUsername("user2")).thenReturn(Optional.of(user2));
                 when(friendshipService.getPendingFriendRequests(2L)).thenReturn(Arrays.asList(pendingFriendship));
 
                 mockMvc.perform(get("/api/friends/pending"))

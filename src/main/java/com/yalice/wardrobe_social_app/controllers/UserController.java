@@ -1,10 +1,13 @@
 package com.yalice.wardrobe_social_app.controllers;
 
+import com.yalice.wardrobe_social_app.controllers.helpers.UserDtoValidator;
+import com.yalice.wardrobe_social_app.dtos.user.UserDto;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.UserRegistrationException;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -18,16 +21,20 @@ import java.util.Optional;
 public class UserController {
 
     /** Service for user-related operations. */
-    private final UserService userService;
+    private final UserSearchService userSearchService;
+
+//    @Autowired
+    private UserDtoValidator userDtoValidator;
 
     /**
      * Constructor for UserController.
      *
-     * @param userService Service for user-related operations
+     * @param userSearchService Service for user-related operations
      */
     @Autowired
-    public UserController(final UserService userService) {
-        this.userService = userService;
+    public UserController(final UserSearchService userSearchService) {
+        this.userSearchService = userSearchService;
+        this.userDtoValidator = new UserDtoValidator();
     }
 
     /**
@@ -41,7 +48,7 @@ public class UserController {
     public ResponseEntity<?> registerUser(@RequestBody final User user) {
         validateUser(user);
 
-        final Optional<User> registeredUser = userService.registerUser(user);
+        final Optional<User> registeredUser = userSearchService.registerUser(user);
 
         if (registeredUser.isEmpty()) {
             throw new UserRegistrationException("Username already taken");
@@ -49,6 +56,18 @@ public class UserController {
 
         return ResponseEntity.ok(registeredUser.get());
     }
+
+
+
+    @PostMapping("/register")
+    public ResponseEntity<?> registerUser(@RequestBody UserDto userDto, BindingResult result) {
+        userDtoValidator.validate(userDto, result);
+        if (result.hasErrors()) {
+            return ResponseEntity.badRequest().body(result.getAllErrors());
+        }
+        return ResponseEntity.ok(userSearchService.registerUser(userDto));
+    }
+
 
     /**
      * Finds a user by their username.
@@ -58,7 +77,7 @@ public class UserController {
      */
     @GetMapping("/findByUsername")
     public ResponseEntity<User> findUserByUsername(@RequestParam final String username) {
-        final Optional<User> foundUser = userService.findUserByUsername(username);
+        final Optional<User> foundUser = userSearchService.findUserByUsername(username);
         return foundUser.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

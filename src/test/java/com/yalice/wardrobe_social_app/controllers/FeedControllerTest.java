@@ -10,7 +10,7 @@ import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 import com.yalice.wardrobe_social_app.interfaces.FeedService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.utils.AuthenticationTestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +47,7 @@ class FeedControllerTest {
         private FeedService feedService;
 
         @Mock
-        private UserService userService;
+        private UserSearchService userSearchService;
 
         @InjectMocks
         private FeedController feedController;
@@ -120,7 +120,7 @@ class FeedControllerTest {
 
         @Test
         void getUserFeed_returnsFeed() throws Exception {
-                when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
+                when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
                 when(feedService.getUserFeed(eq(1L), any(Pageable.class)))
                         .thenReturn(new PageImpl<>(Arrays.asList(post)));
 
@@ -134,7 +134,7 @@ class FeedControllerTest {
 
         @Test
         void getUserPosts_returnsUserPosts() throws Exception {
-                when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
+                when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
                 Pageable pageable = PageRequest.of(0, 20);  // Create a Pageable object
 
                 // Mock the service call

@@ -8,7 +8,7 @@ import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.OutfitService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.PostServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +29,7 @@ public class CreatePostServiceTest {
     private PostRepository postRepository;
 
     @Mock
-    private UserService userService;
+    private UserSearchService userSearchService;
 
     @Mock
     private OutfitService outfitService;
@@ -71,7 +71,7 @@ public class CreatePostServiceTest {
         // Arrange
         Long userId = 1L;
 
-        when(userService.findById(userId)).thenReturn(Optional.empty());
+        when(userSearchService.findById(userId)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThrows(ResourceNotFoundException.class, () -> postService.createPost(userId, postDto));
@@ -82,7 +82,7 @@ public class CreatePostServiceTest {
         // Arrange
         Long userId = 1L;
 
-        when(userService.findById(userId)).thenReturn(Optional.of(user1));
+        when(userSearchService.findById(userId)).thenReturn(Optional.of(user1));
         when(outfitService.getOutfit(postDto.getOutfitId())).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -94,7 +94,7 @@ public class CreatePostServiceTest {
         // Arrange
         Long userId = 1L;
 
-        when(userService.findById(userId)).thenReturn(Optional.of(user1));
+        when(userSearchService.findById(userId)).thenReturn(Optional.of(user1));
         when(outfitService.getOutfit(postDto.getOutfitId())).thenReturn(Optional.of(outfit));
         when(postRepository.save(any())).thenReturn(Post.builder()
                 .user(user1)
@@ -160,7 +160,7 @@ public class CreatePostServiceTest {
         // Arrange
         Long userId = 1L;
 
-        when(userService.findById(userId)).thenReturn(Optional.of(user1));
+        when(userSearchService.findById(userId)).thenReturn(Optional.of(user1));
         when(outfitService.getOutfit(postDto.getOutfitId())).thenReturn(Optional.of(outfit));
         when(postRepository.save(any())).thenReturn(Post.builder()
                 .user(user1)

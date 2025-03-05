@@ -1,10 +1,11 @@
 package com.yalice.wardrobe_social_app.services.helpers;
 
+import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import org.springframework.stereotype.Component;
@@ -14,13 +15,13 @@ public class PostServiceHelper {
 
     private final PostRepository postRepository;
     private final LikeRepository likeRepository;
-    private final UserService userService;
+    private final UserSearchService userSearchService;
     private final FriendshipService friendshipService;
 
-    public PostServiceHelper(PostRepository postRepository, LikeRepository likeRepository, UserService userService, FriendshipService friendshipService) {
+    public PostServiceHelper(PostRepository postRepository, LikeRepository likeRepository, UserSearchService userSearchService, FriendshipService friendshipService) {
         this.postRepository = postRepository;
         this.likeRepository = likeRepository;
-        this.userService = userService;
+        this.userSearchService = userSearchService;
         this.friendshipService = friendshipService;
     }
 
@@ -28,7 +29,7 @@ public class PostServiceHelper {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("Post not found"));
 
-        User user = userService.findById(userId)
+        UserResponseDto user = userSearchService.getUserById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         return likeRepository.existsByPostAndUser(post, user); // Return true if the like exists

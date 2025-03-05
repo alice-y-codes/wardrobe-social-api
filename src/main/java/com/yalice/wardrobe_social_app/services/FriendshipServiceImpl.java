@@ -4,7 +4,7 @@ import com.yalice.wardrobe_social_app.entities.Friendship;
 import com.yalice.wardrobe_social_app.entities.Friendship.FriendshipStatus;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.FriendshipRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,12 +17,12 @@ import java.util.Optional;
 public class FriendshipServiceImpl implements FriendshipService {
 
     private final FriendshipRepository friendshipRepository;
-    private final UserService userService;
+    private final UserSearchService userSearchService;
 
     @Autowired
-    public FriendshipServiceImpl(FriendshipRepository friendshipRepository, UserService userService) {
+    public FriendshipServiceImpl(FriendshipRepository friendshipRepository, UserSearchService userSearchService) {
         this.friendshipRepository = friendshipRepository;
-        this.userService = userService;
+        this.userSearchService = userSearchService;
     }
 
     @Override
@@ -31,8 +31,8 @@ public class FriendshipServiceImpl implements FriendshipService {
             throw new IllegalArgumentException("Cannot send friend request to yourself");
         }
 
-        Optional<User> requesterOptional = userService.findById(requesterId);
-        Optional<User> recipientOptional = userService.findById(recipientId);
+        Optional<User> requesterOptional = userSearchService.findById(requesterId);
+        Optional<User> recipientOptional = userSearchService.findById(recipientId);
 
         if (requesterOptional.isEmpty() || recipientOptional.isEmpty()) {
             throw new IllegalArgumentException("User not found");
@@ -111,8 +111,8 @@ public class FriendshipServiceImpl implements FriendshipService {
 
     @Override
     public void removeFriend(Long userId, Long friendId) {
-        Optional<User> userOptional = userService.findById(userId);
-        Optional<User> friendOptional = userService.findById(friendId);
+        Optional<User> userOptional = userSearchService.findById(userId);
+        Optional<User> friendOptional = userSearchService.findById(friendId);
 
         if (userOptional.isEmpty() || friendOptional.isEmpty()) {
             throw new IllegalArgumentException("User not found");
@@ -144,7 +144,7 @@ public class FriendshipServiceImpl implements FriendshipService {
 
     @Override
     public List<Friendship> getPendingFriendRequests(Long userId) {
-        Optional<User> userOptional = userService.findById(userId);
+        Optional<User> userOptional = userSearchService.findById(userId);
         if (userOptional.isEmpty()) {
             throw new IllegalArgumentException("User not found");
         }
@@ -173,8 +173,8 @@ public class FriendshipServiceImpl implements FriendshipService {
 
     @Override
     public Optional<Friendship> getFriendshipBetweenUsers(Long userId1, Long userId2) {
-        Optional<User> user1Optional = userService.findById(userId1);
-        Optional<User> user2Optional = userService.findById(userId2);
+        Optional<User> user1Optional = userSearchService.findById(userId1);
+        Optional<User> user2Optional = userSearchService.findById(userId2);
 
         if (user1Optional.isEmpty() || user2Optional.isEmpty()) {
             throw new IllegalArgumentException("User not found");

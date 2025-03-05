@@ -3,7 +3,7 @@ package com.yalice.wardrobe_social_app.services.feedServiceTests;
 import com.yalice.wardrobe_social_app.entities.*;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.CommentRepository;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
@@ -36,7 +36,7 @@ class FeedServiceTest {
     private LikeRepository likeRepository;
 
     @Mock
-    private UserService userService;
+    private UserSearchService userSearchService;
 
     @Mock
     private FriendshipService friendshipService;

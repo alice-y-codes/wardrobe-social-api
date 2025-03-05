@@ -4,7 +4,7 @@ import com.yalice.wardrobe_social_app.dtos.CommentDto;
 import com.yalice.wardrobe_social_app.entities.Comment;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.CommentService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.utilities.CurrentUser;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,12 +29,12 @@ public class CommentController {
      * Constructor for CommentController.
      *
      * @param commentService Service for comment-related operations
-     * @param userService Service for user-related operations
+     * @param userSearchService Service for user-related operations
      */
     @Autowired
-    public CommentController(CommentService commentService, UserService userService) {
+    public CommentController(CommentService commentService, UserSearchService userSearchService) {
         this.commentService = commentService;
-        this.currentUser = new CurrentUser(userService);
+        this.currentUser = new CurrentUser(userSearchService);
     }
 
     /**

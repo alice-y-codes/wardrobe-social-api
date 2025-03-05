@@ -4,7 +4,7 @@ import com.yalice.wardrobe_social_app.dtos.FriendRequestDto;
 import com.yalice.wardrobe_social_app.entities.Friendship;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -19,12 +19,12 @@ import java.util.Optional;
 public class FriendshipController {
 
     private final FriendshipService friendshipService;
-    private final UserService userService;
+    private final UserSearchService userSearchService;
 
     @Autowired
-    public FriendshipController(FriendshipService friendshipService, UserService userService) {
+    public FriendshipController(FriendshipService friendshipService, UserSearchService userSearchService) {
         this.friendshipService = friendshipService;
-        this.userService = userService;
+        this.userSearchService = userSearchService;
     }
 
     @PostMapping("/request")
@@ -109,6 +109,6 @@ public class FriendshipController {
         }
 
         String username = authentication.getName();
-        return userService.findUserByUsername(username);
+        return userSearchService.findUserByUsername(username);
     }
 }

@@ -6,7 +6,7 @@ import com.yalice.wardrobe_social_app.entities.Comment;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.CommentService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.utils.AuthenticationTestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +35,7 @@ class CommentControllerTest {
     private CommentService commentService;
 
     @Mock
-    private UserService userService;
+    private UserSearchService userSearchService;
 
     @InjectMocks
     private CommentController commentController;
@@ -82,7 +82,7 @@ class CommentControllerTest {
 
     @Test
     void addComment_addsAndReturnsComment() throws Exception {
-        when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
+        when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
         when(commentService.addComment(eq(1L), eq(1L), anyString())).thenReturn(comment);
 
         mockMvc.perform(post("/api/feed/1/comments")
@@ -95,7 +95,7 @@ class CommentControllerTest {
 
     @Test
     void deleteComment_deletesComment() throws Exception {
-        when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
+        when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
 
         mockMvc.perform(delete("/api/feed/1/comments/1"))
                 .andExpect(status().isOk());

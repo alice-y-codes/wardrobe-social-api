@@ -4,7 +4,7 @@ import com.yalice.wardrobe_social_app.dtos.item.ItemDto;
 import com.yalice.wardrobe_social_app.dtos.item.ItemResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.ItemService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.utilities.ApiResponse;
 import com.yalice.wardrobe_social_app.utilities.CurrentUser;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,9 +22,9 @@ public class ItemController {
     private final CurrentUser currentUser;
 
     @Autowired
-    public ItemController(ItemService itemService, UserService userService) {
+    public ItemController(ItemService itemService, UserSearchService userSearchService) {
         this.itemService = itemService;
-        this.currentUser = new CurrentUser(userService); // Instantiate CurrentUser with UserService
+        this.currentUser = new CurrentUser(userSearchService); // Instantiate CurrentUser with UserService
     }
 
     /**

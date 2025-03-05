@@ -5,7 +5,7 @@ import com.yalice.wardrobe_social_app.dtos.item.ItemDto;
 import com.yalice.wardrobe_social_app.dtos.item.ItemResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.ItemService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +41,7 @@ public class ItemControllerTest {
     private ItemService itemService;
 
     @Mock
-    private UserService userService;
+    private UserSearchService userSearchService;
 
     @InjectMocks
     private ItemController itemController;
@@ -53,7 +53,7 @@ public class ItemControllerTest {
     @BeforeEach
     public void setup() {
         // Create a new MockMvc instance for each test
-        itemController = new ItemController(itemService, userService);
+        itemController = new ItemController(itemService, userSearchService);
         mockMvc = MockMvcBuilders.standaloneSetup(itemController).build();
 
         // Set up test data
@@ -97,7 +97,7 @@ public class ItemControllerTest {
     public void shouldCreateItem() throws Exception {
         // Arrange
         setupAuthentication("testuser");
-        when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
+        when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
         when(itemService.createItem(eq(1L), any(ItemDto.class))).thenReturn(itemResponseDto);
 
         // Act & Assert
@@ -109,7 +109,7 @@ public class ItemControllerTest {
                 .andExpect(jsonPath("$.data.category").value("Test category"))
                 .andExpect(jsonPath("$.data.imageUrl").value("Test image url"));
 
-        verify(userService).findUserByUsername("testuser");
+        verify(userSearchService).findUserByUsername("testuser");
         verify(itemService).createItem(eq(1L), any(ItemDto.class));
     }
 
@@ -120,7 +120,7 @@ public class ItemControllerTest {
     public void shouldGetMyItems() throws Exception {
         // Arrange
         setupAuthentication("testuser");
-        when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
+        when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
         when(itemService.getAllItems(1L)).thenReturn(Collections.singletonList(itemResponseDto));
 
         // Act & Assert
@@ -129,7 +129,7 @@ public class ItemControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].name").value("Test name"));
 
-        verify(userService).findUserByUsername("testuser");
+        verify(userSearchService).findUserByUsername("testuser");
         verify(itemService).getAllItems(1L);
     }
 
@@ -253,7 +253,7 @@ public class ItemControllerTest {
     @Test
     public void shouldReturnBadRequestWhenUserNotAuthenticated() throws Exception {
         // Arrange - no authentication setup
-        when(userService.findUserByUsername("testuser")).thenReturn(Optional.empty());
+        when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.empty());
 
         // Act & Assert
         mockMvc.perform(post("/api/items")
@@ -269,7 +269,7 @@ public class ItemControllerTest {
     public void shouldReturnBadRequestWhenUserNotFound() throws Exception {
         // Arrange
         setupAuthentication("testuser");
-        when(userService.findUserByUsername("testuser")).thenReturn(Optional.empty());
+        when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.empty());
 
         // Act & Assert
         mockMvc.perform(post("/api/items")
@@ -277,6 +277,6 @@ public class ItemControllerTest {
                         .content(objectMapper.writeValueAsString(itemDto)))
                 .andExpect(status().isBadRequest());
 
-        verify(userService).findUserByUsername("testuser");
+        verify(userSearchService).findUserByUsername("testuser");
     }
 }

@@ -5,7 +5,7 @@ import com.yalice.wardrobe_social_app.entities.Item;
 import com.yalice.wardrobe_social_app.entities.Outfit;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.OutfitService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -38,7 +38,7 @@ class OutfitControllerTest {
     private OutfitService outfitService;
 
     @Mock
-    private UserService userService;
+    private UserSearchService userSearchService;
 
     @Mock
     private Authentication authentication;
@@ -71,7 +71,7 @@ class OutfitControllerTest {
                 .username("testuser")
                 .email("test@example.com")
                 .build();
-        when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
+        when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
 
         // Setup test item
         testItem = Item.builder()

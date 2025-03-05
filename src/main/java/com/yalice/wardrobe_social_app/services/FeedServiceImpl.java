@@ -6,7 +6,6 @@ import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.FeedService;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
 import com.yalice.wardrobe_social_app.repositories.CommentRepository;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
@@ -24,12 +23,12 @@ public class FeedServiceImpl implements FeedService {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final LikeRepository likeRepository;
-    private final UserServiceImpl userService;
+    private final UserSearchServiceImpl userService;
     private final FriendshipService friendshipService;
 
     @Autowired
     public FeedServiceImpl(PostRepository postRepository, CommentRepository commentRepository,
-            LikeRepository likeRepository, UserServiceImpl userService,
+            LikeRepository likeRepository, UserSearchServiceImpl userService,
             FriendshipService friendshipService) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;

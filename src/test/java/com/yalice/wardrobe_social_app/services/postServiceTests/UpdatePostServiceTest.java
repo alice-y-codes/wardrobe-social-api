@@ -8,7 +8,7 @@ import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import com.yalice.wardrobe_social_app.services.helpers.PostServiceHelper;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.PostServiceImpl;
@@ -35,7 +35,7 @@ public class UpdatePostServiceTest {
     private LikeRepository likeRepository;
 
     @Mock
-    private UserService userService;
+    private UserSearchService userSearchService;
 
     @Mock
     private PostServiceHelper postServiceHelper;
@@ -102,7 +102,7 @@ public class UpdatePostServiceTest {
     @Test
     void likePost_whenUserLikesForFirstTime_shouldLikePost() {
         when(postRepository.findById(postEntity.getId())).thenReturn(Optional.of(postEntity));
-        when(userService.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userSearchService.findById(user.getId())).thenReturn(Optional.of(user));
         when(postServiceHelper.hasUserLikedPost(postEntity.getId(), user.getId())).thenReturn(false);
         when(likeRepository.save(any(Like.class))).thenReturn(new Like());
         when(postRepository.save(postEntity)).thenReturn(postEntity);
@@ -117,7 +117,7 @@ public class UpdatePostServiceTest {
     @Test
     void likePost_whenUserAlreadyLiked_shouldReturnFalse() {
         when(postRepository.findById(postEntity.getId())).thenReturn(Optional.of(postEntity));
-        when(userService.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userSearchService.findById(user.getId())).thenReturn(Optional.of(user));
         when(postServiceHelper.hasUserLikedPost(postEntity.getId(), user.getId())).thenReturn(true);
 
         boolean result = postService.likePost(postEntity.getId(), user.getId());
@@ -131,7 +131,7 @@ public class UpdatePostServiceTest {
     void unlikePost_whenUserHasLiked_shouldUnlikePost() {
         Like like = Like.builder().post(postEntity).user(user).build();
         when(postRepository.findById(postEntity.getId())).thenReturn(Optional.of(postEntity));
-        when(userService.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userSearchService.findById(user.getId())).thenReturn(Optional.of(user));
         when(postServiceHelper.hasUserLikedPost(postEntity.getId(), user.getId())).thenReturn(true);
         when(likeRepository.findByPostAndUser(postEntity, user)).thenReturn(Optional.of(like));
 
@@ -145,7 +145,7 @@ public class UpdatePostServiceTest {
     @Test
     void unlikePost_whenUserHasNotLiked_shouldReturnFalse() {
         when(postRepository.findById(postEntity.getId())).thenReturn(Optional.of(postEntity));
-        when(userService.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userSearchService.findById(user.getId())).thenReturn(Optional.of(user));
         when(postServiceHelper.hasUserLikedPost(postEntity.getId(), user.getId())).thenReturn(false);
 
         boolean result = postService.unlikePost(postEntity.getId(), user.getId());

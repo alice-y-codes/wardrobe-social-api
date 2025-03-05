@@ -3,7 +3,7 @@ package com.yalice.wardrobe_social_app.services.friendshipServicesTests;
 import com.yalice.wardrobe_social_app.entities.Friendship;
 import com.yalice.wardrobe_social_app.entities.Friendship.FriendshipStatus;
 import com.yalice.wardrobe_social_app.entities.User;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.FriendshipRepository;
 import com.yalice.wardrobe_social_app.services.FriendshipServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,7 +28,7 @@ class FriendshipServiceTest {
     private FriendshipRepository friendshipRepository;
 
     @Mock
-    private UserService userService;
+    private UserSearchService userSearchService;
 
     @InjectMocks
     private FriendshipServiceImpl friendshipService;
@@ -72,8 +72,8 @@ class FriendshipServiceTest {
     @Test
     void sendFriendRequest_createsAndReturnsFriendship() {
         // Arrange
-        when(userService.findById(1L)).thenReturn(Optional.of(user1));
-        when(userService.findById(2L)).thenReturn(Optional.of(user2));
+        when(userSearchService.findById(1L)).thenReturn(Optional.of(user1));
+        when(userSearchService.findById(2L)).thenReturn(Optional.of(user2));
         when(friendshipRepository.findByRequesterAndRecipient(any(User.class), any(User.class)))
                 .thenReturn(Optional.empty());
         when(friendshipRepository.save(any(Friendship.class))).thenReturn(pendingFriendship);
@@ -120,8 +120,8 @@ class FriendshipServiceTest {
     @Test
     void removeFriend_whenFriendshipExists_deletesFriendship() {
         // Arrange
-        when(userService.findById(1L)).thenReturn(Optional.of(user1));
-        when(userService.findById(2L)).thenReturn(Optional.of(user2));
+        when(userSearchService.findById(1L)).thenReturn(Optional.of(user1));
+        when(userSearchService.findById(2L)).thenReturn(Optional.of(user2));
         when(friendshipRepository.findFriendshipBetweenUsers(user1, user2)).thenReturn(Optional.of(acceptedFriendship));
 
         // Act
@@ -149,7 +149,7 @@ class FriendshipServiceTest {
     @Test
     void getPendingFriendRequests_returnsListOfPendingRequests() {
         // Arrange
-        when(userService.findById(1L)).thenReturn(Optional.of(user1));
+        when(userSearchService.findById(1L)).thenReturn(Optional.of(user1));
         when(friendshipRepository.findByRecipientAndStatus(user1, FriendshipStatus.PENDING))
                 .thenReturn(List.of(pendingFriendship));
 
@@ -192,8 +192,8 @@ class FriendshipServiceTest {
     @Test
     void getFriendshipBetweenUsers_whenFriendshipExists_returnsFriendship() {
         // Arrange
-        when(userService.findById(1L)).thenReturn(Optional.of(user1));
-        when(userService.findById(2L)).thenReturn(Optional.of(user2));
+        when(userSearchService.findById(1L)).thenReturn(Optional.of(user1));
+        when(userSearchService.findById(2L)).thenReturn(Optional.of(user2));
         when(friendshipRepository.findFriendshipBetweenUsers(user1, user2))
                 .thenReturn(Optional.of(acceptedFriendship));
 

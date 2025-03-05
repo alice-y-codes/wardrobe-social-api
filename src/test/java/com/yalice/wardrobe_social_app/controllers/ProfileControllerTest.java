@@ -8,7 +8,7 @@ import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
 import com.yalice.wardrobe_social_app.interfaces.ProfileService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ class ProfileControllerTest {
         private ProfileService profileService;
 
         @Mock
-        private UserService userService;
+        private UserSearchService userSearchService;
 
         @Mock
         private FriendshipService friendshipService;
@@ -86,7 +86,7 @@ class ProfileControllerTest {
                 // Setup authentication
                 setupAuthentication("testuser");
 
-                when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
+                when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
                 when(profileService.getProfileByUserId(1L)).thenReturn(Optional.of(testProfile));
                 when(profileService.isProfileAccessibleToUser(1L, 1L)).thenReturn(true);
 
@@ -102,7 +102,7 @@ class ProfileControllerTest {
                 // Setup authentication
                 setupAuthentication("testuser");
 
-                when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
+                when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
                 when(profileService.isProfileAccessibleToUser(2L, 1L)).thenReturn(false);
 
                 mockMvc.perform(get("/api/users/2/profile"))
@@ -114,7 +114,7 @@ class ProfileControllerTest {
                 // Setup authentication
                 setupAuthentication("testuser");
 
-                when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
+                when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
                 when(profileService.getProfileByUserId(2L)).thenReturn(Optional.empty());
                 when(profileService.isProfileAccessibleToUser(2L, 1L)).thenReturn(true);
 
@@ -127,7 +127,7 @@ class ProfileControllerTest {
                 // Setup authentication
                 setupAuthentication("testuser");
 
-                when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
+                when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
                 when(profileService.updateProfile(1L, "Updated bio", ProfileVisibility.FRIENDS_ONLY))
                                 .thenReturn(testProfile);
 
@@ -143,7 +143,7 @@ class ProfileControllerTest {
                 // Setup authentication
                 setupAuthentication("testuser");
 
-                when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
+                when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
 
                 mockMvc.perform(put("/api/users/2/profile")
                                 .contentType(MediaType.APPLICATION_JSON)

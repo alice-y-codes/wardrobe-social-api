@@ -5,7 +5,7 @@ import com.yalice.wardrobe_social_app.entities.Profile;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
 import com.yalice.wardrobe_social_app.interfaces.ProfileService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -19,14 +19,14 @@ import java.util.Optional;
 public class ProfileController {
 
     private final ProfileService profileService;
-    private final UserService userService;
+    private final UserSearchService userSearchService;
     private final FriendshipService friendshipService;
 
     @Autowired
-    public ProfileController(ProfileService profileService, UserService userService,
+    public ProfileController(ProfileService profileService, UserSearchService userSearchService,
             FriendshipService friendshipService) {
         this.profileService = profileService;
-        this.userService = userService;
+        this.userSearchService = userSearchService;
         this.friendshipService = friendshipService;
     }
 
@@ -80,6 +80,6 @@ public class ProfileController {
         }
 
         String username = authentication.getName();
-        return userService.findUserByUsername(username);
+        return userSearchService.findUserByUsername(username);
     }
 }

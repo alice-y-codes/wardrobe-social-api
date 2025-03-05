@@ -13,7 +13,7 @@ import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.services.helpers.PostServiceHelper;
 import com.yalice.wardrobe_social_app.interfaces.OutfitService;
 import com.yalice.wardrobe_social_app.interfaces.PostService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 
@@ -30,7 +30,7 @@ public class PostServiceImpl implements PostService {
 
     private final PostRepository postRepository;
     private final LikeRepository likeRepository;
-    private final UserService userService;
+    private final UserSearchService userSearchService;
     private final OutfitService outfitService;
     private final PostServiceHelper postServiceHelper;
 
@@ -39,19 +39,19 @@ public class PostServiceImpl implements PostService {
      *
      * @param postRepository the {@link PostRepository} for interacting with post data.
      * @param likeRepository the {@link LikeRepository} for interacting with like data.
-     * @param userService the {@link UserService} for interacting with user data.
+     * @param userSearchService the {@link UserSearchService} for interacting with user data.
      * @param outfitService the {@link OutfitService} for interacting with outfit data.
      * @param postServiceHelper the helper class for additional post-related logic.
      */
     @Autowired
     public PostServiceImpl(PostRepository postRepository,
                            LikeRepository likeRepository,
-                           UserService userService,
+                           UserSearchService userSearchService,
                            OutfitService outfitService,
                            PostServiceHelper postServiceHelper) {
         this.postRepository = postRepository;
         this.likeRepository = likeRepository;
-        this.userService = userService;
+        this.userSearchService = userSearchService;
         this.outfitService = outfitService;
         this.postServiceHelper = postServiceHelper;
     }
@@ -69,7 +69,7 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional
     public PostResponseDto createPost(Long userId, PostDto postDto) {
-        User user = userService.findById(userId)
+        User user = userSearchService.getUserById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
 
         Outfit outfit = outfitService.getOutfit(postDto.getOutfitId())
@@ -208,7 +208,7 @@ public class PostServiceImpl implements PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found with ID: " + postId));
 
-        User user = userService.findById(userId)
+        User user = userSearchService.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
 
         if (postServiceHelper.hasUserLikedPost(postId, userId)) {
@@ -242,7 +242,7 @@ public class PostServiceImpl implements PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found with ID: " + postId));
 
-        User user = userService.findById(userId)
+        User user = userSearchService.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
 
         if (!postServiceHelper.hasUserLikedPost(postId, userId)) {
