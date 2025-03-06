@@ -1,15 +1,13 @@
 package com.yalice.wardrobe_social_app.dtos.item;
 
 import com.yalice.wardrobe_social_app.entities.Item;
-import com.yalice.wardrobe_social_app.entities.Profile;
-import com.yalice.wardrobe_social_app.entities.User;
-import com.yalice.wardrobe_social_app.entities.Wardrobe;
 import lombok.*;
 
 @Getter
 @Setter
-@Builder
+@NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ItemResponseDto {
     private Long id;
     private String name;

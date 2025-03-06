@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
+public interface FriendRepository extends JpaRepository<Friendship, Long> {
     List<Friendship> findByRequesterAndStatus(User requester, FriendshipStatus status);
 
     List<Friendship> findByRecipientAndStatus(User recipient, FriendshipStatus status);

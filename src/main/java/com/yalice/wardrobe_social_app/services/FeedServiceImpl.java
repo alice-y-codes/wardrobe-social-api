@@ -1,13 +1,13 @@
 package com.yalice.wardrobe_social_app.services;
 
 import com.yalice.wardrobe_social_app.dtos.feed.FeedItemDto;
-import com.yalice.wardrobe_social_app.dtos.friendship.FriendshipResponseDto;
+import com.yalice.wardrobe_social_app.dtos.friendship.FriendResponseDto;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.FeedService;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
+import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
@@ -23,14 +23,14 @@ import java.util.stream.Collectors;
 public class FeedServiceImpl extends BaseService implements FeedService {
 
         private final PostRepository postRepository;
-        private final FriendshipService friendshipService;
+        private final FriendService friendService;
         private final UserSearchService userSearchService;
 
         @Autowired
-        public FeedServiceImpl(PostRepository postRepository, FriendshipService friendshipService,
+        public FeedServiceImpl(PostRepository postRepository, FriendService friendService,
                         UserSearchService userSearchService) {
                 this.postRepository = postRepository;
-                this.friendshipService = friendshipService;
+                this.friendService = friendService;
                 this.userSearchService = userSearchService;
         }
 
@@ -38,9 +38,9 @@ public class FeedServiceImpl extends BaseService implements FeedService {
         public List<FeedItemDto> getFeed(Long userId, int page, int size) {
                 logger.info("Retrieving feed for user ID: {} (page: {}, size: {})", userId, page, size);
 
-                List<FriendshipResponseDto> friendships = friendshipService.getFriends(userId);
+                List<FriendResponseDto> friendships = friendService.getFriends(userId);
                 List<Long> friendIds = friendships.stream()
-                                .map(FriendshipResponseDto::getUserId)
+                                .map(FriendResponseDto::getUserId)
                                 .collect(Collectors.toList());
                 friendIds.add(userId);
 
@@ -55,9 +55,9 @@ public class FeedServiceImpl extends BaseService implements FeedService {
                 logger.info("Retrieving feed filtered by season '{}' for user ID: {} (page: {}, size: {})",
                                 season, userId, page, size);
 
-                List<FriendshipResponseDto> friendships = friendshipService.getFriends(userId);
+                List<FriendResponseDto> friendships = friendService.getFriends(userId);
                 List<Long> friendIds = friendships.stream()
-                                .map(FriendshipResponseDto::getUserId)
+                                .map(FriendResponseDto::getUserId)
                                 .collect(Collectors.toList());
                 friendIds.add(userId);
 
@@ -73,9 +73,9 @@ public class FeedServiceImpl extends BaseService implements FeedService {
                 logger.info("Retrieving feed filtered by category '{}' for user ID: {} (page: {}, size: {})",
                                 category, userId, page, size);
 
-                List<FriendshipResponseDto> friendships = friendshipService.getFriends(userId);
+                List<FriendResponseDto> friendships = friendService.getFriends(userId);
                 List<Long> friendIds = friendships.stream()
-                                .map(FriendshipResponseDto::getUserId)
+                                .map(FriendResponseDto::getUserId)
                                 .collect(Collectors.toList());
                 friendIds.add(userId);
 
@@ -95,7 +95,7 @@ public class FeedServiceImpl extends BaseService implements FeedService {
                         throw new ResourceNotFoundException("User not found with id: " + userId);
                 }
 
-                boolean isViewerFriend = userId.equals(viewerId) || friendshipService.areFriends(userId, viewerId);
+                boolean isViewerFriend = userId.equals(viewerId) || friendService.areFriends(userId, viewerId);
 
                 if (isViewerFriend) {
                         return postRepository.findByUserIdAndVisibilityInOrderByCreatedAtDesc(

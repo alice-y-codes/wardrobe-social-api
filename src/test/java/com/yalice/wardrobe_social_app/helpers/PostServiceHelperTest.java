@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
+import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.services.helpers.PostServiceHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,7 @@ class PostServiceHelperTest {
     private PostServiceHelper postServiceHelper;
 
     @Mock
-    private FriendshipService friendshipService;
+    private FriendService friendService;
 
     private Post post;
     private User postOwner;
@@ -99,7 +99,7 @@ class PostServiceHelperTest {
         // Arrange
         post.setVisibility(PostVisibility.FRIENDS_ONLY);  // Friends-only post
         viewerId = 2L;  // Viewer is not the owner
-        when(friendshipService.areFriends(postOwner.getId(), viewerId)).thenReturn(true); // Mock friendship
+        when(friendService.areFriends(postOwner.getId(), viewerId)).thenReturn(true); // Mock friendship
 
         // Act
         boolean result = postServiceHelper.isPostAccessibleToUser(post, viewerId);
@@ -113,7 +113,7 @@ class PostServiceHelperTest {
         // Arrange
         post.setVisibility(PostVisibility.FRIENDS_ONLY);  // Friends-only post
         viewerId = 2L;  // Viewer is not the owner
-        when(friendshipService.areFriends(postOwner.getId(), viewerId)).thenReturn(false); // Mock no friendship
+        when(friendService.areFriends(postOwner.getId(), viewerId)).thenReturn(false); // Mock no friendship
 
         // Act
         boolean result = postServiceHelper.isPostAccessibleToUser(post, viewerId);

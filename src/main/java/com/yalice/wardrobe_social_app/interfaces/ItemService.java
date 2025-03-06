@@ -11,6 +11,7 @@ import java.util.List;
  * Service interface for managing wardrobe items.
  */
 public interface ItemService {
+
     /**
      * Creates a new wardrobe item.
      *
@@ -19,7 +20,7 @@ public interface ItemService {
      * @param image   the item image file (optional)
      * @return the created item
      */
-    ItemResponseDto createItem(Long userId, ItemDto itemDto, MultipartFile image);
+    ItemResponseDto createItem(Long userId, ItemDto itemDto, Long wardrobeId, MultipartFile image);
 
     /**
      * Updates an existing wardrobe item.
@@ -56,9 +57,19 @@ public interface ItemService {
      */
     ItemResponseDto getItem(Long id);
 
-    // Get Item by name: Returns ItemResponseDto
-    ItemResponseDto getItemByName(String itemName); // Returns ItemResponseDto, throws exception if not found
+    /**
+     * Gets an item by its name.
+     *
+     * @param itemName the name of the item to retrieve
+     * @return the item
+     */
+    ItemResponseDto getItemByName(String itemName);
 
-    // Get Item entity: Return Item entity
-    Item getItemEntity(Long id); // Returns Item, throws exception if not found
+    /**
+     * Gets the item entity by ID.
+     *
+     * @param id the ID of the item to retrieve
+     * @return the item entity
+     */
+    Item getItemEntity(Long id);
 }

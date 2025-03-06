@@ -1,11 +1,11 @@
-package com.yalice.wardrobe_social_app.services.friendshipServicesTests;
+package com.yalice.wardrobe_social_app.services.friendServicesTests;
 
 import com.yalice.wardrobe_social_app.entities.Friendship;
 import com.yalice.wardrobe_social_app.entities.Friendship.FriendshipStatus;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
-import com.yalice.wardrobe_social_app.repositories.FriendshipRepository;
-import com.yalice.wardrobe_social_app.services.FriendshipServiceImpl;
+import com.yalice.wardrobe_social_app.repositories.FriendRepository;
+import com.yalice.wardrobe_social_app.services.FriendServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -22,16 +22,16 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class FriendshipServiceTest {
+class FriendServiceTest {
 
     @Mock
-    private FriendshipRepository friendshipRepository;
+    private FriendRepository friendRepository;
 
     @Mock
     private UserSearchService userSearchService;
 
     @InjectMocks
-    private FriendshipServiceImpl friendshipService;
+    private FriendServiceImpl friendshipService;
 
     private User user1;
     private User user2;
@@ -74,9 +74,9 @@ class FriendshipServiceTest {
         // Arrange
         when(userSearchService.findById(1L)).thenReturn(Optional.of(user1));
         when(userSearchService.findById(2L)).thenReturn(Optional.of(user2));
-        when(friendshipRepository.findByRequesterAndRecipient(any(User.class), any(User.class)))
+        when(friendRepository.findByRequesterAndRecipient(any(User.class), any(User.class)))
                 .thenReturn(Optional.empty());
-        when(friendshipRepository.save(any(Friendship.class))).thenReturn(pendingFriendship);
+        when(friendRepository.save(any(Friendship.class))).thenReturn(pendingFriendship);
 
         // Act
         Friendship result = friendshipService.sendFriendRequest(1L, 2L);
@@ -86,14 +86,14 @@ class FriendshipServiceTest {
         assertEquals(FriendshipStatus.PENDING, result.getStatus());
         assertEquals(user1, result.getRequester());
         assertEquals(user2, result.getRecipient());
-        verify(friendshipRepository).save(any(Friendship.class));
+        verify(friendRepository).save(any(Friendship.class));
     }
 
     @Test
     void acceptFriendRequest_whenRequestExists_updatesStatusAndReturnsFriendship() {
         // Arrange
-        when(friendshipRepository.findById(1L)).thenReturn(Optional.of(pendingFriendship));
-        when(friendshipRepository.save(any(Friendship.class))).thenReturn(acceptedFriendship);
+        when(friendRepository.findById(1L)).thenReturn(Optional.of(pendingFriendship));
+        when(friendRepository.save(any(Friendship.class))).thenReturn(acceptedFriendship);
 
         // Act
         Friendship result = friendshipService.acceptFriendRequest(1L, 2L);
@@ -101,20 +101,20 @@ class FriendshipServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals(FriendshipStatus.ACCEPTED, result.getStatus());
-        verify(friendshipRepository).save(pendingFriendship);
+        verify(friendRepository).save(pendingFriendship);
     }
 
     @Test
     void rejectFriendRequest_whenRequestExists_updatesStatusAndSaves() {
         // Arrange
-        when(friendshipRepository.findById(1L)).thenReturn(Optional.of(pendingFriendship));
+        when(friendRepository.findById(1L)).thenReturn(Optional.of(pendingFriendship));
 
         // Act
         friendshipService.rejectFriendRequest(1L, 2L);
 
         // Assert
         assertEquals(FriendshipStatus.REJECTED, pendingFriendship.getStatus());
-        verify(friendshipRepository).save(pendingFriendship);
+        verify(friendRepository).save(pendingFriendship);
     }
 
     @Test
@@ -122,21 +122,21 @@ class FriendshipServiceTest {
         // Arrange
         when(userSearchService.findById(1L)).thenReturn(Optional.of(user1));
         when(userSearchService.findById(2L)).thenReturn(Optional.of(user2));
-        when(friendshipRepository.findFriendshipBetweenUsers(user1, user2)).thenReturn(Optional.of(acceptedFriendship));
+        when(friendRepository.findFriendshipBetweenUsers(user1, user2)).thenReturn(Optional.of(acceptedFriendship));
 
         // Act
         friendshipService.removeFriend(1L, 2L);
 
         // Assert
-        verify(friendshipRepository).delete(acceptedFriendship);
+        verify(friendRepository).delete(acceptedFriendship);
     }
 
     @Test
     void getFriends_returnsListOfFriends() {
         // Arrange
         List<User> friends = Arrays.asList(user2);
-        when(friendshipRepository.findFriendsWhoAcceptedRequestFromUser(1L)).thenReturn(friends);
-        when(friendshipRepository.findFriendsWhoSentAcceptedRequestToUser(1L)).thenReturn(List.of());
+        when(friendRepository.findFriendsWhoAcceptedRequestFromUser(1L)).thenReturn(friends);
+        when(friendRepository.findFriendsWhoSentAcceptedRequestToUser(1L)).thenReturn(List.of());
 
         // Act
         List<User> result = friendshipService.getFriends(1L);
@@ -150,7 +150,7 @@ class FriendshipServiceTest {
     void getPendingFriendRequests_returnsListOfPendingRequests() {
         // Arrange
         when(userSearchService.findById(1L)).thenReturn(Optional.of(user1));
-        when(friendshipRepository.findByRecipientAndStatus(user1, FriendshipStatus.PENDING))
+        when(friendRepository.findByRecipientAndStatus(user1, FriendshipStatus.PENDING))
                 .thenReturn(List.of(pendingFriendship));
 
         // Act
@@ -164,9 +164,9 @@ class FriendshipServiceTest {
     @Test
     void areFriends_whenFriendshipExists_returnsTrue() {
         // Arrange
-        when(friendshipRepository.findAcceptedFriendshipsForUser(1L))
+        when(friendRepository.findAcceptedFriendshipsForUser(1L))
                 .thenReturn(List.of(acceptedFriendship));
-        when(friendshipRepository.findAcceptedFriendshipsForUser(2L))
+        when(friendRepository.findAcceptedFriendshipsForUser(2L))
                 .thenReturn(List.of(acceptedFriendship));
 
         // Act
@@ -179,7 +179,7 @@ class FriendshipServiceTest {
     @Test
     void areFriends_whenFriendshipDoesNotExist_returnsFalse() {
         // Arrange
-        when(friendshipRepository.findAcceptedFriendshipsForUser(anyLong()))
+        when(friendRepository.findAcceptedFriendshipsForUser(anyLong()))
                 .thenReturn(List.of());
 
         // Act
@@ -194,7 +194,7 @@ class FriendshipServiceTest {
         // Arrange
         when(userSearchService.findById(1L)).thenReturn(Optional.of(user1));
         when(userSearchService.findById(2L)).thenReturn(Optional.of(user2));
-        when(friendshipRepository.findFriendshipBetweenUsers(user1, user2))
+        when(friendRepository.findFriendshipBetweenUsers(user1, user2))
                 .thenReturn(Optional.of(acceptedFriendship));
 
         // Act

@@ -8,7 +8,7 @@ import com.yalice.wardrobe_social_app.entities.Profile.ProfileVisibility;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.entities.Wardrobe;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
+import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.interfaces.ProfileService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.ItemRepository;
@@ -29,17 +29,17 @@ public class ProfileServiceImpl extends BaseService implements ProfileService {
     private final WardrobeRepository wardrobeRepository;
     private final ItemRepository itemRepository;
     private final UserSearchService userSearchService;
-    private final FriendshipService friendshipService;
+    private final FriendService friendService;
 
     @Autowired
     public ProfileServiceImpl(ProfileRepository profileRepository, WardrobeRepository wardrobeRepository,
             ItemRepository itemRepository,
-            UserSearchService userSearchService, FriendshipService friendshipService) {
+            UserSearchService userSearchService, FriendService friendService) {
         this.profileRepository = profileRepository;
         this.wardrobeRepository = wardrobeRepository;
         this.itemRepository = itemRepository;
         this.userSearchService = userSearchService;
-        this.friendshipService = friendshipService;
+        this.friendService = friendService;
     }
 
     @Override
@@ -117,7 +117,7 @@ public class ProfileServiceImpl extends BaseService implements ProfileService {
         }
 
         // Private profiles are only accessible to friends
-        return friendshipService.areFriends(profileUserId, viewerId);
+        return friendService.areFriends(profileUserId, viewerId);
     }
 
     @Override

@@ -13,20 +13,21 @@ import java.util.Set;
  */
 @Getter
 @Setter
-@Builder
+@NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class OutfitResponseDto {
 
-    private Long id; // Outfit ID
-    private String name; // Name of the outfit
-    private String description; // Description of the outfit
-    private String season; // Season the outfit is designed for
-    private boolean isFavorite; // Whether the outfit is marked as favorite
-    private boolean isPublic; // Whether the outfit is public or private
-    private LocalDateTime createdAt; // Timestamp when the outfit was created
-    private LocalDateTime updatedAt; // Timestamp when the outfit was last updated
-    private Set<ItemResponseDto> items; // Detailed items that make up the outfit
-    private Long profileId; // ID of the profile who owns the outfit
+    private Long id;
+    private String name;
+    private String description;
+    private String season;
+    private boolean isFavorite;
+    private boolean isPublic;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private Set<ItemResponseDto> items;
+    private Long profileId;
 
     /**
      * Constructor for creating OutfitResponseDto from an Outfit entity without the items set.
@@ -36,7 +37,7 @@ public class OutfitResponseDto {
     public OutfitResponseDto(Outfit outfit) {
         this(outfit.getId(), outfit.getName(), outfit.getDescription(), outfit.getSeason(),
                 outfit.isFavorite(), outfit.isPublic(), outfit.getCreatedAt(), outfit.getUpdatedAt(),
-                convertItemsToDto((Set<Item>) outfit.getItems()), outfit.getProfile().getId()); // Use profileId
+                convertItemsToDto((Set<Item>) outfit.getItems()), outfit.getProfile().getId());
     }
 
     /**

@@ -1,9 +1,9 @@
 package com.yalice.wardrobe_social_app.controllers;
 
 import com.yalice.wardrobe_social_app.dtos.friendship.FriendRequestDto;
-import com.yalice.wardrobe_social_app.dtos.friendship.FriendshipResponseDto;
+import com.yalice.wardrobe_social_app.dtos.friendship.FriendResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
+import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.utilities.ApiResponse;
 import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,12 +20,12 @@ import java.util.List;
 @RequestMapping("/api/friendships")
 public class FriendshipController extends ApiBaseController {
 
-    private final FriendshipService friendshipService;
+    private final FriendService friendService;
 
     @Autowired
-    public FriendshipController(FriendshipService friendshipService, AuthUtils authUtils) {
+    public FriendshipController(FriendService friendService, AuthUtils authUtils) {
         super(authUtils);
-        this.friendshipService = friendshipService;
+        this.friendService = friendService;
     }
 
     /**
@@ -40,7 +40,7 @@ public class FriendshipController extends ApiBaseController {
 
         User currentUser = getLoggedInUser();
         try {
-            FriendRequestDto request = friendshipService.sendFriendRequest(currentUser.getId(), recipientId);
+            FriendRequestDto request = friendService.sendFriendRequest(currentUser.getId(), recipientId);
             logger.info("Successfully sent friend request from user ID: {} to user ID: {}",
                     currentUser.getId(), recipientId);
             return createSuccessResponse("Friend request sent successfully", request);
@@ -58,12 +58,12 @@ public class FriendshipController extends ApiBaseController {
      * @return ResponseEntity containing the friendship
      */
     @PostMapping("/requests/{requestId}/accept")
-    public ResponseEntity<ApiResponse<FriendshipResponseDto>> acceptFriendRequest(@PathVariable Long requestId) {
+    public ResponseEntity<ApiResponse<FriendResponseDto>> acceptFriendRequest(@PathVariable Long requestId) {
         logger.info("Attempting to accept friend request with ID: {}", requestId);
 
         User currentUser = getLoggedInUser();
         try {
-            FriendshipResponseDto friendship = friendshipService.acceptFriendRequest(currentUser.getId(), requestId);
+            FriendResponseDto friendship = friendService.acceptFriendRequest(currentUser.getId(), requestId);
             logger.info("Successfully accepted friend request with ID: {} by user ID: {}",
                     requestId, currentUser.getId());
             return createSuccessResponse("Friend request accepted successfully", friendship);
@@ -86,7 +86,7 @@ public class FriendshipController extends ApiBaseController {
 
         User currentUser = getLoggedInUser();
         try {
-            friendshipService.rejectFriendRequest(currentUser.getId(), requestId);
+            friendService.rejectFriendRequest(currentUser.getId(), requestId);
             logger.info("Successfully rejected friend request with ID: {} by user ID: {}",
                     requestId, currentUser.getId());
             return createSuccessResponse("Friend request rejected successfully", null);
@@ -108,7 +108,7 @@ public class FriendshipController extends ApiBaseController {
 
         User currentUser = getLoggedInUser();
         try {
-            List<FriendRequestDto> requests = friendshipService.getPendingFriendRequests(currentUser.getId());
+            List<FriendRequestDto> requests = friendService.getPendingFriendRequests(currentUser.getId());
             logger.info("Successfully retrieved {} pending friend requests for user ID: {}",
                     requests.size(), currentUser.getId());
             return createSuccessResponse("Pending friend requests retrieved successfully", requests);
@@ -125,12 +125,12 @@ public class FriendshipController extends ApiBaseController {
      * @return ResponseEntity containing the list of friendships
      */
     @GetMapping("/friends")
-    public ResponseEntity<ApiResponse<List<FriendshipResponseDto>>> getFriends() {
+    public ResponseEntity<ApiResponse<List<FriendResponseDto>>> getFriends() {
         logger.info("Retrieving friends for current user");
 
         User currentUser = getLoggedInUser();
         try {
-            List<FriendshipResponseDto> friendships = friendshipService.getFriends(currentUser.getId());
+            List<FriendResponseDto> friendships = friendService.getFriends(currentUser.getId());
             logger.info("Successfully retrieved {} friends for user ID: {}",
                     friendships.size(), currentUser.getId());
             return createSuccessResponse("Friends retrieved successfully", friendships);

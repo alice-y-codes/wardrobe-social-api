@@ -2,7 +2,7 @@ package com.yalice.wardrobe_social_app.services.feedServiceTests;
 
 import com.yalice.wardrobe_social_app.entities.*;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
+import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.CommentRepository;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
@@ -39,7 +39,7 @@ class FeedServiceTest {
     private UserSearchService userSearchService;
 
     @Mock
-    private FriendshipService friendshipService;
+    private FriendService friendService;
 
     @InjectMocks
     private FeedServiceImpl feedService;
@@ -98,7 +98,7 @@ class FeedServiceTest {
     @Test
     void getUserFeed_returnsFeedPosts() {
         // Arrange
-        when(friendshipService.getFriends(anyLong())).thenReturn(Arrays.asList(user2));
+        when(friendService.getFriends(anyLong())).thenReturn(Arrays.asList(user2));
         when(postRepository.findFeedPostsForUser(anyList(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(Arrays.asList(post)));
 

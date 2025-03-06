@@ -1,14 +1,14 @@
 package com.yalice.wardrobe_social_app.services;
 
 import com.yalice.wardrobe_social_app.dtos.friendship.FriendRequestDto;
-import com.yalice.wardrobe_social_app.dtos.friendship.FriendshipResponseDto;
+import com.yalice.wardrobe_social_app.dtos.friendship.FriendResponseDto;
 import com.yalice.wardrobe_social_app.entities.Friendship;
 import com.yalice.wardrobe_social_app.entities.Friendship.FriendshipStatus;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
+import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
-import com.yalice.wardrobe_social_app.repositories.FriendshipRepository;
+import com.yalice.wardrobe_social_app.repositories.FriendRepository;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,14 +19,14 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-public class FriendshipServiceImpl extends BaseService implements FriendshipService {
+public class FriendServiceImpl extends BaseService implements FriendService {
 
-    private final FriendshipRepository friendshipRepository;
+    private final FriendRepository friendRepository;
     private final UserSearchService userSearchService;
 
     @Autowired
-    public FriendshipServiceImpl(FriendshipRepository friendshipRepository, UserSearchService userSearchService) {
-        this.friendshipRepository = friendshipRepository;
+    public FriendServiceImpl(FriendRepository friendRepository, UserSearchService userSearchService) {
+        this.friendRepository = friendRepository;
         this.userSearchService = userSearchService;
     }
 
@@ -40,7 +40,7 @@ public class FriendshipServiceImpl extends BaseService implements FriendshipServ
         }
 
         // Check if friendship already exists
-        if (friendshipRepository.existsBySenderIdAndRecipientId(senderId, recipientId)) {
+        if (friendRepository.existsBySenderIdAndRecipientId(senderId, recipientId)) {
             throw new IllegalStateException("Friend request already exists");
         }
 
@@ -52,7 +52,7 @@ public class FriendshipServiceImpl extends BaseService implements FriendshipServ
         friendship.setRecipient(recipient);
         friendship.setStatus(FriendshipStatus.PENDING);
 
-        Friendship savedFriendship = friendshipRepository.save(friendship);
+        Friendship savedFriendship = friendRepository.save(friendship);
         logger.info("Friend request sent successfully from user ID: {} to user ID: {}", senderId, recipientId);
 
         return convertToFriendRequestDto(savedFriendship);
@@ -60,10 +60,10 @@ public class FriendshipServiceImpl extends BaseService implements FriendshipServ
 
     @Override
     @Transactional
-    public FriendshipResponseDto acceptFriendRequest(Long userId, Long requestId) {
+    public FriendResponseDto acceptFriendRequest(Long userId, Long requestId) {
         logger.info("Attempting to accept friend request with ID: {} by user ID: {}", requestId, userId);
 
-        Friendship friendship = friendshipRepository.findById(requestId)
+        Friendship friendship = friendRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Friend request not found with ID: " + requestId));
 
         if (!friendship.getRecipient().getId().equals(userId)) {
@@ -75,7 +75,7 @@ public class FriendshipServiceImpl extends BaseService implements FriendshipServ
         }
 
         friendship.setStatus(FriendshipStatus.ACCEPTED);
-        Friendship updatedFriendship = friendshipRepository.save(friendship);
+        Friendship updatedFriendship = friendRepository.save(friendship);
         logger.info("Friend request accepted successfully with ID: {}", requestId);
 
         return convertToFriendshipResponseDto(updatedFriendship);
@@ -86,7 +86,7 @@ public class FriendshipServiceImpl extends BaseService implements FriendshipServ
     public void rejectFriendRequest(Long userId, Long requestId) {
         logger.info("Attempting to reject friend request with ID: {} by user ID: {}", requestId, userId);
 
-        Friendship friendship = friendshipRepository.findById(requestId)
+        Friendship friendship = friendRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Friend request not found with ID: " + requestId));
 
         if (!friendship.getRecipient().getId().equals(userId)) {
@@ -98,7 +98,7 @@ public class FriendshipServiceImpl extends BaseService implements FriendshipServ
         }
 
         friendship.setStatus(FriendshipStatus.REJECTED);
-        friendshipRepository.save(friendship);
+        friendRepository.save(friendship);
         logger.info("Friend request rejected successfully with ID: {}", requestId);
     }
 
@@ -106,7 +106,7 @@ public class FriendshipServiceImpl extends BaseService implements FriendshipServ
     public List<FriendRequestDto> getPendingFriendRequests(Long userId) {
         logger.info("Retrieving pending friend requests for user ID: {}", userId);
 
-        List<Friendship> pendingRequests = friendshipRepository.findByRecipientIdAndStatus(userId,
+        List<Friendship> pendingRequests = friendRepository.findByRecipientIdAndStatus(userId,
                 FriendshipStatus.PENDING);
         logger.info("Found {} pending friend requests for user ID: {}", pendingRequests.size(), userId);
 
@@ -116,10 +116,10 @@ public class FriendshipServiceImpl extends BaseService implements FriendshipServ
     }
 
     @Override
-    public List<FriendshipResponseDto> getFriends(Long userId) {
+    public List<FriendResponseDto> getFriends(Long userId) {
         logger.info("Retrieving friends for user ID: {}", userId);
 
-        List<Friendship> friendships = friendshipRepository.findBySenderIdOrRecipientIdAndStatus(userId,
+        List<Friendship> friendships = friendRepository.findBySenderIdOrRecipientIdAndStatus(userId,
                 FriendshipStatus.ACCEPTED);
         logger.info("Found {} friends for user ID: {}", friendships.size(), userId);
 
@@ -132,7 +132,7 @@ public class FriendshipServiceImpl extends BaseService implements FriendshipServ
     public boolean areFriends(Long userId1, Long userId2) {
         logger.info("Checking if users {} and {} are friends", userId1, userId2);
 
-        Optional<Friendship> friendship = friendshipRepository.findFriendshipBetweenUsers(userId1, userId2);
+        Optional<Friendship> friendship = friendRepository.findFriendshipBetweenUsers(userId1, userId2);
         boolean areFriends = friendship.isPresent() && friendship.get().getStatus() == FriendshipStatus.ACCEPTED;
 
         logger.info("Users {} and {} are{} friends", userId1, userId2, areFriends ? "" : " not");
@@ -151,8 +151,8 @@ public class FriendshipServiceImpl extends BaseService implements FriendshipServ
                 .build();
     }
 
-    private FriendshipResponseDto convertToFriendshipResponseDto(Friendship friendship) {
-        return FriendshipResponseDto.builder()
+    private FriendResponseDto convertToFriendshipResponseDto(Friendship friendship) {
+        return FriendResponseDto.builder()
                 .id(friendship.getId())
                 .userId(friendship.getSender().getId().equals(friendship.getRecipient().getId())
                         ? friendship.getRecipient().getId()

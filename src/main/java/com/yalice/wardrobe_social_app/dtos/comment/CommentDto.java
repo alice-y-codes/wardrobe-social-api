@@ -1,12 +1,12 @@
 package com.yalice.wardrobe_social_app.dtos.comment;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class CommentDto {
     private String content;
 }

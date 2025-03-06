@@ -3,7 +3,7 @@ package com.yalice.wardrobe_social_app.services.profileServiceTests;
 import com.yalice.wardrobe_social_app.entities.Profile;
 import com.yalice.wardrobe_social_app.entities.Profile.ProfileVisibility;
 import com.yalice.wardrobe_social_app.entities.User;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
+import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import com.yalice.wardrobe_social_app.services.ProfileServiceImpl;
@@ -30,7 +30,7 @@ class ProfileServiceTest {
     private UserSearchService userSearchService;
 
     @Mock
-    private FriendshipService friendshipService;
+    private FriendService friendService;
 
     @InjectMocks
     private ProfileServiceImpl profileService;
@@ -144,7 +144,7 @@ class ProfileServiceTest {
         // Arrange
         testProfile.setVisibility(ProfileVisibility.PRIVATE);
         when(profileRepository.findByUserId(anyLong())).thenReturn(Optional.of(testProfile));
-        when(friendshipService.areFriends(anyLong(), anyLong())).thenReturn(false);
+        when(friendService.areFriends(anyLong(), anyLong())).thenReturn(false);
 
         // Act
         boolean result = profileService.isProfileAccessibleToUser(1L, 2L);
@@ -152,7 +152,7 @@ class ProfileServiceTest {
         // Assert
         assertFalse(result);
         verify(profileRepository).findByUserId(1L);
-        verify(friendshipService).areFriends(1L, 2L);
+        verify(friendService).areFriends(1L, 2L);
     }
 
     @Test
@@ -160,7 +160,7 @@ class ProfileServiceTest {
         // Arrange
         testProfile.setVisibility(ProfileVisibility.FRIENDS_ONLY);
         when(profileRepository.findByUserId(anyLong())).thenReturn(Optional.of(testProfile));
-        when(friendshipService.areFriends(anyLong(), anyLong())).thenReturn(true);
+        when(friendService.areFriends(anyLong(), anyLong())).thenReturn(true);
 
         // Act
         boolean result = profileService.isProfileAccessibleToUser(1L, 2L);
@@ -168,6 +168,6 @@ class ProfileServiceTest {
         // Assert
         assertTrue(result);
         verify(profileRepository).findByUserId(1L);
-        verify(friendshipService).areFriends(1L, 2L);
+        verify(friendService).areFriends(1L, 2L);
     }
 }

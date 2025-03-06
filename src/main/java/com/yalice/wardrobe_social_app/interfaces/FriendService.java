@@ -1,14 +1,14 @@
 package com.yalice.wardrobe_social_app.interfaces;
 
 import com.yalice.wardrobe_social_app.dtos.friendship.FriendRequestDto;
-import com.yalice.wardrobe_social_app.dtos.friendship.FriendshipResponseDto;
-import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.dtos.friendship.FriendResponseDto;
+
 import java.util.List;
 
 /**
  * Service interface for managing friendships and friend requests.
  */
-public interface FriendshipService {
+public interface FriendService {
     /**
      * Sends a friend request to another user.
      *
@@ -25,7 +25,7 @@ public interface FriendshipService {
      * @param requestId the ID of the friend request to accept
      * @return the created friendship
      */
-    FriendshipResponseDto acceptFriendRequest(Long userId, Long requestId);
+    FriendResponseDto acceptFriendRequest(Long userId, Long requestId);
 
     /**
      * Rejects a friend request.
@@ -49,7 +49,7 @@ public interface FriendshipService {
      * @param userId the ID of the user
      * @return the list of friendships
      */
-    List<FriendshipResponseDto> getFriends(Long userId);
+    List<FriendResponseDto> getFriends(Long userId);
 
     /**
      * Checks if two users are friends.

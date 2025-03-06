@@ -2,9 +2,8 @@ package com.yalice.wardrobe_social_app.services.helpers;
 
 import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.entities.Post;
-import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
+import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
@@ -16,13 +15,13 @@ public class PostServiceHelper {
     private final PostRepository postRepository;
     private final LikeRepository likeRepository;
     private final UserSearchService userSearchService;
-    private final FriendshipService friendshipService;
+    private final FriendService friendService;
 
-    public PostServiceHelper(PostRepository postRepository, LikeRepository likeRepository, UserSearchService userSearchService, FriendshipService friendshipService) {
+    public PostServiceHelper(PostRepository postRepository, LikeRepository likeRepository, UserSearchService userSearchService, FriendService friendService) {
         this.postRepository = postRepository;
         this.likeRepository = likeRepository;
         this.userSearchService = userSearchService;
-        this.friendshipService = friendshipService;
+        this.friendService = friendService;
     }
 
     public boolean hasUserLikedPost(Long postId, Long userId) {
@@ -64,6 +63,6 @@ public class PostServiceHelper {
         }
 
         // FRIENDS_ONLY posts are accessible to friends
-        return friendshipService.areFriends(postOwnerId, viewerId);
+        return friendService.areFriends(postOwnerId, viewerId);
     }
 }

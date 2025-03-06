@@ -1,13 +1,13 @@
 package com.yalice.wardrobe_social_app.dtos.profile;
 
 import com.yalice.wardrobe_social_app.entities.Profile.ProfileVisibility;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ProfileUpdateRequest {
     private String bio;
     private ProfileVisibility visibility;

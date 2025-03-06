@@ -1,10 +1,13 @@
 package com.yalice.wardrobe_social_app.dtos.friendship;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
+
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class FriendRequestDto {
     private Long id;

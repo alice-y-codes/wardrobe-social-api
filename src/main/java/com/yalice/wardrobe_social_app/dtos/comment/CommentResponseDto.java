@@ -1,10 +1,13 @@
 package com.yalice.wardrobe_social_app.dtos.comment;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
+
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class CommentResponseDto {
     private Long id;

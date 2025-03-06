@@ -7,11 +7,12 @@ import lombok.*;
  */
 @Getter
 @Setter
-@Builder
+@NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class UserResponseDto {
 
-    private Long id; // User ID
-    private String username; // User's username
-    private String email; // User's email
+    private Long id;
+    private String username;
+    private String email;
 }

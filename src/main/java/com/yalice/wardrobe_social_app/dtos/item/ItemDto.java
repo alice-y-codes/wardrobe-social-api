@@ -4,8 +4,9 @@ import lombok.*;
 
 @Getter
 @Setter
-@Builder
+@NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ItemDto {
     private String name;
     private String brand;

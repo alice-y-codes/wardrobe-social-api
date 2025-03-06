@@ -2,16 +2,13 @@ package com.yalice.wardrobe_social_app.dtos.post;
 
 import com.yalice.wardrobe_social_app.entities.Outfit;
 import com.yalice.wardrobe_social_app.entities.Post;
-import com.yalice.wardrobe_social_app.enums.PostVisibility;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
-@Builder
+@NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class PostResponseDto {
 
     private Long id;

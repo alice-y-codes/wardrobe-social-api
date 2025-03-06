@@ -2,17 +2,16 @@ package com.yalice.wardrobe_social_app.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yalice.wardrobe_social_app.dtos.friendship.FriendRequestDto;
-import com.yalice.wardrobe_social_app.dtos.friendship.FriendshipResponseDto;
+import com.yalice.wardrobe_social_app.dtos.friendship.FriendResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
+import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -27,12 +26,12 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-class FriendshipControllerTest {
+class FriendControllerTest {
 
         private MockMvc mockMvc;
 
         @Mock
-        private FriendshipService friendshipService;
+        private FriendService friendService;
 
         @Mock
         private AuthUtils authUtils;
@@ -43,9 +42,9 @@ class FriendshipControllerTest {
         private final ObjectMapper objectMapper = new ObjectMapper();
         private User testUser;
         private FriendRequestDto testFriendRequestDto;
-        private FriendshipResponseDto testFriendshipResponseDto;
+        private FriendResponseDto testFriendResponseDto;
         private List<FriendRequestDto> testFriendRequestList;
-        private List<FriendshipResponseDto> testFriendshipList;
+        private List<FriendResponseDto> testFriendshipList;
 
         @BeforeEach
         void setUp() {
@@ -74,7 +73,7 @@ class FriendshipControllerTest {
                                 .createdAt(LocalDateTime.now())
                                 .build();
 
-                testFriendshipResponseDto = FriendshipResponseDto.builder()
+                testFriendResponseDto = FriendResponseDto.builder()
                                 .id(1L)
                                 .userId(2L)
                                 .username("otheruser")
@@ -95,8 +94,8 @@ class FriendshipControllerTest {
                                                 .build());
 
                 testFriendshipList = Arrays.asList(
-                                testFriendshipResponseDto,
-                                FriendshipResponseDto.builder()
+                        testFriendResponseDto,
+                                FriendResponseDto.builder()
                                                 .id(2L)
                                                 .userId(3L)
                                                 .username("thirduser")
@@ -108,7 +107,7 @@ class FriendshipControllerTest {
         @Test
         void sendFriendRequest_Success() throws Exception {
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(friendshipService.sendFriendRequest(anyLong(), anyLong()))
+                when(friendService.sendFriendRequest(anyLong(), anyLong()))
                                 .thenReturn(testFriendRequestDto);
 
                 mockMvc.perform(post("/api/friendships/requests")
@@ -121,13 +120,13 @@ class FriendshipControllerTest {
                                 .andExpect(jsonPath("$.data.recipientUsername", is("otheruser")))
                                 .andExpect(jsonPath("$.data.status", is("PENDING")));
 
-                verify(friendshipService).sendFriendRequest(anyLong(), anyLong());
+                verify(friendService).sendFriendRequest(anyLong(), anyLong());
         }
 
         @Test
         void sendFriendRequest_Error() throws Exception {
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(friendshipService.sendFriendRequest(anyLong(), anyLong()))
+                when(friendService.sendFriendRequest(anyLong(), anyLong()))
                                 .thenThrow(new RuntimeException("Failed to send friend request"));
 
                 mockMvc.perform(post("/api/friendships/requests")
@@ -136,14 +135,14 @@ class FriendshipControllerTest {
                                 .andExpect(jsonPath("$.success", is(false)))
                                 .andExpect(jsonPath("$.message", is("Failed to send friend request")));
 
-                verify(friendshipService).sendFriendRequest(anyLong(), anyLong());
+                verify(friendService).sendFriendRequest(anyLong(), anyLong());
         }
 
         @Test
         void acceptFriendRequest_Success() throws Exception {
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(friendshipService.acceptFriendRequest(anyLong(), anyLong()))
-                                .thenReturn(testFriendshipResponseDto);
+                when(friendService.acceptFriendRequest(anyLong(), anyLong()))
+                                .thenReturn(testFriendResponseDto);
 
                 mockMvc.perform(post("/api/friendships/requests/1/accept"))
                                 .andExpect(status().isOk())
@@ -153,13 +152,13 @@ class FriendshipControllerTest {
                                 .andExpect(jsonPath("$.data.username", is("otheruser")))
                                 .andExpect(jsonPath("$.data.status", is("ACCEPTED")));
 
-                verify(friendshipService).acceptFriendRequest(anyLong(), anyLong());
+                verify(friendService).acceptFriendRequest(anyLong(), anyLong());
         }
 
         @Test
         void acceptFriendRequest_Error() throws Exception {
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(friendshipService.acceptFriendRequest(anyLong(), anyLong()))
+                when(friendService.acceptFriendRequest(anyLong(), anyLong()))
                                 .thenThrow(new RuntimeException("Failed to accept friend request"));
 
                 mockMvc.perform(post("/api/friendships/requests/1/accept"))
@@ -167,13 +166,13 @@ class FriendshipControllerTest {
                                 .andExpect(jsonPath("$.success", is(false)))
                                 .andExpect(jsonPath("$.message", is("Failed to accept friend request")));
 
-                verify(friendshipService).acceptFriendRequest(anyLong(), anyLong());
+                verify(friendService).acceptFriendRequest(anyLong(), anyLong());
         }
 
         @Test
         void rejectFriendRequest_Success() throws Exception {
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                doNothing().when(friendshipService).rejectFriendRequest(anyLong(), anyLong());
+                doNothing().when(friendService).rejectFriendRequest(anyLong(), anyLong());
 
                 mockMvc.perform(post("/api/friendships/requests/1/reject"))
                                 .andExpect(status().isOk())
@@ -181,27 +180,27 @@ class FriendshipControllerTest {
                                 .andExpect(jsonPath("$.message", is("Friend request rejected successfully")))
                                 .andExpect(jsonPath("$.data", nullValue()));
 
-                verify(friendshipService).rejectFriendRequest(anyLong(), anyLong());
+                verify(friendService).rejectFriendRequest(anyLong(), anyLong());
         }
 
         @Test
         void rejectFriendRequest_Error() throws Exception {
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
                 doThrow(new RuntimeException("Failed to reject friend request"))
-                                .when(friendshipService).rejectFriendRequest(anyLong(), anyLong());
+                                .when(friendService).rejectFriendRequest(anyLong(), anyLong());
 
                 mockMvc.perform(post("/api/friendships/requests/1/reject"))
                                 .andExpect(status().isInternalServerError())
                                 .andExpect(jsonPath("$.success", is(false)))
                                 .andExpect(jsonPath("$.message", is("Failed to reject friend request")));
 
-                verify(friendshipService).rejectFriendRequest(anyLong(), anyLong());
+                verify(friendService).rejectFriendRequest(anyLong(), anyLong());
         }
 
         @Test
         void getPendingFriendRequests_Success() throws Exception {
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(friendshipService.getPendingFriendRequests(anyLong()))
+                when(friendService.getPendingFriendRequests(anyLong()))
                                 .thenReturn(testFriendRequestList);
 
                 mockMvc.perform(get("/api/friendships/requests/pending"))
@@ -212,13 +211,13 @@ class FriendshipControllerTest {
                                 .andExpect(jsonPath("$.data[0].senderUsername", is("testuser")))
                                 .andExpect(jsonPath("$.data[1].senderUsername", is("thirduser")));
 
-                verify(friendshipService).getPendingFriendRequests(anyLong());
+                verify(friendService).getPendingFriendRequests(anyLong());
         }
 
         @Test
         void getPendingFriendRequests_Error() throws Exception {
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(friendshipService.getPendingFriendRequests(anyLong()))
+                when(friendService.getPendingFriendRequests(anyLong()))
                                 .thenThrow(new RuntimeException("Failed to retrieve pending friend requests"));
 
                 mockMvc.perform(get("/api/friendships/requests/pending"))
@@ -226,13 +225,13 @@ class FriendshipControllerTest {
                                 .andExpect(jsonPath("$.success", is(false)))
                                 .andExpect(jsonPath("$.message", is("Failed to retrieve pending friend requests")));
 
-                verify(friendshipService).getPendingFriendRequests(anyLong());
+                verify(friendService).getPendingFriendRequests(anyLong());
         }
 
         @Test
         void getFriends_Success() throws Exception {
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(friendshipService.getFriends(anyLong()))
+                when(friendService.getFriends(anyLong()))
                                 .thenReturn(testFriendshipList);
 
                 mockMvc.perform(get("/api/friendships/friends"))
@@ -243,13 +242,13 @@ class FriendshipControllerTest {
                                 .andExpect(jsonPath("$.data[0].username", is("otheruser")))
                                 .andExpect(jsonPath("$.data[1].username", is("thirduser")));
 
-                verify(friendshipService).getFriends(anyLong());
+                verify(friendService).getFriends(anyLong());
         }
 
         @Test
         void getFriends_Error() throws Exception {
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(friendshipService.getFriends(anyLong()))
+                when(friendService.getFriends(anyLong()))
                                 .thenThrow(new RuntimeException("Failed to retrieve friends"));
 
                 mockMvc.perform(get("/api/friendships/friends"))
@@ -257,6 +256,6 @@ class FriendshipControllerTest {
                                 .andExpect(jsonPath("$.success", is(false)))
                                 .andExpect(jsonPath("$.message", is("Failed to retrieve friends")));
 
-                verify(friendshipService).getFriends(anyLong());
+                verify(friendService).getFriends(anyLong());
         }
 }

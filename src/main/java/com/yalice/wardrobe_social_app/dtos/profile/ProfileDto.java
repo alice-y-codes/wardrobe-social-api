@@ -1,11 +1,15 @@
 package com.yalice.wardrobe_social_app.dtos.profile;
 
-import lombok.Data;
+import lombok.*;
 
 /**
  * DTO for profile data.
  */
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ProfileDto {
     private String bio;
     private boolean isPublic;
