@@ -8,6 +8,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Represents a user profile that includes personal details, preferences, and associated collections like wardrobes, outfits, and posts.
+ */
 @Entity
 @Table(name = "profiles")
 @Getter
@@ -18,62 +21,89 @@ import java.util.Set;
 @Builder
 public class Profile extends BaseEntity {
 
-    /** Reference to the associated user */
+    /**
+     * The associated user for this profile.
+     */
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-    /** Bio of the profile. */
+    /**
+     * The bio of the profile.
+     */
     @Column(length = 500)
     private String bio;
 
-    /** Location of the user. */
+    /**
+     * The location of the user.
+     */
     @Column
     private String location;
 
-    /** Style preferences of the user. */
+    /**
+     * The style preferences of the user.
+     */
     @Column
     private String stylePreferences;
 
-    /** Favorite brands of the user. */
+    /**
+     * The favorite brands of the user.
+     */
     @Column
     private String favoriteBrands;
 
-    /** Fashion inspirations for the user. */
+    /**
+     * Fashion inspirations for the user.
+     */
     @Column
     private String fashionInspirations;
 
-    /** Profile image URL (now in the Profile entity). */
+    /**
+     * The profile image URL.
+     */
     @Column
     private String profileImageUrl;
 
-    /** Visibility of the profile (public, private, friends only). */
+    /**
+     * The visibility of the profile (public, private, friends only).
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ProfileVisibility visibility;
 
-    /** Wardrobe associated with the profile. */
+    /**
+     * The wardrobes associated with this profile.
+     */
     @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Set<Wardrobe> wardrobes = new HashSet<>();
 
-    /** Outfits associated with the profile. */
+    /**
+     * The outfits associated with this profile.
+     */
     @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Set<Outfit> outfits = new HashSet<>();
 
-    /** Posts created by the profile. */
+    /**
+     * The posts created by this profile.
+     */
     @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Set<Post> posts = new HashSet<>();
 
-    /** Items associated with the profile. */
+    /**
+     * The items associated with this profile.
+     */
     @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL)
     private List<Item> items = new ArrayList<>();
 
+    /**
+     * Enum representing the visibility of the profile.
+     */
     public enum ProfileVisibility {
         PUBLIC,
         PRIVATE,

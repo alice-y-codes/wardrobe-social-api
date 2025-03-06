@@ -7,61 +7,73 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entity representing a user in the wardrobe social application.
- * Stores user authentication details and relationships with other entities.
+ * Represents a user in the wardrobe social application, storing user authentication details
+ * and relationships with other entities such as profile, friend requests, and likes.
  */
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class User extends BaseEntity {
 
-    /** Unique identifier for the user. */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    /** Username of the user (must be unique). */
+    /**
+     * The username of the user. This field must be unique.
+     */
     @Column(nullable = false, unique = true)
     private String username;
 
-    /** Email address of the user (must be unique). */
+    /**
+     * The email address of the user. This field must be unique.
+     */
     @Column(nullable = false, unique = true)
     private String email;
 
-    /** Encrypted password of the user. */
+    /**
+     * The encrypted password of the user.
+     */
     @Column(nullable = false)
     private String password;
 
-    /** Authentication provider used by the user. */
+    /**
+     * The authentication provider used by the user (e.g., Facebook, Google, Apple, or Local).
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Provider provider;
 
-    /** User's profile (manages wardrobe, outfits, and items). */
+    /**
+     * The profile associated with the user, which manages the wardrobe, outfits, and items.
+     */
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Profile profile;
 
-    /** Friend requests sent by the user. */
+    /**
+     * The friend requests sent by the user.
+     */
     @OneToMany(mappedBy = "requester", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private List<Friendship> sentFriendRequests = new ArrayList<>();
 
-    /** Friend requests received by the user. */
+    /**
+     * The friend requests received by the user.
+     */
     @OneToMany(mappedBy = "recipient", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private List<Friendship> receivedFriendRequests = new ArrayList<>();
 
-    /** List of likes given by the user. */
+    /**
+     * The list of likes given by the user.
+     */
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
     @ToString.Exclude

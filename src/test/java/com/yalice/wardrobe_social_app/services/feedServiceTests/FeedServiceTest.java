@@ -1,7 +1,6 @@
 package com.yalice.wardrobe_social_app.services.feedServiceTests;
 
 import com.yalice.wardrobe_social_app.entities.*;
-import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.CommentRepository;

@@ -3,8 +3,6 @@ package com.yalice.wardrobe_social_app.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-
 /**
  * Represents a like on a post by a profile (user).
  */
@@ -19,10 +17,6 @@ import java.time.LocalDateTime;
 @Builder
 public class Like extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
     /** The post that is liked. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
@@ -36,13 +30,4 @@ public class Like extends BaseEntity {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Profile profile;
-
-    /** Timestamp when the like was created. */
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 }
