@@ -29,7 +29,6 @@ public class Wardrobe {
     private String name;
 
     @OneToMany(mappedBy = "wardrobe", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Set<Item> items = new HashSet<>();

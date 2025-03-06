@@ -17,7 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
+public class User extends BaseEntity {
 
     /** Unique identifier for the user. */
     @Id
@@ -41,10 +41,6 @@ public class User {
     @Column(nullable = false)
     private Provider provider;
 
-    /** URL to the user's profile picture. */
-    @Column(nullable = true)
-    private String profilePicture;
-
     /** User's profile (manages wardrobe, outfits, and items). */
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @ToString.Exclude
@@ -64,20 +60,6 @@ public class User {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private List<Friendship> receivedFriendRequests = new ArrayList<>();
-
-    /** List of posts created by the user. */
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @Builder.Default
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private List<Post> posts = new ArrayList<>();
-
-    /** List of comments made by the user. */
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @Builder.Default
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private List<Comment> comments = new ArrayList<>();
 
     /** List of likes given by the user. */
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)

@@ -1,5 +1,7 @@
 package com.yalice.wardrobe_social_app.services;
 
+import com.yalice.wardrobe_social_app.dtos.profile.ProfileDto;
+import com.yalice.wardrobe_social_app.dtos.profile.ProfileResponseDto;
 import com.yalice.wardrobe_social_app.entities.Item;
 import com.yalice.wardrobe_social_app.entities.Profile;
 import com.yalice.wardrobe_social_app.entities.Profile.ProfileVisibility;
@@ -16,6 +18,7 @@ import com.yalice.wardrobe_social_app.services.helpers.BaseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
 
@@ -29,8 +32,9 @@ public class ProfileServiceImpl extends BaseService implements ProfileService {
     private final FriendshipService friendshipService;
 
     @Autowired
-    public ProfileServiceImpl(ProfileRepository profileRepository, WardrobeRepository wardrobeRepository, ItemRepository itemRepository,
-                              UserSearchService userSearchService, FriendshipService friendshipService) {
+    public ProfileServiceImpl(ProfileRepository profileRepository, WardrobeRepository wardrobeRepository,
+            ItemRepository itemRepository,
+            UserSearchService userSearchService, FriendshipService friendshipService) {
         this.profileRepository = profileRepository;
         this.wardrobeRepository = wardrobeRepository;
         this.itemRepository = itemRepository;
@@ -39,16 +43,87 @@ public class ProfileServiceImpl extends BaseService implements ProfileService {
     }
 
     @Override
-    public Profile getProfileByUserId(Long userId) {
-        return profileRepository.findByUserId(userId).orElseThrow(() -> new ResourceNotFoundException("Profile not found with userId: " + userId)
-        );
+    public ProfileResponseDto getProfile(Long userId) {
+        logger.info("Retrieving profile for user ID: {}", userId);
+
+        Profile profile = profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with userId: " + userId));
+
+        return convertToProfileResponseDto(profile);
+    }
+
+    @Override
+    @Transactional
+    public ProfileResponseDto updateProfile(Long userId, ProfileDto profileDto, MultipartFile image) {
+        logger.info("Attempting to update profile for user ID: {}", userId);
+
+        Profile profile = profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with userId: " + userId));
+
+        profile.setBio(profileDto.getBio());
+        profile.setLocation(profileDto.getLocation());
+        profile.setStylePreferences(profileDto.getStylePreferences());
+        profile.setFavoriteBrands(profileDto.getFavoriteBrands());
+        profile.setFashionInspirations(profileDto.getFashionInspirations());
+
+        if (image != null && !image.isEmpty()) {
+            // TODO: Implement image upload logic
+            profile.setProfileImageUrl("placeholder_url");
+        }
+
+        Profile updatedProfile = profileRepository.save(profile);
+        logger.info("Profile updated successfully for user ID: {}", userId);
+
+        return convertToProfileResponseDto(updatedProfile);
+    }
+
+    @Override
+    @Transactional
+    public ProfileResponseDto updateProfileVisibility(Long userId, boolean isPublic) {
+        logger.info("Attempting to update profile visibility for user ID: {} to: {}", userId, isPublic);
+
+        Profile profile = profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with userId: " + userId));
+
+        profile.setVisibility(isPublic ? ProfileVisibility.PUBLIC : ProfileVisibility.PRIVATE);
+        Profile updatedProfile = profileRepository.save(profile);
+        logger.info("Profile visibility updated successfully for user ID: {}", userId);
+
+        return convertToProfileResponseDto(updatedProfile);
+    }
+
+    @Override
+    @Transactional
+    public boolean isProfileAccessibleToUser(Long profileUserId, Long viewerId) {
+        logger.info("Checking profile accessibility for user ID: {} to view profile of user ID: {}", viewerId,
+                profileUserId);
+
+        // Users can always view their own profiles
+        if (profileUserId.equals(viewerId)) {
+            return true;
+        }
+
+        Optional<Profile> profileOptional = profileRepository.findByUserId(profileUserId);
+        if (profileOptional.isEmpty()) {
+            return false;
+        }
+
+        Profile profile = profileOptional.get();
+        ProfileVisibility visibility = profile.getVisibility();
+
+        // Public profiles are accessible to everyone
+        if (visibility == ProfileVisibility.PUBLIC) {
+            return true;
+        }
+
+        // Private profiles are only accessible to friends
+        return friendshipService.areFriends(profileUserId, viewerId);
     }
 
     @Override
     public Profile getProfileEntityById(Long profileId) {
         return profileRepository.findById(profileId).orElseThrow(
-                () -> new ResourceNotFoundException("Profile not found with id: " + profileId)
-        );
+                () -> new ResourceNotFoundException("Profile not found with id: " + profileId));
     }
 
     @Override
@@ -74,51 +149,6 @@ public class ProfileServiceImpl extends BaseService implements ProfileService {
         wardrobeRepository.save(defaultWardrobe);
 
         return profile;
-    }
-
-    @Override
-    @Transactional
-    public Profile updateProfile(Long userId, String bio, ProfileVisibility visibility) {
-        Optional<Profile> profileOptional = profileRepository.findByUserId(userId);
-        if (profileOptional.isEmpty()) {
-            throw new IllegalArgumentException("Profile not found for user with ID: " + userId);
-        }
-
-        Profile profile = profileOptional.get();
-        profile.setBio(bio);
-        profile.setVisibility(visibility);
-
-        return profileRepository.save(profile);
-    }
-
-    @Override
-    @Transactional
-    public boolean isProfileAccessibleToUser(Long profileOwnerId, Long viewerId) {
-        // Users can always view their own profiles
-        if (profileOwnerId.equals(viewerId)) {
-            return true;
-        }
-
-        Optional<Profile> profileOptional = profileRepository.findByUserId(profileOwnerId);
-        if (profileOptional.isEmpty()) {
-            return false;
-        }
-
-        Profile profile = profileOptional.get();
-        ProfileVisibility visibility = profile.getVisibility();
-
-        // Public profiles are accessible to everyone
-        if (visibility == ProfileVisibility.PUBLIC) {
-            return true;
-        }
-
-        // Private profiles are only accessible to the owner (handled above)
-        if (visibility == ProfileVisibility.PRIVATE) {
-            return friendshipService.areFriends(profileOwnerId, viewerId);
-        }
-
-        // FRIENDS_ONLY profiles are accessible to friends
-        return friendshipService.areFriends(profileOwnerId, viewerId);
     }
 
     /**
@@ -155,5 +185,20 @@ public class ProfileServiceImpl extends BaseService implements ProfileService {
 
         item.setWardrobe(newWardrobe);
         itemRepository.save(item);
+    }
+
+    private ProfileResponseDto convertToProfileResponseDto(Profile profile) {
+        return ProfileResponseDto.builder()
+                .id(profile.getId())
+                .userId(profile.getUser().getId())
+                .username(profile.getUser().getUsername())
+                .bio(profile.getBio())
+                .location(profile.getLocation())
+                .stylePreferences(profile.getStylePreferences())
+                .favoriteBrands(profile.getFavoriteBrands())
+                .fashionInspirations(profile.getFashionInspirations())
+                .profileImageUrl(profile.getProfileImageUrl())
+                .isPublic(profile.getVisibility() == ProfileVisibility.PUBLIC)
+                .build();
     }
 }

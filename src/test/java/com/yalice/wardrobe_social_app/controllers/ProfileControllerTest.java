@@ -1,55 +1,48 @@
 package com.yalice.wardrobe_social_app.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yalice.wardrobe_social_app.dtos.profile.ProfileUpdateRequest;
-import com.yalice.wardrobe_social_app.entities.Profile;
-import com.yalice.wardrobe_social_app.entities.Profile.ProfileVisibility;
+import com.yalice.wardrobe_social_app.dtos.profile.ProfileDto;
+import com.yalice.wardrobe_social_app.dtos.profile.ProfileResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
 import com.yalice.wardrobe_social_app.interfaces.ProfileService;
-import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
-import org.junit.jupiter.api.AfterEach;
+import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.Optional;
-
-import static com.yalice.wardrobe_social_app.utils.AuthenticationTestUtils.setupAuthentication;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class ProfileControllerTest {
 
         private MockMvc mockMvc;
 
-        private final ObjectMapper objectMapper = new ObjectMapper();
-
         @Mock
         private ProfileService profileService;
 
         @Mock
-        private UserSearchService userSearchService;
-
-        @Mock
-        private FriendshipService friendshipService;
+        private AuthUtils authUtils;
 
         @InjectMocks
         private ProfileController profileController;
 
+        private final ObjectMapper objectMapper = new ObjectMapper();
         private User testUser;
-        private Profile testProfile;
-        private ProfileUpdateRequest updateRequest;
+        private ProfileDto testProfileDto;
+        private ProfileResponseDto testProfileResponseDto;
+        private MockMultipartFile testImageFile;
 
         @BeforeEach
         void setUp() {
@@ -58,96 +51,211 @@ class ProfileControllerTest {
                                 .setControllerAdvice(new GlobalExceptionHandler())
                                 .build();
 
+                initializeTestData();
+        }
+
+        private void initializeTestData() {
                 testUser = User.builder()
                                 .id(1L)
                                 .username("testuser")
                                 .email("test@example.com")
                                 .build();
 
-                testProfile = Profile.builder()
+                testProfileDto = new ProfileDto();
+                testProfileDto.setBio("Test bio");
+                testProfileDto.setPublic(true);
+                testProfileDto.setLocation("Test Location");
+                testProfileDto.setStylePreferences("Casual, Modern");
+                testProfileDto.setFavoriteBrands("Brand1, Brand2");
+                testProfileDto.setFashionInspirations("Inspiration1, Inspiration2");
+
+                testProfileResponseDto = ProfileResponseDto.builder()
                                 .id(1L)
-                                .user(testUser)
+                                .userId(1L)
+                                .username("testuser")
                                 .bio("Test bio")
-                                .visibility(ProfileVisibility.PUBLIC)
+                                .location("Test Location")
+                                .stylePreferences("Casual, Modern")
+                                .favoriteBrands("Brand1, Brand2")
+                                .fashionInspirations("Inspiration1, Inspiration2")
+                                .profileImageUrl("https://example.com/profile.jpg")
+                                .isPublic(true)
                                 .build();
 
-                updateRequest = new ProfileUpdateRequest();
-                updateRequest.setBio("Updated bio");
-                updateRequest.setVisibility(ProfileVisibility.FRIENDS_ONLY);
-        }
-
-        @AfterEach
-        void tearDown() {
-                SecurityContextHolder.clearContext();
+                testImageFile = new MockMultipartFile(
+                                "image",
+                                "test.jpg",
+                                MediaType.IMAGE_JPEG_VALUE,
+                                "test image content".getBytes());
         }
 
         @Test
-        void getUserProfile_whenProfileExistsAndAccessible_returnsProfile() throws Exception {
-                // Setup authentication
-                setupAuthentication("testuser");
+        void getMyProfile_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(profileService.getProfile(anyLong())).thenReturn(testProfileResponseDto);
 
-                when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
-                when(profileService.getProfileByUserId(1L)).thenReturn(Optional.of(testProfile));
-                when(profileService.isProfileAccessibleToUser(1L, 1L)).thenReturn(true);
-
-                mockMvc.perform(get("/api/users/1/profile"))
+                mockMvc.perform(get("/api/profiles/me"))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.id").value(1))
-                                .andExpect(jsonPath("$.bio").value("Test bio"))
-                                .andExpect(jsonPath("$.visibility").value("PUBLIC"));
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Profile retrieved successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.username", is("testuser")))
+                                .andExpect(jsonPath("$.data.bio", is("Test bio")));
+
+                verify(profileService).getProfile(anyLong());
         }
 
         @Test
-        void getUserProfile_whenProfileNotAccessible_returnsForbidden() throws Exception {
-                // Setup authentication
-                setupAuthentication("testuser");
+        void getMyProfile_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(profileService.getProfile(anyLong()))
+                                .thenThrow(new RuntimeException("Failed to retrieve profile"));
 
-                when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
-                when(profileService.isProfileAccessibleToUser(2L, 1L)).thenReturn(false);
+                mockMvc.perform(get("/api/profiles/me"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to retrieve profile")));
 
-                mockMvc.perform(get("/api/users/2/profile"))
-                                .andExpect(status().isForbidden());
+                verify(profileService).getProfile(anyLong());
         }
 
         @Test
-        void getUserProfile_whenProfileNotFound_returnsNotFound() throws Exception {
-                // Setup authentication
-                setupAuthentication("testuser");
+        void getProfile_Success() throws Exception {
+                when(profileService.getProfile(anyLong())).thenReturn(testProfileResponseDto);
 
-                when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
-                when(profileService.getProfileByUserId(2L)).thenReturn(Optional.empty());
-                when(profileService.isProfileAccessibleToUser(2L, 1L)).thenReturn(true);
-
-                mockMvc.perform(get("/api/users/2/profile"))
-                                .andExpect(status().isNotFound());
-        }
-
-        @Test
-        void updateProfile_whenUserIsProfileOwner_updatesAndReturnsProfile() throws Exception {
-                // Setup authentication
-                setupAuthentication("testuser");
-
-                when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
-                when(profileService.updateProfile(1L, "Updated bio", ProfileVisibility.FRIENDS_ONLY))
-                                .thenReturn(testProfile);
-
-                mockMvc.perform(put("/api/users/1/profile")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(updateRequest)))
+                mockMvc.perform(get("/api/profiles/1"))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.id").value(1));
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Profile retrieved successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.username", is("testuser")))
+                                .andExpect(jsonPath("$.data.bio", is("Test bio")));
+
+                verify(profileService).getProfile(anyLong());
         }
 
         @Test
-        void updateProfile_whenUserIsNotProfileOwner_returnsForbidden() throws Exception {
-                // Setup authentication
-                setupAuthentication("testuser");
+        void getProfile_NotFound() throws Exception {
+                when(profileService.getProfile(anyLong())).thenThrow(new RuntimeException("Profile not found"));
 
-                when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
+                mockMvc.perform(get("/api/profiles/1"))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Profile not found for user ID: 1")));
 
-                mockMvc.perform(put("/api/users/2/profile")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(updateRequest)))
-                                .andExpect(status().isForbidden());
+                verify(profileService).getProfile(anyLong());
+        }
+
+        @Test
+        void updateProfile_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(profileService.updateProfile(anyLong(), any(ProfileDto.class), any()))
+                                .thenReturn(testProfileResponseDto);
+
+                MockMultipartFile profilePart = new MockMultipartFile(
+                                "profile",
+                                "",
+                                MediaType.APPLICATION_JSON_VALUE,
+                                objectMapper.writeValueAsString(testProfileDto).getBytes());
+
+                mockMvc.perform(multipart("/api/profiles/me")
+                                .file(profilePart)
+                                .file(testImageFile)
+                                .with(request -> {
+                                        request.setMethod("PUT");
+                                        return request;
+                                }))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Profile updated successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.username", is("testuser")))
+                                .andExpect(jsonPath("$.data.bio", is("Test bio")));
+
+                verify(profileService).updateProfile(anyLong(), any(ProfileDto.class), any());
+        }
+
+        @Test
+        void updateProfile_WithoutImage_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(profileService.updateProfile(anyLong(), any(ProfileDto.class), any()))
+                                .thenReturn(testProfileResponseDto);
+
+                MockMultipartFile profilePart = new MockMultipartFile(
+                                "profile",
+                                "",
+                                MediaType.APPLICATION_JSON_VALUE,
+                                objectMapper.writeValueAsString(testProfileDto).getBytes());
+
+                mockMvc.perform(multipart("/api/profiles/me")
+                                .file(profilePart)
+                                .with(request -> {
+                                        request.setMethod("PUT");
+                                        return request;
+                                }))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Profile updated successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.username", is("testuser")));
+
+                verify(profileService).updateProfile(anyLong(), any(ProfileDto.class), any());
+        }
+
+        @Test
+        void updateProfile_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(profileService.updateProfile(anyLong(), any(ProfileDto.class), any()))
+                                .thenThrow(new RuntimeException("Failed to update profile"));
+
+                MockMultipartFile profilePart = new MockMultipartFile(
+                                "profile",
+                                "",
+                                MediaType.APPLICATION_JSON_VALUE,
+                                objectMapper.writeValueAsString(testProfileDto).getBytes());
+
+                mockMvc.perform(multipart("/api/profiles/me")
+                                .file(profilePart)
+                                .with(request -> {
+                                        request.setMethod("PUT");
+                                        return request;
+                                }))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to update profile")));
+
+                verify(profileService).updateProfile(anyLong(), any(ProfileDto.class), any());
+        }
+
+        @Test
+        void updateProfileVisibility_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(profileService.updateProfileVisibility(anyLong(), anyBoolean()))
+                                .thenReturn(testProfileResponseDto);
+
+                mockMvc.perform(put("/api/profiles/me/visibility")
+                                .param("isPublic", "true"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Profile visibility updated successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.isPublic", is(true)));
+
+                verify(profileService).updateProfileVisibility(anyLong(), anyBoolean());
+        }
+
+        @Test
+        void updateProfileVisibility_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(profileService.updateProfileVisibility(anyLong(), anyBoolean()))
+                                .thenThrow(new RuntimeException("Failed to update profile visibility"));
+
+                mockMvc.perform(put("/api/profiles/me/visibility")
+                                .param("isPublic", "true"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to update profile visibility")));
+
+                verify(profileService).updateProfileVisibility(anyLong(), anyBoolean());
         }
 }

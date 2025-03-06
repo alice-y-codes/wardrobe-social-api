@@ -12,20 +12,21 @@ import java.time.LocalDateTime;
 @Table(name = "friendships")
 @Getter
 @Setter
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Friendship {
+public class Friendship extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /** The user who sent the friend request. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "requester_id", nullable = false)
+    @JoinColumn(name = "sender_id", nullable = false)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private User requester;
+    private User sender;
 
     /** The user who received the friend request. */
     @ManyToOne(fetch = FetchType.LAZY)
@@ -37,8 +38,7 @@ public class Friendship {
     /** Status of the friendship (Pending, Accepted, Rejected). */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    @Builder.Default
-    private FriendshipStatus status = FriendshipStatus.PENDING;
+    private FriendshipStatus status;
 
     /** Timestamp when the friendship request was created. */
     @Column(name = "created_at", nullable = false, updatable = false)

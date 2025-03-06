@@ -2,102 +2,288 @@ package com.yalice.wardrobe_social_app.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yalice.wardrobe_social_app.dtos.comment.CommentDto;
-import com.yalice.wardrobe_social_app.entities.Comment;
-import com.yalice.wardrobe_social_app.entities.Post;
+import com.yalice.wardrobe_social_app.dtos.comment.CommentResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.exceptions.CommentNotFoundException;
+import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 import com.yalice.wardrobe_social_app.interfaces.CommentService;
-import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
-import com.yalice.wardrobe_social_app.utils.AuthenticationTestUtils;
-import org.junit.jupiter.api.AfterEach;
+import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class CommentControllerTest {
 
-    private MockMvc mockMvc;
+        private MockMvc mockMvc;
 
-    @Mock
-    private CommentService commentService;
+        @Mock
+        private CommentService commentService;
 
-    @Mock
-    private UserSearchService userSearchService;
+        @Mock
+        private AuthUtils authUtils;
 
-    @InjectMocks
-    private CommentController commentController;
+        @InjectMocks
+        private CommentController commentController;
 
-    private User user;
-    private Post post;
-    private Comment comment;
-    private CommentDto commentDto;
+        private final ObjectMapper objectMapper = new ObjectMapper();
+        private User testUser;
+        private CommentDto testCommentDto;
+        private CommentResponseDto testCommentResponseDto;
+        private List<CommentResponseDto> testCommentList;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(commentController).build();
+        @BeforeEach
+        void setUp() {
+                MockitoAnnotations.openMocks(this);
+                mockMvc = MockMvcBuilders.standaloneSetup(commentController)
+                                .setControllerAdvice(new GlobalExceptionHandler())
+                                .build();
 
-        user = User.builder()
-                .id(1L)
-                .username("testuser")
-                .email("test@example.com")
-                .build();
+                initializeTestData();
+        }
 
-        post = Post.builder()
-                .id(1L)
-                .user(user)
-                .content("Test post content")
-                .build();
+        private void initializeTestData() {
+                testUser = User.builder()
+                                .id(1L)
+                                .username("testuser")
+                                .email("test@example.com")
+                                .build();
 
-        comment = Comment.builder()
-                .id(1L)
-                .post(post)
-                .user(user)
-                .content("Test comment")
-                .build();
+                testCommentDto = new CommentDto("Test comment");
 
-        commentDto = new CommentDto();
-        commentDto.setContent("Test comment");
+                testCommentResponseDto = CommentResponseDto.builder()
+                                .id(1L)
+                                .content("Test comment")
+                                .createdAt(LocalDateTime.now())
+                                .updatedAt(LocalDateTime.now())
+                                .userId(1L)
+                                .username("testuser")
+                                .postId(1L)
+                                .build();
 
-        AuthenticationTestUtils.setupAuthentication("testuser");
-    }
+                testCommentList = Arrays.asList(
+                                testCommentResponseDto,
+                                CommentResponseDto.builder()
+                                                .id(2L)
+                                                .content("Another comment")
+                                                .createdAt(LocalDateTime.now())
+                                                .updatedAt(LocalDateTime.now())
+                                                .userId(2L)
+                                                .username("otheruser")
+                                                .postId(1L)
+                                                .build());
+        }
 
-    @AfterEach
-    void tearDown() {
-        SecurityContextHolder.clearContext(); // Clears the security context after each test
-    }
+        @Test
+        void createComment_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(commentService.createComment(anyLong(), anyLong(), any(CommentDto.class)))
+                                .thenReturn(testCommentResponseDto);
 
-    @Test
-    void addComment_addsAndReturnsComment() throws Exception {
-        when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
-        when(commentService.addComment(eq(1L), eq(1L), anyString())).thenReturn(comment);
+                mockMvc.perform(post("/api/comments/posts/1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(testCommentDto)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Comment created successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.content", is("Test comment")))
+                                .andExpect(jsonPath("$.data.username", is("testuser")))
+                                .andExpect(jsonPath("$.data.postId", is(1)));
 
-        mockMvc.perform(post("/api/feed/1/comments")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(new ObjectMapper().writeValueAsString(commentDto)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.content").value("Test comment"));
-    }
+                verify(commentService).createComment(anyLong(), anyLong(), any(CommentDto.class));
+        }
 
-    @Test
-    void deleteComment_deletesComment() throws Exception {
-        when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
+        @Test
+        void createComment_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(commentService.createComment(anyLong(), anyLong(), any(CommentDto.class)))
+                                .thenThrow(new RuntimeException("Failed to create comment"));
 
-        mockMvc.perform(delete("/api/feed/1/comments/1"))
-                .andExpect(status().isOk());
-    }
+                mockMvc.perform(post("/api/comments/posts/1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(testCommentDto)))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to create comment")));
+
+                verify(commentService).createComment(anyLong(), anyLong(), any(CommentDto.class));
+        }
+
+        @Test
+        void updateComment_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(commentService.updateComment(anyLong(), anyLong(), any(CommentDto.class)))
+                                .thenReturn(testCommentResponseDto);
+
+                mockMvc.perform(put("/api/comments/1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(testCommentDto)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Comment updated successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.content", is("Test comment")))
+                                .andExpect(jsonPath("$.data.username", is("testuser")));
+
+                verify(commentService).updateComment(anyLong(), anyLong(), any(CommentDto.class));
+        }
+
+        @Test
+        void updateComment_NotFound() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(commentService.updateComment(anyLong(), anyLong(), any(CommentDto.class)))
+                                .thenThrow(new CommentNotFoundException("Comment not found with ID: 999"));
+
+                mockMvc.perform(put("/api/comments/999")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(testCommentDto)))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Comment not found with ID: 999")));
+
+                verify(commentService).updateComment(anyLong(), anyLong(), any(CommentDto.class));
+        }
+
+        @Test
+        void updateComment_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(commentService.updateComment(anyLong(), anyLong(), any(CommentDto.class)))
+                                .thenThrow(new RuntimeException("Failed to update comment"));
+
+                mockMvc.perform(put("/api/comments/1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(testCommentDto)))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to update comment")));
+
+                verify(commentService).updateComment(anyLong(), anyLong(), any(CommentDto.class));
+        }
+
+        @Test
+        void deleteComment_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                doNothing().when(commentService).deleteComment(anyLong(), anyLong());
+
+                mockMvc.perform(delete("/api/comments/1"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Comment deleted successfully")))
+                                .andExpect(jsonPath("$.data", nullValue()));
+
+                verify(commentService).deleteComment(anyLong(), anyLong());
+        }
+
+        @Test
+        void deleteComment_NotFound() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                doThrow(new CommentNotFoundException("Comment not found with ID: 999"))
+                                .when(commentService).deleteComment(anyLong(), anyLong());
+
+                mockMvc.perform(delete("/api/comments/999"))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Comment not found with ID: 999")));
+
+                verify(commentService).deleteComment(anyLong(), anyLong());
+        }
+
+        @Test
+        void deleteComment_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                doThrow(new RuntimeException("Failed to delete comment"))
+                                .when(commentService).deleteComment(anyLong(), anyLong());
+
+                mockMvc.perform(delete("/api/comments/1"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to delete comment")));
+
+                verify(commentService).deleteComment(anyLong(), anyLong());
+        }
+
+        @Test
+        void getPostComments_Success() throws Exception {
+                when(commentService.getPostComments(anyLong())).thenReturn(testCommentList);
+
+                mockMvc.perform(get("/api/comments/posts/1"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Comments retrieved successfully")))
+                                .andExpect(jsonPath("$.data", hasSize(2)))
+                                .andExpect(jsonPath("$.data[0].content", is("Test comment")))
+                                .andExpect(jsonPath("$.data[1].content", is("Another comment")));
+
+                verify(commentService).getPostComments(anyLong());
+        }
+
+        @Test
+        void getPostComments_Error() throws Exception {
+                when(commentService.getPostComments(anyLong()))
+                                .thenThrow(new RuntimeException("Failed to retrieve comments"));
+
+                mockMvc.perform(get("/api/comments/posts/1"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to retrieve comments")));
+
+                verify(commentService).getPostComments(anyLong());
+        }
+
+        @Test
+        void getComment_Success() throws Exception {
+                when(commentService.getComment(anyLong())).thenReturn(testCommentResponseDto);
+
+                mockMvc.perform(get("/api/comments/1"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Comment retrieved successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.content", is("Test comment")))
+                                .andExpect(jsonPath("$.data.username", is("testuser")));
+
+                verify(commentService).getComment(anyLong());
+        }
+
+        @Test
+        void getComment_NotFound() throws Exception {
+                when(commentService.getComment(anyLong()))
+                                .thenThrow(new CommentNotFoundException("Comment not found with ID: 999"));
+
+                mockMvc.perform(get("/api/comments/999"))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Comment not found with ID: 999")));
+
+                verify(commentService).getComment(anyLong());
+        }
+
+        @Test
+        void getComment_Error() throws Exception {
+                when(commentService.getComment(anyLong()))
+                                .thenThrow(new RuntimeException("Failed to retrieve comment"));
+
+                mockMvc.perform(get("/api/comments/1"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to retrieve comment")));
+
+                verify(commentService).getComment(anyLong());
+        }
 }

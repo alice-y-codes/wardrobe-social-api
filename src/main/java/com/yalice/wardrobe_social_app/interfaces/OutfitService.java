@@ -3,65 +3,72 @@ package com.yalice.wardrobe_social_app.interfaces;
 import com.yalice.wardrobe_social_app.dtos.outfit.OutfitDto;
 import com.yalice.wardrobe_social_app.dtos.outfit.OutfitResponseDto;
 import com.yalice.wardrobe_social_app.entities.Outfit;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+/**
+ * Service interface for managing outfits.
+ */
 public interface OutfitService {
-
     /**
-     * Create a new outfit for a user.
+     * Creates a new outfit.
      *
-     * @param userId the ID of the user creating the outfit
-     * @param outfitDto the outfit data to create
-     * @return the created outfit as a DTO
+     * @param userId    the ID of the user creating the outfit
+     * @param outfitDto the outfit data
+     * @param image     the outfit image file (optional)
+     * @return the created outfit
      */
-    OutfitResponseDto createOutfit(Long userId, OutfitDto outfitDto);
+    OutfitResponseDto createOutfit(Long userId, OutfitDto outfitDto, MultipartFile image);
 
     /**
-     * Get all outfits for a user.
+     * Updates an existing outfit.
+     *
+     * @param userId    the ID of the user updating the outfit
+     * @param outfitId  the ID of the outfit to update
+     * @param outfitDto the updated outfit data
+     * @param image     the new outfit image file (optional)
+     * @return the updated outfit
+     */
+    OutfitResponseDto updateOutfit(Long userId, Long outfitId, OutfitDto outfitDto, MultipartFile image);
+
+    /**
+     * Deletes an outfit.
+     *
+     * @param userId   the ID of the user deleting the outfit
+     * @param outfitId the ID of the outfit to delete
+     */
+    void deleteOutfit(Long userId, Long outfitId);
+
+    /**
+     * Gets all outfits for a specific user.
      *
      * @param userId the ID of the user
-     * @return a list of outfit response DTOs
+     * @return the list of outfits
      */
-    List<OutfitResponseDto> getAllOutfits(Long userId);
+    List<OutfitResponseDto> getUserOutfits(Long userId);
 
     /**
-     * Get an outfit by ID.
+     * Gets a specific outfit by ID.
      *
      * @param outfitId the ID of the outfit to retrieve
-     * @return the outfit response DTO
+     * @return the outfit
      */
     OutfitResponseDto getOutfit(Long outfitId);
 
     /**
-     * Get an outfit entity by ID.
+     * Gets the Outfit entity by ID.
      *
      * @param outfitId the ID of the outfit to retrieve
-     * @return the outfit entity
+     * @return the Outfit entity
      */
     Outfit getOutfitEntityById(Long outfitId);
-
-    /**
-     * Update an outfit.
-     *
-     * @param outfitId the ID of the outfit to update
-     * @param outfitDto the updated outfit data
-     * @return the updated outfit as a DTO
-     */
-    OutfitResponseDto updateOutfit(Long outfitId, OutfitDto outfitDto);
-
-    /**
-     * Delete an outfit.
-     *
-     * @param outfitId the ID of the outfit to delete
-     */
-    void deleteOutfit(Long outfitId);
 
     /**
      * Add an item to an outfit.
      *
      * @param outfitId the ID of the outfit
-     * @param itemId the ID of the item to add
+     * @param itemId   the ID of the item to add
      * @return the updated outfit response DTO
      */
     OutfitResponseDto addItemToOutfit(Long outfitId, Long itemId);
@@ -70,7 +77,7 @@ public interface OutfitService {
      * Remove an item from an outfit.
      *
      * @param outfitId the ID of the outfit
-     * @param itemId the ID of the item to remove
+     * @param itemId   the ID of the item to remove
      * @return the updated outfit response DTO
      */
     OutfitResponseDto removeItemFromOutfit(Long outfitId, Long itemId);

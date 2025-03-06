@@ -31,4 +31,12 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
 
     @Query("SELECT f.requester FROM Friendship f WHERE f.recipient.id = ?1 AND f.status = 'ACCEPTED'")
     List<User> findFriendsWhoSentAcceptedRequestToUser(Long userId);
+
+    boolean existsBySenderIdAndRecipientId(Long senderId, Long recipientId);
+
+    List<Friendship> findByRecipientIdAndStatus(Long recipientId, FriendshipStatus status);
+
+    List<Friendship> findBySenderIdOrRecipientIdAndStatus(Long userId, FriendshipStatus status);
+
+    Optional<Friendship> findFriendshipBetweenUsers(Long userId1, Long userId2);
 }

@@ -6,18 +6,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.yalice.wardrobe_social_app.dtos.feed.FeedItemDto;
+import com.yalice.wardrobe_social_app.dtos.outfit.OutfitResponseDto;
+import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 import com.yalice.wardrobe_social_app.interfaces.FeedService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
-import com.yalice.wardrobe_social_app.utils.AuthenticationTestUtils;
+import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,14 +32,16 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class FeedControllerTest {
 
@@ -49,68 +55,75 @@ class FeedControllerTest {
         @Mock
         private UserSearchService userSearchService;
 
+        @Mock
+        private AuthUtils authUtils;
+
         @InjectMocks
         private FeedController feedController;
 
-        private User user;
-        private Post post;
+        private User testUser;
+        private Post testPost;
+        private FeedItemDto testFeedItemDto;
+        private Page<Post> testPostPage;
 
         @BeforeEach
         void setUp() {
-                // Configure PageableHandlerMethodArgumentResolver with default values
-                PageableHandlerMethodArgumentResolver pageableResolver = new PageableHandlerMethodArgumentResolver();
-                pageableResolver.setFallbackPageable(PageRequest.of(0, 20));
-                pageableResolver.setOneIndexedParameters(false);
-
-                // Configure ObjectMapper to handle Java 8 date/time types and PageImpl
-                objectMapper.findAndRegisterModules();
-                objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-                // Register custom PageImpl serializer to avoid UnsupportedOperationException
-                SimpleModule pageModule = new SimpleModule();
-                pageModule.addSerializer(PageImpl.class, new JsonSerializer<PageImpl>() {
-                        @Override
-                        public void serialize(PageImpl page, JsonGenerator gen, SerializerProvider serializers)
-                                throws IOException {
-                                gen.writeStartObject();
-                                gen.writeObjectField("content", page.getContent());
-                                gen.writeNumberField("number", page.getNumber());
-                                gen.writeNumberField("size", page.getSize());
-                                gen.writeNumberField("totalElements", page.getTotalElements());
-                                gen.writeNumberField("totalPages", page.getTotalPages());
-                                gen.writeBooleanField("first", page.isFirst());
-                                gen.writeBooleanField("last", page.isLast());
-                                gen.writeBooleanField("empty", page.isEmpty());
-                                gen.writeEndObject();
-                        }
-                });
-                objectMapper.registerModule(pageModule);
-
-                // Create a message converter with our custom ObjectMapper
-                MappingJackson2HttpMessageConverter messageConverter = new MappingJackson2HttpMessageConverter();
-                messageConverter.setObjectMapper(objectMapper);
-
                 MockitoAnnotations.openMocks(this);
                 mockMvc = MockMvcBuilders.standaloneSetup(feedController)
-                        .setControllerAdvice(new GlobalExceptionHandler())
-                        .setCustomArgumentResolvers(pageableResolver)
-                        .setMessageConverters(messageConverter)
-                        .build();
+                                .setControllerAdvice(new GlobalExceptionHandler())
+                                .build();
 
+                initializeTestData();
+        }
 
-                user = User.builder()
-                        .id(1L)
-                        .username("testuser")
-                        .email("test@example.com")
-                        .build();
+        private void initializeTestData() {
+                testUser = User.builder()
+                                .id(1L)
+                                .username("testuser")
+                                .email("test@example.com")
+                                .build();
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
 
-                post = Post.builder()
-                        .id(1L)
-                        .user(user)
-                        .content("Test post content")
-                        .build();
+                UserResponseDto userResponseDto = UserResponseDto.builder()
+                                .id(1L)
+                                .username("testuser")
+                                .email("test@example.com")
+                                .build();
 
-                AuthenticationTestUtils.setupAuthentication("testuser");
+                OutfitResponseDto outfitResponseDto = OutfitResponseDto.builder()
+                                .id(1L)
+                                .name("Test Outfit")
+                                .description("A test outfit")
+                                .season("SUMMER")
+                                .isFavorite(false)
+                                .isPublic(true)
+                                .createdAt(LocalDateTime.now())
+                                .updatedAt(LocalDateTime.now())
+                                .profileId(1L)
+                                .build();
+
+                testFeedItemDto = new FeedItemDto();
+                testFeedItemDto.setId(1L);
+                testFeedItemDto.setType("OUTFIT");
+                testFeedItemDto.setOutfit(outfitResponseDto);
+                testFeedItemDto.setUser(userResponseDto);
+                testFeedItemDto.setCreatedAt(LocalDateTime.now());
+                testFeedItemDto.setUpdatedAt(LocalDateTime.now());
+                testFeedItemDto.setSeason("SUMMER");
+                testFeedItemDto.setCategory("CASUAL");
+                testFeedItemDto.setLikesCount(5);
+                testFeedItemDto.setCommentsCount(2);
+                testFeedItemDto.setLikedByCurrentUser(false);
+
+                testPost = Post.builder()
+                                .id(1L)
+                                .title("Test Post")
+                                .content("This is a test post")
+                                .createdAt(LocalDateTime.now())
+                                .updatedAt(LocalDateTime.now())
+                                .build();
+
+                testPostPage = new PageImpl<>(Arrays.asList(testPost), PageRequest.of(0, 20), 1);
         }
 
         @AfterEach
@@ -119,35 +132,122 @@ class FeedControllerTest {
         }
 
         @Test
-        void getUserFeed_returnsFeed() throws Exception {
-                when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
-                when(feedService.getUserFeed(eq(1L), any(Pageable.class)))
-                        .thenReturn(new PageImpl<>(Arrays.asList(post)));
+        void getFeed_Success() throws Exception {
+                List<FeedItemDto> feedItems = Arrays.asList(testFeedItemDto);
+                when(feedService.getFeed(anyLong(), anyInt(), anyInt())).thenReturn(feedItems);
 
                 mockMvc.perform(get("/api/feed")
                                 .param("page", "0")
                                 .param("size", "20"))
-                        .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.content[0].id").value(1))
-                        .andExpect(jsonPath("$.content[0].content").value("Test post content"));
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Feed retrieved successfully")))
+                                .andExpect(jsonPath("$.data", hasSize(1)))
+                                .andExpect(jsonPath("$.data[0].id", is(1)))
+                                .andExpect(jsonPath("$.data[0].type", is("OUTFIT")))
+                                .andExpect(jsonPath("$.data[0].season", is("SUMMER")));
+
+                verify(feedService).getFeed(anyLong(), anyInt(), anyInt());
         }
 
         @Test
-        void getUserPosts_returnsUserPosts() throws Exception {
-                when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
-                Pageable pageable = PageRequest.of(0, 20);  // Create a Pageable object
+        void getFeedBySeason_Success() throws Exception {
+                List<FeedItemDto> feedItems = Arrays.asList(testFeedItemDto);
+                when(feedService.getFeedBySeason(anyLong(), anyString(), anyInt(), anyInt())).thenReturn(feedItems);
 
-                // Mock the service call
-                when(feedService.getUserPosts(eq(1L), eq(1L), eq(pageable)))
-                        .thenReturn(new PageImpl<>(Arrays.asList(post)));
+                mockMvc.perform(get("/api/feed/season/SUMMER")
+                                .param("page", "0")
+                                .param("size", "20"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Feed retrieved successfully")))
+                                .andExpect(jsonPath("$.data", hasSize(1)))
+                                .andExpect(jsonPath("$.data[0].id", is(1)))
+                                .andExpect(jsonPath("$.data[0].type", is("OUTFIT")))
+                                .andExpect(jsonPath("$.data[0].season", is("SUMMER")));
 
-                // Perform the request
+                verify(feedService).getFeedBySeason(anyLong(), anyString(), anyInt(), anyInt());
+        }
+
+        @Test
+        void getFeedByCategory_Success() throws Exception {
+                List<FeedItemDto> feedItems = Arrays.asList(testFeedItemDto);
+                when(feedService.getFeedByCategory(anyLong(), anyString(), anyInt(), anyInt())).thenReturn(feedItems);
+
+                mockMvc.perform(get("/api/feed/category/CASUAL")
+                                .param("page", "0")
+                                .param("size", "20"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Feed retrieved successfully")))
+                                .andExpect(jsonPath("$.data", hasSize(1)))
+                                .andExpect(jsonPath("$.data[0].id", is(1)))
+                                .andExpect(jsonPath("$.data[0].type", is("OUTFIT")))
+                                .andExpect(jsonPath("$.data[0].category", is("CASUAL")));
+
+                verify(feedService).getFeedByCategory(anyLong(), anyString(), anyInt(), anyInt());
+        }
+
+        @Test
+        void getUserPosts_Success() throws Exception {
+                when(feedService.getUserPosts(anyLong(), anyLong(), eq(PageRequest.of(0, 20))))
+                                .thenReturn(testPostPage);
+
                 mockMvc.perform(get("/api/feed/users/1/posts")
                                 .param("page", "0")
                                 .param("size", "20"))
-                        .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.content[0].id").value(1))
-                        .andExpect(jsonPath("$.content[0].content").value("Test post content"));
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("User posts retrieved successfully")))
+                                .andExpect(jsonPath("$.data.content", hasSize(1)))
+                                .andExpect(jsonPath("$.data.content[0].id", is(1)))
+                                .andExpect(jsonPath("$.data.content[0].title", is("Test Post")));
+
+                verify(feedService).getUserPosts(anyLong(), anyLong(), eq(PageRequest.of(0, 20)));
         }
 
+        @Test
+        void getFeed_Error() throws Exception {
+                when(feedService.getFeed(anyLong(), anyInt(), anyInt()))
+                                .thenThrow(new RuntimeException("Database error"));
+
+                mockMvc.perform(get("/api/feed")
+                                .param("page", "0")
+                                .param("size", "20"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to retrieve feed")));
+
+                verify(feedService).getFeed(anyLong(), anyInt(), anyInt());
+        }
+
+        @Test
+        void getFeedBySeason_Error() throws Exception {
+                when(feedService.getFeedBySeason(anyLong(), anyString(), anyInt(), anyInt()))
+                                .thenThrow(new RuntimeException("Database error"));
+
+                mockMvc.perform(get("/api/feed/season/SUMMER")
+                                .param("page", "0")
+                                .param("size", "20"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to retrieve feed")));
+
+                verify(feedService).getFeedBySeason(anyLong(), anyString(), anyInt(), anyInt());
+        }
+
+        @Test
+        void getFeedByCategory_Error() throws Exception {
+                when(feedService.getFeedByCategory(anyLong(), anyString(), anyInt(), anyInt()))
+                                .thenThrow(new RuntimeException("Database error"));
+
+                mockMvc.perform(get("/api/feed/category/CASUAL")
+                                .param("page", "0")
+                                .param("size", "20"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to retrieve feed")));
+
+                verify(feedService).getFeedByCategory(anyLong(), anyString(), anyInt(), anyInt());
+        }
 }

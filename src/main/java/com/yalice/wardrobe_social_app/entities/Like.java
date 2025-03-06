@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Like {
+public class Like extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,10 +32,10 @@ public class Like {
 
     /** The profile (user) who liked the post. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "profile_id", nullable = false)  // Changed from user_id to profile_id
+    @JoinColumn(name = "profile_id", nullable = false)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private Profile profile;  // Changed from user to profile
+    private Profile profile;
 
     /** Timestamp when the like was created. */
     @Column(name = "created_at", nullable = false, updatable = false)

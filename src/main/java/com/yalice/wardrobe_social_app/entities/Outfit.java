@@ -4,21 +4,18 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "outfits")
 @Getter
 @Setter
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Outfit {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Outfit extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "profile_id", nullable = false)
@@ -32,32 +29,30 @@ public class Outfit {
     @Column(length = 1000)
     private String description;
 
-    @Column(nullable = false)
+    @Column
     private String season;
 
-    @Column(name = "is_favorite", nullable = false)
-    @Builder.Default
-    private boolean isFavorite = false;
+    @Column
+    private String category;
 
-    @Column(name = "is_public", nullable = false)
-    @Builder.Default
-    private boolean isPublic = false;
+    @Column
+    private String imageUrl;
+
+    @Column
+    private boolean favorite;
+
+    @Column
+    private boolean isPublic;
 
     @ManyToMany
-    @JoinTable(
-            name = "outfit_items",
-            joinColumns = @JoinColumn(name = "outfit_id"),
-            inverseJoinColumns = @JoinColumn(name = "item_id")
-    )
-    @Builder.Default
-    private Set<Item> items = new HashSet<>();
+    @JoinTable(name = "outfit_items", joinColumns = @JoinColumn(name = "outfit_id"), inverseJoinColumns = @JoinColumn(name = "item_id"))
+    private List<Item> items = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
 
     @PrePersist
     protected void onCreate() {
@@ -71,14 +66,12 @@ public class Outfit {
     }
 
     public void addOutfitItem(Item item) {
-        if (item != null) {
-            this.items.add(item);
+        if (!items.contains(item)) {
+            items.add(item);
         }
     }
 
     public void removeOutfitItem(Item item) {
-        if (item != null) {
-            this.items.remove(item);
-        }
+        items.remove(item);
     }
 }

@@ -4,279 +4,351 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yalice.wardrobe_social_app.dtos.item.ItemDto;
 import com.yalice.wardrobe_social_app.dtos.item.ItemResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 import com.yalice.wardrobe_social_app.interfaces.ItemService;
-import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
-import org.junit.jupiter.api.AfterEach;
+import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.Collections;
-import java.util.Optional;
+import java.util.Arrays;
+import java.util.List;
 
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
-public class ItemControllerTest {
+class ItemControllerTest {
 
-    private MockMvc mockMvc;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+        private MockMvc mockMvc;
 
-    @Mock
-    private ItemService itemService;
+        @Mock
+        private ItemService itemService;
 
-    @Mock
-    private UserSearchService userSearchService;
+        @Mock
+        private AuthUtils authUtils;
 
-    @InjectMocks
-    private ItemController itemController;
+        @InjectMocks
+        private ItemController itemController;
 
-    private User user;
-    private ItemDto itemDto;
-    private ItemResponseDto itemResponseDto;
+        private final ObjectMapper objectMapper = new ObjectMapper();
+        private User testUser;
+        private ItemDto testItemDto;
+        private ItemResponseDto testItemResponseDto;
+        private MockMultipartFile testImageFile;
+        private List<ItemResponseDto> testItemList;
 
-    @BeforeEach
-    public void setup() {
-        // Create a new MockMvc instance for each test
-        itemController = new ItemController(itemService, userSearchService);
-        mockMvc = MockMvcBuilders.standaloneSetup(itemController).build();
+        @BeforeEach
+        void setUp() {
+                MockitoAnnotations.openMocks(this);
+                mockMvc = MockMvcBuilders.standaloneSetup(itemController)
+                                .setControllerAdvice(new GlobalExceptionHandler())
+                                .build();
 
-        // Set up test data
-        user = User.builder().id(1L).username("testuser").build();
-        itemDto = ItemDto.builder()
-                .name("Test name")
-                .category("Test category")
-                .imageUrl("Test image url")
-                .build();
-        itemResponseDto = ItemResponseDto.builder()
-                .id(1L)
-                .name("Test name")
-                .category("Test category")
-                .imageUrl("Test image url")
-                .build();
-    }
+                initializeTestData();
+        }
 
-    @AfterEach
-    public void tearDown() {
-        // Clear the security context after each test
-        SecurityContextHolder.clearContext();
-    }
+        private void initializeTestData() {
+                testUser = User.builder()
+                                .id(1L)
+                                .username("testuser")
+                                .email("test@example.com")
+                                .build();
 
-    /**
-     * Sets up authentication for tests by creating a mock authentication context.
-     *
-     * @param username The username of the authenticated user.
-     */
-    public static void setupAuthentication(String username) {
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                username, null, Collections.emptyList());
-        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-        securityContext.setAuthentication(authentication);
-        SecurityContextHolder.setContext(securityContext);
-    }
+                testItemDto = ItemDto.builder()
+                                .name("Test Item")
+                                .brand("Test Brand")
+                                .category("TOPS")
+                                .size("M")
+                                .color("Blue")
+                                .build();
 
-    /**
-     * Test to create an item for a user.
-     */
-    @Test
-    public void shouldCreateItem() throws Exception {
-        // Arrange
-        setupAuthentication("testuser");
-        when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
-        when(itemService.createItem(eq(1L), any(ItemDto.class))).thenReturn(itemResponseDto);
+                testItemResponseDto = ItemResponseDto.builder()
+                                .id(1L)
+                                .name("Test Item")
+                                .brand("Test Brand")
+                                .category("TOPS")
+                                .size("M")
+                                .color("Blue")
+                                .imageUrl("https://example.com/item.jpg")
+                                .profileId(1L)
+                                .wardrobeId(1L)
+                                .build();
 
-        // Act & Assert
-        mockMvc.perform(post("/api/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(itemDto)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.name").value("Test name"))
-                .andExpect(jsonPath("$.data.category").value("Test category"))
-                .andExpect(jsonPath("$.data.imageUrl").value("Test image url"));
+                testItemList = Arrays.asList(
+                                testItemResponseDto,
+                                ItemResponseDto.builder()
+                                                .id(2L)
+                                                .name("Another Item")
+                                                .brand("Another Brand")
+                                                .category("BOTTOMS")
+                                                .size("L")
+                                                .color("Red")
+                                                .imageUrl("https://example.com/another-item.jpg")
+                                                .profileId(1L)
+                                                .wardrobeId(1L)
+                                                .build());
 
-        verify(userSearchService).findUserByUsername("testuser");
-        verify(itemService).createItem(eq(1L), any(ItemDto.class));
-    }
+                testImageFile = new MockMultipartFile(
+                                "image",
+                                "test.jpg",
+                                MediaType.IMAGE_JPEG_VALUE,
+                                "test image content".getBytes());
+        }
 
-    /**
-     * Test to retrieve the items belonging to the authenticated user.
-     */
-    @Test
-    public void shouldGetMyItems() throws Exception {
-        // Arrange
-        setupAuthentication("testuser");
-        when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
-        when(itemService.getAllItems(1L)).thenReturn(Collections.singletonList(itemResponseDto));
+        @Test
+        void createItem_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(itemService.createItem(anyLong(), any(ItemDto.class), any())).thenReturn(testItemResponseDto);
 
-        // Act & Assert
-        mockMvc.perform(get("/api/items/my-items")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].name").value("Test name"));
+                MockMultipartFile itemPart = new MockMultipartFile(
+                                "item",
+                                "",
+                                MediaType.APPLICATION_JSON_VALUE,
+                                objectMapper.writeValueAsString(testItemDto).getBytes());
 
-        verify(userSearchService).findUserByUsername("testuser");
-        verify(itemService).getAllItems(1L);
-    }
+                mockMvc.perform(multipart("/api/items")
+                                .file(itemPart)
+                                .file(testImageFile))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Item created successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.name", is("Test Item")))
+                                .andExpect(jsonPath("$.data.category", is("TOPS")))
+                                .andExpect(jsonPath("$.data.size", is("M")));
 
-    /**
-     * Test to retrieve all items for a specific user by their ID.
-     */
-    @Test
-    public void shouldGetAllItems() throws Exception {
-        // Arrange
-        when(itemService.getAllItems(1L)).thenReturn(Collections.singletonList(itemResponseDto));
+                verify(itemService).createItem(anyLong(), any(ItemDto.class), any());
+        }
 
-        // Act & Assert
-        mockMvc.perform(get("/api/items/users/1")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].name").value("Test name"));
+        @Test
+        void createItem_WithoutImage_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(itemService.createItem(anyLong(), any(ItemDto.class), any())).thenReturn(testItemResponseDto);
 
-        verify(itemService).getAllItems(1L);
-    }
+                MockMultipartFile itemPart = new MockMultipartFile(
+                                "item",
+                                "",
+                                MediaType.APPLICATION_JSON_VALUE,
+                                objectMapper.writeValueAsString(testItemDto).getBytes());
 
-    /**
-     * Test to retrieve a specific item by its ID.
-     */
-    @Test
-    public void shouldGetItemById() throws Exception {
-        // Arrange
-        when(itemService.getItem(1L)).thenReturn(itemResponseDto);
+                mockMvc.perform(multipart("/api/items")
+                                .file(itemPart))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Item created successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.name", is("Test Item")));
 
-        // Act & Assert
-        mockMvc.perform(get("/api/items/1")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.name").value("Test name"));
+                verify(itemService).createItem(anyLong(), any(ItemDto.class), any());
+        }
 
-        verify(itemService).getItem(1L);
-    }
+        @Test
+        void createItem_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(itemService.createItem(anyLong(), any(ItemDto.class), any()))
+                                .thenThrow(new RuntimeException("Failed to create item"));
 
-    /**
-     * Test to handle when an item does not exist for the given ID.
-     */
-    @Test
-    public void shouldReturnNotFoundWhenItemByIdDoesNotExist() throws Exception {
-        // Arrange
-        when(itemService.getItem(1L)).thenReturn(null);
+                MockMultipartFile itemPart = new MockMultipartFile(
+                                "item",
+                                "",
+                                MediaType.APPLICATION_JSON_VALUE,
+                                objectMapper.writeValueAsString(testItemDto).getBytes());
 
-        // Act & Assert
-        mockMvc.perform(get("/api/items/1")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound());
+                mockMvc.perform(multipart("/api/items")
+                                .file(itemPart))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to create item")));
 
-        verify(itemService).getItem(1L);
-    }
+                verify(itemService).createItem(anyLong(), any(ItemDto.class), any());
+        }
 
-    /**
-     * Test to retrieve an item by its name.
-     */
-    @Test
-    public void shouldGetItemByName() throws Exception {
-        // Arrange
-        when(itemService.getItemByName("Test name")).thenReturn(itemResponseDto);
+        @Test
+        void updateItem_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(itemService.updateItem(anyLong(), anyLong(), any(ItemDto.class), any()))
+                                .thenReturn(testItemResponseDto);
 
-        // Act & Assert
-        mockMvc.perform(get("/api/items/names/Test name")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.name").value("Test name"));
+                MockMultipartFile itemPart = new MockMultipartFile(
+                                "item",
+                                "",
+                                MediaType.APPLICATION_JSON_VALUE,
+                                objectMapper.writeValueAsString(testItemDto).getBytes());
 
-        verify(itemService).getItemByName("Test name");
-    }
+                mockMvc.perform(multipart("/api/items/1")
+                                .file(itemPart)
+                                .file(testImageFile)
+                                .with(request -> {
+                                        request.setMethod("PUT");
+                                        return request;
+                                }))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Item updated successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.name", is("Test Item")))
+                                .andExpect(jsonPath("$.data.category", is("TOPS")));
 
-    /**
-     * Test to update an existing item.
-     */
-    @Test
-    public void shouldUpdateItem() throws Exception {
-        // Arrange
-        ItemDto updatedItemDto = ItemDto.builder()
-                .name("Updated name")
-                .category("Updated category")
-                .imageUrl("Updated image url")
-                .build();
-        ItemResponseDto updatedItem = ItemResponseDto.builder()
-                .id(1L)
-                .name("Updated name")
-                .category("Updated category")
-                .imageUrl("Updated image url")
-                .build();
-        when(itemService.updateItem(eq(1L), any(ItemDto.class))).thenReturn(updatedItem);
+                verify(itemService).updateItem(anyLong(), anyLong(), any(ItemDto.class), any());
+        }
 
-        // Act & Assert
-        mockMvc.perform(put("/api/items/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedItemDto)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.name").value("Updated name"))
-                .andExpect(jsonPath("$.data.category").value("Updated category"));
+        @Test
+        void updateItem_WithoutImage_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(itemService.updateItem(anyLong(), anyLong(), any(ItemDto.class), any()))
+                                .thenReturn(testItemResponseDto);
 
-        verify(itemService).updateItem(eq(1L), any(ItemDto.class));
-    }
+                MockMultipartFile itemPart = new MockMultipartFile(
+                                "item",
+                                "",
+                                MediaType.APPLICATION_JSON_VALUE,
+                                objectMapper.writeValueAsString(testItemDto).getBytes());
 
-    /**
-     * Test to delete an item by its ID.
-     */
-    @Test
-    public void shouldDeleteItem() throws Exception {
-        // Arrange
-        long itemId = 1L;
-        when(itemService.deleteItem(itemId)).thenReturn(true);
+                mockMvc.perform(multipart("/api/items/1")
+                                .file(itemPart)
+                                .with(request -> {
+                                        request.setMethod("PUT");
+                                        return request;
+                                }))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Item updated successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.name", is("Test Item")));
 
-        // Act & Assert
-        mockMvc.perform(delete("/api/items/1")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNoContent());
+                verify(itemService).updateItem(anyLong(), anyLong(), any(ItemDto.class), any());
+        }
 
-        verify(itemService).deleteItem(itemId);
-    }
+        @Test
+        void updateItem_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(itemService.updateItem(anyLong(), anyLong(), any(ItemDto.class), any()))
+                                .thenThrow(new RuntimeException("Failed to update item"));
 
-    /**
-     * Test to return a BadRequest status when the user is not authenticated.
-     */
-    @Test
-    public void shouldReturnBadRequestWhenUserNotAuthenticated() throws Exception {
-        // Arrange - no authentication setup
-        when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.empty());
+                MockMultipartFile itemPart = new MockMultipartFile(
+                                "item",
+                                "",
+                                MediaType.APPLICATION_JSON_VALUE,
+                                objectMapper.writeValueAsString(testItemDto).getBytes());
 
-        // Act & Assert
-        mockMvc.perform(post("/api/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(itemDto)))
-                .andExpect(status().isBadRequest());
-    }
+                mockMvc.perform(multipart("/api/items/1")
+                                .file(itemPart)
+                                .with(request -> {
+                                        request.setMethod("PUT");
+                                        return request;
+                                }))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to update item")));
 
-    /**
-     * Test to return a BadRequest status when the user is not found.
-     */
-    @Test
-    public void shouldReturnBadRequestWhenUserNotFound() throws Exception {
-        // Arrange
-        setupAuthentication("testuser");
-        when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.empty());
+                verify(itemService).updateItem(anyLong(), anyLong(), any(ItemDto.class), any());
+        }
 
-        // Act & Assert
-        mockMvc.perform(post("/api/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(itemDto)))
-                .andExpect(status().isBadRequest());
+        @Test
+        void deleteItem_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                doNothing().when(itemService).deleteItem(anyLong(), anyLong());
 
-        verify(userSearchService).findUserByUsername("testuser");
-    }
+                mockMvc.perform(delete("/api/items/1"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Item deleted successfully")));
+
+                verify(itemService).deleteItem(anyLong(), anyLong());
+        }
+
+        @Test
+        void deleteItem_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                doThrow(new RuntimeException("Failed to delete item")).when(itemService).deleteItem(anyLong(),
+                                anyLong());
+
+                mockMvc.perform(delete("/api/items/1"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to delete item")));
+
+                verify(itemService).deleteItem(anyLong(), anyLong());
+        }
+
+        @Test
+        void getMyItems_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(itemService.getUserItems(anyLong())).thenReturn(testItemList);
+
+                mockMvc.perform(get("/api/items/my-items"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Items retrieved successfully")))
+                                .andExpect(jsonPath("$.data", hasSize(2)))
+                                .andExpect(jsonPath("$.data[0].name", is("Test Item")))
+                                .andExpect(jsonPath("$.data[1].name", is("Another Item")));
+
+                verify(itemService).getUserItems(anyLong());
+        }
+
+        @Test
+        void getMyItems_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(itemService.getUserItems(anyLong()))
+                                .thenThrow(new RuntimeException("Failed to retrieve items"));
+
+                mockMvc.perform(get("/api/items/my-items"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to retrieve items")));
+
+                verify(itemService).getUserItems(anyLong());
+        }
+
+        @Test
+        void getItem_Success() throws Exception {
+                when(itemService.getItem(anyLong())).thenReturn(testItemResponseDto);
+
+                mockMvc.perform(get("/api/items/1"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Item retrieved successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.name", is("Test Item")))
+                                .andExpect(jsonPath("$.data.category", is("TOPS")));
+
+                verify(itemService).getItem(anyLong());
+        }
+
+        @Test
+        void getItem_NotFound() throws Exception {
+                when(itemService.getItem(anyLong()))
+                                .thenThrow(new RuntimeException("Item not found"));
+
+                mockMvc.perform(get("/api/items/999"))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Item not found with ID: 999")));
+
+                verify(itemService).getItem(anyLong());
+        }
+
+        @Test
+        void getItem_Error() throws Exception {
+                when(itemService.getItem(anyLong()))
+                                .thenThrow(new RuntimeException("Failed to retrieve item"));
+
+                mockMvc.perform(get("/api/items/1"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to retrieve item")));
+
+                verify(itemService).getItem(anyLong());
+        }
 }

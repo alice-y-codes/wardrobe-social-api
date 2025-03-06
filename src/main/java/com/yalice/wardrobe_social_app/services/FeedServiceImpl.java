@@ -1,5 +1,7 @@
 package com.yalice.wardrobe_social_app.services;
 
+import com.yalice.wardrobe_social_app.dtos.feed.FeedItemDto;
+import com.yalice.wardrobe_social_app.dtos.friendship.FriendshipResponseDto;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import com.yalice.wardrobe_social_app.entities.User;
@@ -20,49 +22,103 @@ import java.util.stream.Collectors;
 @Service
 public class FeedServiceImpl extends BaseService implements FeedService {
 
-    private final PostRepository postRepository;
-    private final FriendshipService friendshipService;
-    private final UserSearchService userSearchService;
+        private final PostRepository postRepository;
+        private final FriendshipService friendshipService;
+        private final UserSearchService userSearchService;
 
-    @Autowired
-    public FeedServiceImpl(PostRepository postRepository, FriendshipService friendshipService, UserSearchService userSearchService) {
-        this.postRepository = postRepository;
-        this.friendshipService = friendshipService;
-        this.userSearchService = userSearchService;
-    }
-
-    @Override
-    public Page<Post> getUserFeed(Long userId, Pageable pageable) {
-        List<User> friends = friendshipService.getFriends(userId);
-        List<Long> friendIds = friends.stream()
-                .map(User::getId)
-                .collect(Collectors.toList());
-
-        friendIds.add(userId);
-
-        return postRepository.findFeedPostsForUser(friendIds, pageable);
-    }
-
-    @Override
-    public Page<Post> getUserPosts(Long userId, Long viewerId, Pageable pageable) {
-        User user = userSearchService.getUserEntityById(userId);
-        if (user == null) {
-            throw new ResourceNotFoundException("User not found with id: " + userId);
+        @Autowired
+        public FeedServiceImpl(PostRepository postRepository, FriendshipService friendshipService,
+                        UserSearchService userSearchService) {
+                this.postRepository = postRepository;
+                this.friendshipService = friendshipService;
+                this.userSearchService = userSearchService;
         }
 
-        // Determine the visibility filter based on the relationship between user and viewer
-        boolean isViewerFriend = userId.equals(viewerId) || friendshipService.areFriends(userId, viewerId);
+        @Override
+        public List<FeedItemDto> getFeed(Long userId, int page, int size) {
+                logger.info("Retrieving feed for user ID: {} (page: {}, size: {})", userId, page, size);
 
-        if (isViewerFriend) {
-            // Retrieve public and friends-only posts for the user
-            return postRepository.findByUserIdAndVisibilityInOrderByCreatedAtDesc(
-                    userId, List.of(PostVisibility.PUBLIC, PostVisibility.FRIENDS_ONLY), pageable
-            );
-        } else {
-            // Retrieve only public posts for the user
-            return postRepository.findByUserIdAndVisibilityOrderByCreatedAtDesc(
-                    userId, PostVisibility.PUBLIC, pageable
-            );
+                List<FriendshipResponseDto> friendships = friendshipService.getFriends(userId);
+                List<Long> friendIds = friendships.stream()
+                                .map(FriendshipResponseDto::getUserId)
+                                .collect(Collectors.toList());
+                friendIds.add(userId);
+
+                Page<Post> posts = postRepository.findFeedPostsForUser(friendIds, Pageable.ofSize(size).withPage(page));
+                return posts.getContent().stream()
+                                .map(this::convertToFeedItemDto)
+                                .collect(Collectors.toList());
         }
-    }
+
+        @Override
+        public List<FeedItemDto> getFeedBySeason(Long userId, String season, int page, int size) {
+                logger.info("Retrieving feed filtered by season '{}' for user ID: {} (page: {}, size: {})",
+                                season, userId, page, size);
+
+                List<FriendshipResponseDto> friendships = friendshipService.getFriends(userId);
+                List<Long> friendIds = friendships.stream()
+                                .map(FriendshipResponseDto::getUserId)
+                                .collect(Collectors.toList());
+                friendIds.add(userId);
+
+                Page<Post> posts = postRepository.findFeedPostsForUserBySeason(friendIds, season,
+                                Pageable.ofSize(size).withPage(page));
+                return posts.getContent().stream()
+                                .map(this::convertToFeedItemDto)
+                                .collect(Collectors.toList());
+        }
+
+        @Override
+        public List<FeedItemDto> getFeedByCategory(Long userId, String category, int page, int size) {
+                logger.info("Retrieving feed filtered by category '{}' for user ID: {} (page: {}, size: {})",
+                                category, userId, page, size);
+
+                List<FriendshipResponseDto> friendships = friendshipService.getFriends(userId);
+                List<Long> friendIds = friendships.stream()
+                                .map(FriendshipResponseDto::getUserId)
+                                .collect(Collectors.toList());
+                friendIds.add(userId);
+
+                Page<Post> posts = postRepository.findFeedPostsForUserByCategory(friendIds, category,
+                                Pageable.ofSize(size).withPage(page));
+                return posts.getContent().stream()
+                                .map(this::convertToFeedItemDto)
+                                .collect(Collectors.toList());
+        }
+
+        @Override
+        public Page<Post> getUserPosts(Long userId, Long viewerId, Pageable pageable) {
+                logger.info("Retrieving posts for user ID: {} viewed by user ID: {}", userId, viewerId);
+
+                User user = userSearchService.getUserEntityById(userId);
+                if (user == null) {
+                        throw new ResourceNotFoundException("User not found with id: " + userId);
+                }
+
+                boolean isViewerFriend = userId.equals(viewerId) || friendshipService.areFriends(userId, viewerId);
+
+                if (isViewerFriend) {
+                        return postRepository.findByUserIdAndVisibilityInOrderByCreatedAtDesc(
+                                        userId, List.of(PostVisibility.PUBLIC, PostVisibility.FRIENDS_ONLY), pageable);
+                } else {
+                        return postRepository.findByUserIdAndVisibilityOrderByCreatedAtDesc(
+                                        userId, PostVisibility.PUBLIC, pageable);
+                }
+        }
+
+        private FeedItemDto convertToFeedItemDto(Post post) {
+                FeedItemDto dto = new FeedItemDto();
+                dto.setId(post.getId());
+                dto.setType("POST");
+                dto.setUser(convertToUserResponseDto(post.getProfile().getUser()));
+                dto.setCreatedAt(post.getCreatedAt());
+                dto.setUpdatedAt(post.getUpdatedAt());
+                dto.setSeason(post.getOutfit().getSeason());
+                dto.setCategory(post.getOutfit().getCategory());
+                dto.setLikesCount(post.getLikes().size());
+                dto.setCommentsCount(post.getComments().size());
+                // TODO: Implement isLikedByCurrentUser logic
+                dto.setLikedByCurrentUser(false);
+                return dto;
+        }
 }

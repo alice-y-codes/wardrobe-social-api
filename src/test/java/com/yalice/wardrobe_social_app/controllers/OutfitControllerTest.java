@@ -1,261 +1,459 @@
 package com.yalice.wardrobe_social_app.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yalice.wardrobe_social_app.entities.Item;
-import com.yalice.wardrobe_social_app.entities.Outfit;
+import com.yalice.wardrobe_social_app.dtos.item.ItemResponseDto;
+import com.yalice.wardrobe_social_app.dtos.outfit.OutfitDto;
+import com.yalice.wardrobe_social_app.dtos.outfit.OutfitResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 import com.yalice.wardrobe_social_app.interfaces.OutfitService;
-import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
+import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class OutfitControllerTest {
 
-    private MockMvc mockMvc;
+        private MockMvc mockMvc;
 
-    @Mock
-    private OutfitService outfitService;
+        @Mock
+        private OutfitService outfitService;
 
-    @Mock
-    private UserSearchService userSearchService;
+        @Mock
+        private AuthUtils authUtils;
 
-    @Mock
-    private Authentication authentication;
+        @InjectMocks
+        private OutfitController outfitController;
 
-    @Mock
-    private SecurityContext securityContext;
+        private final ObjectMapper objectMapper = new ObjectMapper();
+        private User testUser;
+        private OutfitDto testOutfitDto;
+        private OutfitResponseDto testOutfitResponseDto;
+        private MockMultipartFile testImageFile;
+        private Set<ItemResponseDto> testItems;
+        private List<OutfitResponseDto> testOutfitList;
 
-    @InjectMocks
-    private OutfitController outfitController;
+        @BeforeEach
+        void setUp() {
+                MockitoAnnotations.openMocks(this);
+                mockMvc = MockMvcBuilders.standaloneSetup(outfitController)
+                                .setControllerAdvice(new GlobalExceptionHandler())
+                                .build();
 
-    private ObjectMapper objectMapper = new ObjectMapper();
-    private User testUser;
-    private Outfit testOutfit;
-    private Item testItem;
+                initializeTestData();
+        }
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(outfitController).build();
+        private void initializeTestData() {
+                testUser = User.builder()
+                                .id(1L)
+                                .username("testuser")
+                                .email("test@example.com")
+                                .build();
 
-        // Setup security context mock
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
-        when(authentication.getName()).thenReturn("testuser");
-        when(authentication.isAuthenticated()).thenReturn(true);
+                testItems = new HashSet<>();
+                testItems.add(ItemResponseDto.builder()
+                                .id(1L)
+                                .name("Test Item")
+                                .brand("Test Brand")
+                                .category("TOPS")
+                                .size("M")
+                                .color("Blue")
+                                .imageUrl("https://example.com/test.jpg")
+                                .profileId(1L)
+                                .wardrobeId(1L)
+                                .build());
 
-        // Setup test user
-        testUser = User.builder()
-                .id(1L)
-                .username("testuser")
-                .email("test@example.com")
-                .build();
-        when(userSearchService.findUserByUsername("testuser")).thenReturn(Optional.of(testUser));
+                testOutfitDto = OutfitDto.builder()
+                                .name("Test Outfit")
+                                .description("A test outfit")
+                                .season("SUMMER")
+                                .isFavorite(false)
+                                .isPublic(true)
+                                .itemIds(new HashSet<>(Arrays.asList(1L)))
+                                .userId(1L)
+                                .build();
 
-        // Setup test item
-        testItem = Item.builder()
-                .id(1L)
-                .name("Test Item")
-                .category("Tops")
-                .user(testUser)
-                .imageUrl("http://example.com/image.jpg")
-                .build();
+                testOutfitResponseDto = OutfitResponseDto.builder()
+                                .id(1L)
+                                .name("Test Outfit")
+                                .description("A test outfit")
+                                .season("SUMMER")
+                                .isFavorite(false)
+                                .isPublic(true)
+                                .createdAt(LocalDateTime.now())
+                                .updatedAt(LocalDateTime.now())
+                                .items(testItems)
+                                .profileId(1L)
+                                .build();
 
-        // Setup test outfit
-        Set<Item> items = new HashSet<>();
-        items.add(testItem);
+                testOutfitList = Arrays.asList(
+                                testOutfitResponseDto,
+                                OutfitResponseDto.builder()
+                                                .id(2L)
+                                                .name("Another Outfit")
+                                                .description("Another test outfit")
+                                                .season("WINTER")
+                                                .isFavorite(true)
+                                                .isPublic(false)
+                                                .profileId(1L)
+                                                .build());
 
-        testOutfit = Outfit.builder()
-                .id(1L)
-                .name("Test Outfit")
-                .description("A test outfit")
-                .occasion("Casual")
-                .user(testUser)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .items(items)
-                .build();
-    }
+                testImageFile = new MockMultipartFile(
+                                "image",
+                                "test.jpg",
+                                MediaType.IMAGE_JPEG_VALUE,
+                                "test image content".getBytes());
+        }
 
-    @Test
-    void createOutfit_Success() throws Exception {
-        Outfit outfitToCreate = Outfit.builder()
-                .name("New Outfit")
-                .description("A new outfit")
-                .occasion("Formal")
-                .build();
+        @Test
+        void createOutfit_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(outfitService.createOutfit(anyLong(), any(OutfitDto.class), any()))
+                                .thenReturn(testOutfitResponseDto);
 
-        when(outfitService.createOutfit(eq(1L), any(Outfit.class))).thenReturn(Optional.of(testOutfit));
+                MockMultipartFile outfitPart = new MockMultipartFile(
+                                "outfit",
+                                "",
+                                MediaType.APPLICATION_JSON_VALUE,
+                                objectMapper.writeValueAsString(testOutfitDto).getBytes());
 
-        mockMvc.perform(post("/api/outfits")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(outfitToCreate)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(1)))
-                .andExpect(jsonPath("$.name", is("Test Outfit")))
-                .andExpect(jsonPath("$.description", is("A test outfit")))
-                .andExpect(jsonPath("$.occasion", is("Casual")));
+                mockMvc.perform(multipart("/api/outfits")
+                                .file(outfitPart)
+                                .file(testImageFile))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Outfit created successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.name", is("Test Outfit")))
+                                .andExpect(jsonPath("$.data.season", is("SUMMER")));
 
-        verify(outfitService).createOutfit(eq(1L), any(Outfit.class));
-    }
+                verify(outfitService).createOutfit(anyLong(), any(OutfitDto.class), any());
+        }
 
-    @Test
-    void getMyOutfits_Success() throws Exception {
-        List<Outfit> outfits = Collections.singletonList(testOutfit);
-        when(outfitService.getAllOutfits(1L)).thenReturn(outfits);
+        @Test
+        void createOutfit_WithoutImage_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(outfitService.createOutfit(anyLong(), any(OutfitDto.class), any()))
+                                .thenReturn(testOutfitResponseDto);
 
-        mockMvc.perform(get("/api/outfits/my-outfits"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].id", is(1)))
-                .andExpect(jsonPath("$[0].name", is("Test Outfit")));
+                MockMultipartFile outfitPart = new MockMultipartFile(
+                                "outfit",
+                                "",
+                                MediaType.APPLICATION_JSON_VALUE,
+                                objectMapper.writeValueAsString(testOutfitDto).getBytes());
 
-        verify(outfitService).getAllOutfits(1L);
-    }
+                mockMvc.perform(multipart("/api/outfits")
+                                .file(outfitPart))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Outfit created successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.name", is("Test Outfit")));
 
-    @Test
-    void getUserOutfits_Success() throws Exception {
-        List<Outfit> outfits = Collections.singletonList(testOutfit);
-        when(outfitService.getAllOutfits(1L)).thenReturn(outfits);
+                verify(outfitService).createOutfit(anyLong(), any(OutfitDto.class), any());
+        }
 
-        mockMvc.perform(get("/api/outfits/users/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].id", is(1)))
-                .andExpect(jsonPath("$[0].name", is("Test Outfit")));
+        @Test
+        void createOutfit_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(outfitService.createOutfit(anyLong(), any(OutfitDto.class), any()))
+                                .thenThrow(new RuntimeException("Failed to create outfit"));
 
-        verify(outfitService).getAllOutfits(1L);
-    }
+                MockMultipartFile outfitPart = new MockMultipartFile(
+                                "outfit",
+                                "",
+                                MediaType.APPLICATION_JSON_VALUE,
+                                objectMapper.writeValueAsString(testOutfitDto).getBytes());
 
-    @Test
-    void getOutfitById_Success() throws Exception {
-        when(outfitService.getOutfit(1L)).thenReturn(Optional.of(testOutfit));
+                mockMvc.perform(multipart("/api/outfits")
+                                .file(outfitPart))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to create outfit")));
 
-        mockMvc.perform(get("/api/outfits/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(1)))
-                .andExpect(jsonPath("$.name", is("Test Outfit")));
+                verify(outfitService).createOutfit(anyLong(), any(OutfitDto.class), any());
+        }
 
-        verify(outfitService).getOutfit(1L);
-    }
+        @Test
+        void updateOutfit_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(outfitService.updateOutfit(anyLong(), anyLong(), any(OutfitDto.class), any()))
+                                .thenReturn(testOutfitResponseDto);
 
-    @Test
-    void getOutfitById_NotFound() throws Exception {
-        when(outfitService.getOutfit(99L)).thenReturn(Optional.empty());
+                MockMultipartFile outfitPart = new MockMultipartFile(
+                                "outfit",
+                                "",
+                                MediaType.APPLICATION_JSON_VALUE,
+                                objectMapper.writeValueAsString(testOutfitDto).getBytes());
 
-        mockMvc.perform(get("/api/outfits/99"))
-                .andExpect(status().isNotFound());
+                mockMvc.perform(multipart("/api/outfits/1")
+                                .file(outfitPart)
+                                .file(testImageFile)
+                                .with(request -> {
+                                        request.setMethod("PUT");
+                                        return request;
+                                }))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Outfit updated successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.name", is("Test Outfit")));
 
-        verify(outfitService).getOutfit(99L);
-    }
+                verify(outfitService).updateOutfit(anyLong(), anyLong(), any(OutfitDto.class), any());
+        }
 
-    @Test
-    void updateOutfit_Success() throws Exception {
-        Outfit outfitToUpdate = Outfit.builder()
-                .name("Updated Outfit")
-                .description("An updated outfit")
-                .occasion("Business")
-                .build();
+        @Test
+        void updateOutfit_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(outfitService.updateOutfit(anyLong(), anyLong(), any(OutfitDto.class), any()))
+                                .thenThrow(new RuntimeException("Failed to update outfit"));
 
-        when(outfitService.getOutfit(1L)).thenReturn(Optional.of(testOutfit));
-        when(outfitService.updateOutfit(eq(1L), any(Outfit.class))).thenReturn(testOutfit);
+                MockMultipartFile outfitPart = new MockMultipartFile(
+                                "outfit",
+                                "",
+                                MediaType.APPLICATION_JSON_VALUE,
+                                objectMapper.writeValueAsString(testOutfitDto).getBytes());
 
-        mockMvc.perform(put("/api/outfits/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(outfitToUpdate)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(1)))
-                .andExpect(jsonPath("$.name", is("Test Outfit")));
+                mockMvc.perform(multipart("/api/outfits/1")
+                                .file(outfitPart)
+                                .with(request -> {
+                                        request.setMethod("PUT");
+                                        return request;
+                                }))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to update outfit")));
 
-        verify(outfitService).updateOutfit(eq(1L), any(Outfit.class));
-    }
+                verify(outfitService).updateOutfit(anyLong(), anyLong(), any(OutfitDto.class), any());
+        }
 
-    @Test
-    void updateOutfit_NotFound() throws Exception {
-        Outfit outfitToUpdate = Outfit.builder()
-                .name("Updated Outfit")
-                .build();
+        @Test
+        void deleteOutfit_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                doNothing().when(outfitService).deleteOutfit(anyLong(), anyLong());
 
-        when(outfitService.getOutfit(99L)).thenReturn(Optional.empty());
+                mockMvc.perform(delete("/api/outfits/1"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Outfit deleted successfully")));
 
-        mockMvc.perform(put("/api/outfits/99")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(outfitToUpdate)))
-                .andExpect(status().isNotFound());
+                verify(outfitService).deleteOutfit(anyLong(), anyLong());
+        }
 
-        verify(outfitService, never()).updateOutfit(anyLong(), any(Outfit.class));
-    }
+        @Test
+        void deleteOutfit_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                doThrow(new RuntimeException("Failed to delete outfit")).when(outfitService).deleteOutfit(anyLong(),
+                                anyLong());
 
-    @Test
-    void deleteOutfit_Success() throws Exception {
-        when(outfitService.getOutfit(1L)).thenReturn(Optional.of(testOutfit));
-        doNothing().when(outfitService).deleteOutfit(1L);
+                mockMvc.perform(delete("/api/outfits/1"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to delete outfit")));
 
-        mockMvc.perform(delete("/api/outfits/1"))
-                .andExpect(status().isNoContent());
+                verify(outfitService).deleteOutfit(anyLong(), anyLong());
+        }
 
-        verify(outfitService).deleteOutfit(1L);
-    }
+        @Test
+        void getMyOutfits_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(outfitService.getUserOutfits(anyLong())).thenReturn(testOutfitList);
 
-    @Test
-    void addItemToOutfit_Success() throws Exception {
-        when(outfitService.getOutfit(1L)).thenReturn(Optional.of(testOutfit));
-        when(outfitService.addItemToOutfit(1L, 2L)).thenReturn(Optional.of(testOutfit));
+                mockMvc.perform(get("/api/outfits/my-outfits"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Outfits retrieved successfully")))
+                                .andExpect(jsonPath("$.data", hasSize(2)))
+                                .andExpect(jsonPath("$.data[0].name", is("Test Outfit")))
+                                .andExpect(jsonPath("$.data[1].name", is("Another Outfit")));
 
-        mockMvc.perform(post("/api/outfits/1/items/2"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(1)))
-                .andExpect(jsonPath("$.name", is("Test Outfit")));
+                verify(outfitService).getUserOutfits(anyLong());
+        }
 
-        verify(outfitService).addItemToOutfit(1L, 2L);
-    }
+        @Test
+        void getMyOutfits_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(outfitService.getUserOutfits(anyLong()))
+                                .thenThrow(new RuntimeException("Failed to retrieve outfits"));
 
-    @Test
-    void removeItemFromOutfit_Success() throws Exception {
-        when(outfitService.getOutfit(1L)).thenReturn(Optional.of(testOutfit));
-        when(outfitService.removeItemFromOutfit(1L, 1L)).thenReturn(Optional.of(testOutfit));
+                mockMvc.perform(get("/api/outfits/my-outfits"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to retrieve outfits")));
 
-        mockMvc.perform(delete("/api/outfits/1/items/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(1)))
-                .andExpect(jsonPath("$.name", is("Test Outfit")));
+                verify(outfitService).getUserOutfits(anyLong());
+        }
 
-        verify(outfitService).removeItemFromOutfit(1L, 1L);
-    }
+        @Test
+        void getOutfit_Success() throws Exception {
+                when(outfitService.getOutfit(anyLong())).thenReturn(testOutfitResponseDto);
 
-    @Test
-    void getOutfitsByOccasion_Success() throws Exception {
-        List<Outfit> outfits = Collections.singletonList(testOutfit);
-        when(outfitService.getOutfitsByOccasion(1L, "Casual")).thenReturn(outfits);
+                mockMvc.perform(get("/api/outfits/1"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Outfit retrieved successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.name", is("Test Outfit")))
+                                .andExpect(jsonPath("$.data.season", is("SUMMER")));
 
-        mockMvc.perform(get("/api/outfits/occasion/Casual"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].id", is(1)))
-                .andExpect(jsonPath("$[0].name", is("Test Outfit")))
-                .andExpect(jsonPath("$[0].occasion", is("Casual")));
+                verify(outfitService).getOutfit(anyLong());
+        }
 
-        verify(outfitService).getOutfitsByOccasion(1L, "Casual");
-    }
+        @Test
+        void getOutfit_NotFound() throws Exception {
+                when(outfitService.getOutfit(anyLong()))
+                                .thenThrow(new RuntimeException("Outfit not found"));
+
+                mockMvc.perform(get("/api/outfits/999"))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Outfit not found with ID: 999")));
+
+                verify(outfitService).getOutfit(anyLong());
+        }
+
+        @Test
+        void getUserOutfits_Success() throws Exception {
+                when(outfitService.getUserOutfits(anyLong())).thenReturn(testOutfitList);
+
+                mockMvc.perform(get("/api/outfits/users/1"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("User outfits retrieved successfully")))
+                                .andExpect(jsonPath("$.data", hasSize(2)))
+                                .andExpect(jsonPath("$.data[0].name", is("Test Outfit")))
+                                .andExpect(jsonPath("$.data[1].name", is("Another Outfit")));
+
+                verify(outfitService).getUserOutfits(anyLong());
+        }
+
+        @Test
+        void getUserOutfits_Error() throws Exception {
+                when(outfitService.getUserOutfits(anyLong()))
+                                .thenThrow(new RuntimeException("Failed to retrieve outfits"));
+
+                mockMvc.perform(get("/api/outfits/users/1"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to retrieve outfits")));
+
+                verify(outfitService).getUserOutfits(anyLong());
+        }
+
+        @Test
+        void addItemToOutfit_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(outfitService.getOutfit(anyLong())).thenReturn(testOutfitResponseDto);
+                when(outfitService.addItemToOutfit(anyLong(), anyLong())).thenReturn(testOutfitResponseDto);
+
+                mockMvc.perform(post("/api/outfits/1/items/1"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Item added to outfit successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.name", is("Test Outfit")));
+
+                verify(outfitService).addItemToOutfit(anyLong(), anyLong());
+        }
+
+        @Test
+        void addItemToOutfit_Unauthorized() throws Exception {
+                User unauthorizedUser = User.builder()
+                                .id(2L)
+                                .username("otheruser")
+                                .build();
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(unauthorizedUser);
+                when(outfitService.getOutfit(anyLong())).thenReturn(testOutfitResponseDto);
+
+                mockMvc.perform(post("/api/outfits/1/items/1"))
+                                .andExpect(status().isForbidden())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message",
+                                                is("You don't have permission to modify this outfit")));
+
+                verify(outfitService, never()).addItemToOutfit(anyLong(), anyLong());
+        }
+
+        @Test
+        void removeItemFromOutfit_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(outfitService.getOutfit(anyLong())).thenReturn(testOutfitResponseDto);
+                when(outfitService.removeItemFromOutfit(anyLong(), anyLong())).thenReturn(testOutfitResponseDto);
+
+                mockMvc.perform(delete("/api/outfits/1/items/1"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Item removed from outfit successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.name", is("Test Outfit")));
+
+                verify(outfitService).removeItemFromOutfit(anyLong(), anyLong());
+        }
+
+        @Test
+        void removeItemFromOutfit_Unauthorized() throws Exception {
+                User unauthorizedUser = User.builder()
+                                .id(2L)
+                                .username("otheruser")
+                                .build();
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(unauthorizedUser);
+                when(outfitService.getOutfit(anyLong())).thenReturn(testOutfitResponseDto);
+
+                mockMvc.perform(delete("/api/outfits/1/items/1"))
+                                .andExpect(status().isForbidden())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message",
+                                                is("You don't have permission to modify this outfit")));
+
+                verify(outfitService, never()).removeItemFromOutfit(anyLong(), anyLong());
+        }
+
+        @Test
+        void getOutfitsBySeason_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(outfitService.getUserOutfits(anyLong())).thenReturn(testOutfitList);
+                when(outfitService.getOutfit(anyLong())).thenReturn(testOutfitResponseDto);
+
+                mockMvc.perform(get("/api/outfits/season/SUMMER"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Seasonal outfits retrieved successfully")))
+                                .andExpect(jsonPath("$.data", hasSize(1)))
+                                .andExpect(jsonPath("$.data[0].season", is("SUMMER")));
+
+                verify(outfitService).getUserOutfits(anyLong());
+        }
+
+        @Test
+        void getOutfitsBySeason_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(outfitService.getUserOutfits(anyLong()))
+                                .thenThrow(new RuntimeException("Failed to retrieve outfits"));
+
+                mockMvc.perform(get("/api/outfits/season/SUMMER"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to retrieve outfits")));
+
+                verify(outfitService).getUserOutfits(anyLong());
+        }
 }

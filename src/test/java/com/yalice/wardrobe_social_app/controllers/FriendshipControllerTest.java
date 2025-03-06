@@ -1,54 +1,51 @@
 package com.yalice.wardrobe_social_app.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yalice.wardrobe_social_app.entities.Friendship;
-import com.yalice.wardrobe_social_app.entities.Friendship.FriendshipStatus;
+import com.yalice.wardrobe_social_app.dtos.friendship.FriendRequestDto;
+import com.yalice.wardrobe_social_app.dtos.friendship.FriendshipResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
-import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
-import org.junit.jupiter.api.AfterEach;
+import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Optional;
+import java.util.List;
 
-import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class FriendshipControllerTest {
 
         private MockMvc mockMvc;
 
-        private final ObjectMapper objectMapper = new ObjectMapper();
-
         @Mock
         private FriendshipService friendshipService;
 
         @Mock
-        private UserSearchService userSearchService;
+        private AuthUtils authUtils;
 
         @InjectMocks
         private FriendshipController friendshipController;
 
-        private User user1;
-        private User user2;
-        private Friendship pendingFriendship;
-        private Friendship acceptedFriendship;
-        private FriendRequestDto friendRequestDto;
+        private final ObjectMapper objectMapper = new ObjectMapper();
+        private User testUser;
+        private FriendRequestDto testFriendRequestDto;
+        private FriendshipResponseDto testFriendshipResponseDto;
+        private List<FriendRequestDto> testFriendRequestList;
+        private List<FriendshipResponseDto> testFriendshipList;
 
         @BeforeEach
         void setUp() {
@@ -57,134 +54,209 @@ class FriendshipControllerTest {
                                 .setControllerAdvice(new GlobalExceptionHandler())
                                 .build();
 
-                user1 = User.builder()
+                initializeTestData();
+        }
+
+        private void initializeTestData() {
+                testUser = User.builder()
                                 .id(1L)
-                                .username("user1")
-                                .email("user1@example.com")
+                                .username("testuser")
+                                .email("test@example.com")
                                 .build();
 
-                user2 = User.builder()
-                                .id(2L)
-                                .username("user2")
-                                .email("user2@example.com")
-                                .build();
-
-                pendingFriendship = Friendship.builder()
+                testFriendRequestDto = FriendRequestDto.builder()
                                 .id(1L)
-                                .requester(user1)
-                                .recipient(user2)
-                                .status(FriendshipStatus.PENDING)
+                                .senderId(1L)
+                                .senderUsername("testuser")
+                                .recipientId(2L)
+                                .recipientUsername("otheruser")
+                                .status("PENDING")
+                                .createdAt(LocalDateTime.now())
                                 .build();
 
-                acceptedFriendship = Friendship.builder()
-                                .id(2L)
-                                .requester(user1)
-                                .recipient(user2)
-                                .status(FriendshipStatus.ACCEPTED)
+                testFriendshipResponseDto = FriendshipResponseDto.builder()
+                                .id(1L)
+                                .userId(2L)
+                                .username("otheruser")
+                                .status("ACCEPTED")
+                                .createdAt(LocalDateTime.now())
                                 .build();
 
-                friendRequestDto = new FriendRequestDto();
-                friendRequestDto.setRecipientId(2L);
-                friendRequestDto.setRequestId(1L);
-                friendRequestDto.setFriendId(2L);
-        }
+                testFriendRequestList = Arrays.asList(
+                                testFriendRequestDto,
+                                FriendRequestDto.builder()
+                                                .id(2L)
+                                                .senderId(3L)
+                                                .senderUsername("thirduser")
+                                                .recipientId(1L)
+                                                .recipientUsername("testuser")
+                                                .status("PENDING")
+                                                .createdAt(LocalDateTime.now())
+                                                .build());
 
-        @AfterEach
-        void tearDown() {
-                SecurityContextHolder.clearContext();
+                testFriendshipList = Arrays.asList(
+                                testFriendshipResponseDto,
+                                FriendshipResponseDto.builder()
+                                                .id(2L)
+                                                .userId(3L)
+                                                .username("thirduser")
+                                                .status("ACCEPTED")
+                                                .createdAt(LocalDateTime.now())
+                                                .build());
         }
 
         @Test
-        void sendFriendRequest_whenValidRequest_returnsFriendship() throws Exception {
-                // Setup authentication
-                setupAuthentication("user1");
+        void sendFriendRequest_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(friendshipService.sendFriendRequest(anyLong(), anyLong()))
+                                .thenReturn(testFriendRequestDto);
 
-                when(userSearchService.findUserByUsername("user1")).thenReturn(Optional.of(user1));
-                when(friendshipService.sendFriendRequest(1L, 2L)).thenReturn(pendingFriendship);
-
-                mockMvc.perform(post("/api/friends/request")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(friendRequestDto)))
+                mockMvc.perform(post("/api/friendships/requests")
+                                .param("recipientId", "2"))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.id").value(1))
-                                .andExpect(jsonPath("$.status").value("PENDING"));
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Friend request sent successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.senderUsername", is("testuser")))
+                                .andExpect(jsonPath("$.data.recipientUsername", is("otheruser")))
+                                .andExpect(jsonPath("$.data.status", is("PENDING")));
+
+                verify(friendshipService).sendFriendRequest(anyLong(), anyLong());
         }
 
         @Test
-        void acceptFriendRequest_whenValidRequest_returnsFriendship() throws Exception {
-                // Setup authentication
-                setupAuthentication("user2");
+        void sendFriendRequest_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(friendshipService.sendFriendRequest(anyLong(), anyLong()))
+                                .thenThrow(new RuntimeException("Failed to send friend request"));
 
-                when(userSearchService.findUserByUsername("user2")).thenReturn(Optional.of(user2));
-                when(friendshipService.acceptFriendRequest(1L, 2L)).thenReturn(acceptedFriendship);
+                mockMvc.perform(post("/api/friendships/requests")
+                                .param("recipientId", "2"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to send friend request")));
 
-                mockMvc.perform(post("/api/friends/accept")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(friendRequestDto)))
+                verify(friendshipService).sendFriendRequest(anyLong(), anyLong());
+        }
+
+        @Test
+        void acceptFriendRequest_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(friendshipService.acceptFriendRequest(anyLong(), anyLong()))
+                                .thenReturn(testFriendshipResponseDto);
+
+                mockMvc.perform(post("/api/friendships/requests/1/accept"))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.id").value(2))
-                                .andExpect(jsonPath("$.status").value("ACCEPTED"));
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Friend request accepted successfully")))
+                                .andExpect(jsonPath("$.data.id", is(1)))
+                                .andExpect(jsonPath("$.data.username", is("otheruser")))
+                                .andExpect(jsonPath("$.data.status", is("ACCEPTED")));
+
+                verify(friendshipService).acceptFriendRequest(anyLong(), anyLong());
         }
 
         @Test
-        void rejectFriendRequest_whenValidRequest_returnsSuccess() throws Exception {
-                // Setup authentication
-                setupAuthentication("user2");
+        void acceptFriendRequest_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(friendshipService.acceptFriendRequest(anyLong(), anyLong()))
+                                .thenThrow(new RuntimeException("Failed to accept friend request"));
 
-                when(userSearchService.findUserByUsername("user2")).thenReturn(Optional.of(user2));
+                mockMvc.perform(post("/api/friendships/requests/1/accept"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to accept friend request")));
 
-                mockMvc.perform(post("/api/friends/reject")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(friendRequestDto)))
-                                .andExpect(status().isOk());
+                verify(friendshipService).acceptFriendRequest(anyLong(), anyLong());
         }
 
         @Test
-        void removeFriend_whenValidRequest_returnsSuccess() throws Exception {
-                // Setup authentication
-                setupAuthentication("user1");
+        void rejectFriendRequest_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                doNothing().when(friendshipService).rejectFriendRequest(anyLong(), anyLong());
 
-                when(userSearchService.findUserByUsername("user1")).thenReturn(Optional.of(user1));
-
-                mockMvc.perform(delete("/api/friends/remove")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(friendRequestDto)))
-                                .andExpect(status().isOk());
-        }
-
-        @Test
-        void getFriends_returnsListOfFriends() throws Exception {
-                // Setup authentication
-                setupAuthentication("user1");
-
-                when(userSearchService.findUserByUsername("user1")).thenReturn(Optional.of(user1));
-                when(friendshipService.getFriends(1L)).thenReturn(Arrays.asList(user2));
-
-                mockMvc.perform(get("/api/friends"))
+                mockMvc.perform(post("/api/friendships/requests/1/reject"))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$[0].id").value(2))
-                                .andExpect(jsonPath("$[0].username").value("user2"));
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Friend request rejected successfully")))
+                                .andExpect(jsonPath("$.data", nullValue()));
+
+                verify(friendshipService).rejectFriendRequest(anyLong(), anyLong());
         }
 
         @Test
-        void getPendingFriendRequests_returnsListOfPendingRequests() throws Exception {
-                // Setup authentication
-                setupAuthentication("user2");
+        void rejectFriendRequest_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                doThrow(new RuntimeException("Failed to reject friend request"))
+                                .when(friendshipService).rejectFriendRequest(anyLong(), anyLong());
 
-                when(userSearchService.findUserByUsername("user2")).thenReturn(Optional.of(user2));
-                when(friendshipService.getPendingFriendRequests(2L)).thenReturn(Arrays.asList(pendingFriendship));
+                mockMvc.perform(post("/api/friendships/requests/1/reject"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to reject friend request")));
 
-                mockMvc.perform(get("/api/friends/pending"))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$[0].id").value(1))
-                                .andExpect(jsonPath("$[0].status").value("PENDING"));
+                verify(friendshipService).rejectFriendRequest(anyLong(), anyLong());
         }
 
-        private void setupAuthentication(String username) {
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                                username, null, new ArrayList<>());
-                SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-                securityContext.setAuthentication(authentication);
-                SecurityContextHolder.setContext(securityContext);
+        @Test
+        void getPendingFriendRequests_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(friendshipService.getPendingFriendRequests(anyLong()))
+                                .thenReturn(testFriendRequestList);
+
+                mockMvc.perform(get("/api/friendships/requests/pending"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Pending friend requests retrieved successfully")))
+                                .andExpect(jsonPath("$.data", hasSize(2)))
+                                .andExpect(jsonPath("$.data[0].senderUsername", is("testuser")))
+                                .andExpect(jsonPath("$.data[1].senderUsername", is("thirduser")));
+
+                verify(friendshipService).getPendingFriendRequests(anyLong());
+        }
+
+        @Test
+        void getPendingFriendRequests_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(friendshipService.getPendingFriendRequests(anyLong()))
+                                .thenThrow(new RuntimeException("Failed to retrieve pending friend requests"));
+
+                mockMvc.perform(get("/api/friendships/requests/pending"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to retrieve pending friend requests")));
+
+                verify(friendshipService).getPendingFriendRequests(anyLong());
+        }
+
+        @Test
+        void getFriends_Success() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(friendshipService.getFriends(anyLong()))
+                                .thenReturn(testFriendshipList);
+
+                mockMvc.perform(get("/api/friendships/friends"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success", is(true)))
+                                .andExpect(jsonPath("$.message", is("Friends retrieved successfully")))
+                                .andExpect(jsonPath("$.data", hasSize(2)))
+                                .andExpect(jsonPath("$.data[0].username", is("otheruser")))
+                                .andExpect(jsonPath("$.data[1].username", is("thirduser")));
+
+                verify(friendshipService).getFriends(anyLong());
+        }
+
+        @Test
+        void getFriends_Error() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(friendshipService.getFriends(anyLong()))
+                                .thenThrow(new RuntimeException("Failed to retrieve friends"));
+
+                mockMvc.perform(get("/api/friendships/friends"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(jsonPath("$.success", is(false)))
+                                .andExpect(jsonPath("$.message", is("Failed to retrieve friends")));
+
+                verify(friendshipService).getFriends(anyLong());
         }
 }

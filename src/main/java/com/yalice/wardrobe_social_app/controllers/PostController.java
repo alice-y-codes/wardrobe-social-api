@@ -6,7 +6,7 @@ import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.PostNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.PostService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
-import com.yalice.wardrobe_social_app.utilities.CurrentUser;
+import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import com.yalice.wardrobe_social_app.utilities.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -26,16 +26,16 @@ public class PostController {
     private static final Logger logger = LoggerFactory.getLogger(PostController.class);
 
     private final PostService postService;
-    private final CurrentUser currentUser;
+    private final AuthUtils authUtils;
 
     @Autowired
     public PostController(PostService postService, UserSearchService userSearchService) {
         this.postService = postService;
-        this.currentUser = new CurrentUser(userSearchService);
+        this.authUtils = new AuthUtils(userSearchService);
     }
 
     private User getCurrentUser() {
-        return currentUser.getCurrentUserOrElseThrow();
+        return authUtils.getCurrentUserOrElseThrow();
     }
 
     /**

@@ -36,7 +36,7 @@ public class OutfitResponseDto {
     public OutfitResponseDto(Outfit outfit) {
         this(outfit.getId(), outfit.getName(), outfit.getDescription(), outfit.getSeason(),
                 outfit.isFavorite(), outfit.isPublic(), outfit.getCreatedAt(), outfit.getUpdatedAt(),
-                convertItemsToDto(outfit.getItems()), outfit.getProfile().getId()); // Use profileId
+                convertItemsToDto((Set<Item>) outfit.getItems()), outfit.getProfile().getId()); // Use profileId
     }
 
     /**

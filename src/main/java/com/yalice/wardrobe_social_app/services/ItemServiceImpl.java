@@ -14,13 +14,16 @@ import com.yalice.wardrobe_social_app.services.helpers.BaseService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Implementation of the ItemService interface for managing items in the wardrobe application.
- * This class handles CRUD operations for items, including creation, retrieval, updating, and deletion.
+ * Implementation of the ItemService interface for managing items in the
+ * wardrobe application.
+ * This class handles CRUD operations for items, including creation, retrieval,
+ * updating, and deletion.
  */
 @Service
 public class ItemServiceImpl extends BaseService implements ItemService {
@@ -29,18 +32,20 @@ public class ItemServiceImpl extends BaseService implements ItemService {
     private final ProfileRepository profileRepository;
     private final WardrobeRepository wardrobeRepository;
 
-    public ItemServiceImpl(ItemRepository itemRepository, ProfileRepository profileRepository, WardrobeRepository wardrobeRepository) {
+    public ItemServiceImpl(ItemRepository itemRepository, ProfileRepository profileRepository,
+            WardrobeRepository wardrobeRepository) {
         this.itemRepository = itemRepository;
         this.profileRepository = profileRepository;
         this.wardrobeRepository = wardrobeRepository;
     }
 
     /**
-     * Creates a new item for a given user profile and links it to the specified wardrobe.
+     * Creates a new item for a given user profile and links it to the specified
+     * wardrobe.
      *
-     * @param userId The ID of the user creating the item.
+     * @param userId     The ID of the user creating the item.
      * @param wardrobeId The ID of the wardrobe where the item will be added.
-     * @param itemDto The item data to be created.
+     * @param itemDto    The item data to be created.
      * @return ItemResponseDto The response DTO containing the created item details.
      */
     @Override
@@ -80,7 +85,7 @@ public class ItemServiceImpl extends BaseService implements ItemService {
         item.setColor(itemDto.getColor());
         item.setImageUrl(itemDto.getImageUrl());
         item.setWardrobe(wardrobe);
-        item.setProfile(profile);  // Set the profile instead of the user
+        item.setProfile(profile); // Set the profile instead of the user
 
         // Save the item
         item = itemRepository.save(item);
@@ -89,7 +94,8 @@ public class ItemServiceImpl extends BaseService implements ItemService {
         wardrobe.getItems().add(item);
         wardrobeRepository.save(wardrobe);
 
-        logger.info("Item '{}' created successfully for user '{}' in wardrobe '{}'.", item.getName(), profile.getUser().getUsername(), wardrobe.getName());
+        logger.info("Item '{}' created successfully for user '{}' in wardrobe '{}'.", item.getName(),
+                profile.getUser().getUsername(), wardrobe.getName());
 
         return convertToItemResponseDto(item);
     }
@@ -137,7 +143,8 @@ public class ItemServiceImpl extends BaseService implements ItemService {
      * Retrieves all items associated with a specific user profile.
      *
      * @param userId The ID of the user whose items are to be retrieved.
-     * @return List<ItemResponseDto> A list of ItemResponseDto containing the items' details.
+     * @return List<ItemResponseDto> A list of ItemResponseDto containing the items'
+     *         details.
      */
     @Override
     public List<ItemResponseDto> getAllItems(Long userId) {
@@ -154,7 +161,8 @@ public class ItemServiceImpl extends BaseService implements ItemService {
                     return new ResourceNotFoundException("Profile not found for user with ID: " + userId);
                 });
 
-        // Assuming each profile has a default wardrobe. Adjust this logic if multiple wardrobes exist.
+        // Assuming each profile has a default wardrobe. Adjust this logic if multiple
+        // wardrobes exist.
         Wardrobe wardrobe = wardrobeRepository.findByProfileId(profile.getId())
                 .orElseThrow(() -> {
                     logger.warn("Wardrobe not found for profile ID: {}", profile.getId());
@@ -171,7 +179,6 @@ public class ItemServiceImpl extends BaseService implements ItemService {
                 .map(this::convertToItemResponseDto)
                 .collect(Collectors.toList());
     }
-
 
     /**
      * Retrieves an item by its name.
@@ -202,7 +209,7 @@ public class ItemServiceImpl extends BaseService implements ItemService {
     /**
      * Updates an existing item.
      *
-     * @param id The ID of the item to update.
+     * @param id      The ID of the item to update.
      * @param itemDto The updated item data.
      * @return ItemResponseDto The response DTO containing the updated item details.
      */
@@ -231,7 +238,8 @@ public class ItemServiceImpl extends BaseService implements ItemService {
         itemRepository.saveAndFlush(existingItem); // Save the updated item
         Profile profile = existingItem.getProfile();
 
-        logger.info("Item '{}' updated successfully for user '{}'.", existingItem.getName(), profile.getUser().getUsername());
+        logger.info("Item '{}' updated successfully for user '{}'.", existingItem.getName(),
+                profile.getUser().getUsername());
 
         return convertToItemResponseDto(existingItem);
     }
@@ -256,5 +264,124 @@ public class ItemServiceImpl extends BaseService implements ItemService {
         logger.info("Item with ID '{}' deleted successfully.", id);
 
         return true;
+    }
+
+    @Override
+    @Transactional
+    public ItemResponseDto createItem(Long userId, ItemDto itemDto, MultipartFile image) {
+        logger.info("Attempting to create item for user ID: {}", userId);
+
+        if (itemDto == null || userId == null) {
+            throw new IllegalArgumentException("User ID and Item cannot be null");
+        }
+
+        Profile profile = profileRepository.findByUserId(userId)
+                .orElseThrow(() -> {
+                    logger.warn("Profile not found for user ID: {}", userId);
+                    return new ResourceNotFoundException("Profile not found for user with ID: " + userId);
+                });
+
+        Wardrobe wardrobe = wardrobeRepository.findByProfileId(profile.getId())
+                .orElseThrow(() -> {
+                    logger.warn("Wardrobe not found for profile ID: {}", profile.getId());
+                    return new ResourceNotFoundException("Wardrobe not found for profile with ID: " + profile.getId());
+                });
+
+        if (itemRepository.findByNameAndWardrobeId(itemDto.getName(), wardrobe.getId()).isPresent()) {
+            logger.warn("Item with name '{}' already exists in the wardrobe.", itemDto.getName());
+            throw new IllegalStateException("Item with this name already exists in the wardrobe");
+        }
+
+        Item item = new Item();
+        item.setName(itemDto.getName());
+        item.setBrand(itemDto.getBrand());
+        item.setCategory(itemDto.getCategory());
+        item.setSize(itemDto.getSize());
+        item.setColor(itemDto.getColor());
+        item.setWardrobe(wardrobe);
+        item.setProfile(profile);
+
+        if (image != null && !image.isEmpty()) {
+            // TODO: Implement image upload logic
+            item.setImageUrl("placeholder_url");
+        }
+
+        item = itemRepository.save(item);
+        logger.info("Item '{}' created successfully for user '{}'.", item.getName(), profile.getUser().getUsername());
+
+        return convertToItemResponseDto(item);
+    }
+
+    @Override
+    @Transactional
+    public ItemResponseDto updateItem(Long userId, Long itemId, ItemDto itemDto, MultipartFile image) {
+        logger.info("Attempting to update item with ID: {} for user ID: {}", itemId, userId);
+
+        Item existingItem = itemRepository.findById(itemId)
+                .orElseThrow(() -> {
+                    logger.warn("Item not found with ID: {}", itemId);
+                    return new ResourceNotFoundException("Item not found with ID " + itemId);
+                });
+
+        if (!existingItem.getProfile().getUser().getId().equals(userId)) {
+            throw new ResourceNotFoundException("User does not own this item");
+        }
+
+        existingItem.setName(itemDto.getName());
+        existingItem.setBrand(itemDto.getBrand());
+        existingItem.setCategory(itemDto.getCategory());
+        existingItem.setSize(itemDto.getSize());
+        existingItem.setColor(itemDto.getColor());
+
+        if (image != null && !image.isEmpty()) {
+            // TODO: Implement image upload logic
+            existingItem.setImageUrl("placeholder_url");
+        }
+
+        itemRepository.saveAndFlush(existingItem);
+        logger.info("Item '{}' updated successfully for user '{}'.", existingItem.getName(),
+                existingItem.getProfile().getUser().getUsername());
+
+        return convertToItemResponseDto(existingItem);
+    }
+
+    @Override
+    @Transactional
+    public void deleteItem(Long userId, Long itemId) {
+        logger.info("Attempting to delete item with ID: {} for user ID: {}", itemId, userId);
+
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Item not found with ID " + itemId));
+
+        if (!item.getProfile().getUser().getId().equals(userId)) {
+            throw new ResourceNotFoundException("User does not own this item");
+        }
+
+        itemRepository.deleteById(itemId);
+        logger.info("Item with ID '{}' deleted successfully.", itemId);
+    }
+
+    @Override
+    public List<ItemResponseDto> getUserItems(Long userId) {
+        logger.info("Fetching all items for user ID: {}", userId);
+
+        Profile profile = profileRepository.findByUserId(userId)
+                .orElseThrow(() -> {
+                    logger.warn("Profile not found for user ID: {}", userId);
+                    return new ResourceNotFoundException("Profile not found for user with ID: " + userId);
+                });
+
+        Wardrobe wardrobe = wardrobeRepository.findByProfileId(profile.getId())
+                .orElseThrow(() -> {
+                    logger.warn("Wardrobe not found for profile ID: {}", profile.getId());
+                    return new ResourceNotFoundException("Wardrobe not found for profile with ID: " + profile.getId());
+                });
+
+        List<Item> items = itemRepository.findAllByWardrobeId(wardrobe.getId());
+        logger.info("Found {} items for user '{}'.", items.size(), profile.getUser().getUsername());
+
+        return items.stream()
+                .map(this::convertToItemResponseDto)
+                .collect(Collectors.toList());
     }
 }

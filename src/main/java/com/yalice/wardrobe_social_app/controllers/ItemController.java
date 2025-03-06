@@ -6,146 +6,140 @@ import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.ItemService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.utilities.ApiResponse;
-import com.yalice.wardrobe_social_app.utilities.CurrentUser;
+import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+/**
+ * Controller responsible for handling item-related operations.
+ * Provides endpoints for creating, updating, and managing wardrobe items.
+ */
 @RestController
 @RequestMapping("/api/items")
-public class ItemController {
+public class ItemController extends ApiBaseController {
 
     private final ItemService itemService;
-    private final CurrentUser currentUser;
 
     @Autowired
-    public ItemController(ItemService itemService, UserSearchService userSearchService) {
+    public ItemController(ItemService itemService, AuthUtils authUtils) {
+        super(authUtils);
         this.itemService = itemService;
-        this.currentUser = new CurrentUser(userSearchService); // Instantiate CurrentUser with UserService
     }
 
     /**
-     * Create a new item.
+     * Creates a new wardrobe item.
      *
-     * @param itemDto the item data transfer object (DTO)
-     * @return a response containing the created item
+     * @param itemDto the item data
+     * @param image   the item image file
+     * @return ResponseEntity containing the created item
      */
     @PostMapping
-    public ResponseEntity<ApiResponse<ItemResponseDto>> createItem(@RequestBody ItemDto itemDto) {
-        User user = currentUser.getCurrentUserOrElseThrow(); // Fetch the current authenticated user
+    public ResponseEntity<ApiResponse<ItemResponseDto>> createItem(
+            @RequestPart("item") ItemDto itemDto,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+        logger.info("Attempting to create new item for user");
 
-        ItemResponseDto createdItem = itemService.createItem(user.getId(), itemDto);
-
-        return createdItem != null
-                ? ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse<>(true, "Item created successfully", createdItem))
-                : ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ApiResponse<>(false, "Item creation failed", null));
+        User currentUser = getLoggedInUser();
+        try {
+            ItemResponseDto createdItem = itemService.createItem(currentUser.getId(), itemDto, image);
+            logger.info("Successfully created item with ID: {} for user ID: {}", createdItem.getId(),
+                    currentUser.getId());
+            return createSuccessResponse("Item created successfully", createdItem);
+        } catch (Exception e) {
+            logger.error("Failed to create item for user ID: {}", currentUser.getId(), e);
+            return createInternalServerErrorResponse("Failed to create item");
+        }
     }
 
     /**
-     * Get all items for a specific user.
+     * Updates an existing wardrobe item.
      *
-     * @param userId the user ID
-     * @return a response containing the list of items for the user
+     * @param itemId  the ID of the item to update
+     * @param itemDto the updated item data
+     * @param image   the new item image file (optional)
+     * @return ResponseEntity containing the updated item
      */
-    @GetMapping("/users/{userId}")
-    public ResponseEntity<ApiResponse<List<ItemResponseDto>>> getAllItems(@PathVariable Long userId) {
-        // Call the service to get the list of ItemResponseDto
-        List<ItemResponseDto> items = itemService.getAllItems(userId);
+    @PutMapping("/{itemId}")
+    public ResponseEntity<ApiResponse<ItemResponseDto>> updateItem(
+            @PathVariable Long itemId,
+            @RequestPart("item") ItemDto itemDto,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+        logger.info("Attempting to update item with ID: {}", itemId);
 
-        return ResponseEntity.ok(new ApiResponse<>(true, "Items retrieved successfully", items));
+        User currentUser = getLoggedInUser();
+        try {
+            ItemResponseDto updatedItem = itemService.updateItem(currentUser.getId(), itemId, itemDto, image);
+            logger.info("Successfully updated item with ID: {} for user ID: {}", itemId, currentUser.getId());
+            return createSuccessResponse("Item updated successfully", updatedItem);
+        } catch (Exception e) {
+            logger.error("Failed to update item with ID: {} for user ID: {}", itemId, currentUser.getId(), e);
+            return createInternalServerErrorResponse("Failed to update item");
+        }
     }
 
     /**
-     * Get all items for the current authenticated user.
+     * Deletes a wardrobe item.
      *
-     * @return a response containing the list of items for the current user
+     * @param itemId the ID of the item to delete
+     * @return ResponseEntity with a success message
+     */
+    @DeleteMapping("/{itemId}")
+    public ResponseEntity<ApiResponse<Void>> deleteItem(@PathVariable Long itemId) {
+        logger.info("Attempting to delete item with ID: {}", itemId);
+
+        User currentUser = getLoggedInUser();
+        try {
+            itemService.deleteItem(currentUser.getId(), itemId);
+            logger.info("Successfully deleted item with ID: {} for user ID: {}", itemId, currentUser.getId());
+            return createSuccessResponse("Item deleted successfully", null);
+        } catch (Exception e) {
+            logger.error("Failed to delete item with ID: {} for user ID: {}", itemId, currentUser.getId(), e);
+            return createInternalServerErrorResponse("Failed to delete item");
+        }
+    }
+
+    /**
+     * Gets all items for the current user.
+     *
+     * @return ResponseEntity containing the list of items
      */
     @GetMapping("/my-items")
     public ResponseEntity<ApiResponse<List<ItemResponseDto>>> getMyItems() {
-        User user = currentUser.getCurrentUserOrElseThrow(); // Fetch the current authenticated user
+        logger.info("Retrieving items for current user");
 
-        // Call the service to get the list of ItemResponseDto
-        List<ItemResponseDto> items = itemService.getAllItems(user.getId());
-
-        return ResponseEntity.ok(new ApiResponse<>(true, "Items retrieved successfully", items));
-    }
-
-    /**
-     * Get an item by its ID.
-     *
-     * @param id the ID of the item
-     * @return a response containing the item or an error message if not found
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ItemResponseDto>> getItemById(@PathVariable Long id) {
-        ItemResponseDto item = itemService.getItem(id);
-
-        if (item != null) {
-            return ResponseEntity.ok(new ApiResponse<>(true, "Item retrieved successfully", item));
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ApiResponse<>(false, "Item not found", null));
+        User currentUser = getLoggedInUser();
+        try {
+            List<ItemResponseDto> items = itemService.getUserItems(currentUser.getId());
+            logger.info("Successfully retrieved {} items for user ID: {}", items.size(), currentUser.getId());
+            return createSuccessResponse("Items retrieved successfully", items);
+        } catch (Exception e) {
+            logger.error("Failed to retrieve items for user ID: {}", currentUser.getId(), e);
+            return createInternalServerErrorResponse("Failed to retrieve items");
         }
     }
 
     /**
-     * Get an item by its name.
+     * Gets a specific item by ID.
      *
-     * @param name the name of the item
-     * @return a response containing the item or an error message if not found
+     * @param itemId the ID of the item to retrieve
+     * @return ResponseEntity containing the item
      */
-    @GetMapping("/names/{name}")
-    public ResponseEntity<ApiResponse<ItemResponseDto>> getItemByName(@PathVariable String name) {
-        ItemResponseDto item = itemService.getItemByName(name);
+    @GetMapping("/{itemId}")
+    public ResponseEntity<ApiResponse<ItemResponseDto>> getItem(@PathVariable Long itemId) {
+        logger.info("Retrieving item with ID: {}", itemId);
 
-        if (item != null) {
-            return ResponseEntity.ok(new ApiResponse<>(true, "Item retrieved successfully", item));
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ApiResponse<>(false, "Item not found", null));
-        }
-    }
-
-    /**
-     * Update an existing item.
-     *
-     * @param id the ID of the item to be updated
-     * @param itemDto the item data transfer object (DTO)
-     * @return a response containing the updated item or an error message if not found
-     */
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ItemResponseDto>> updateItem(@PathVariable Long id, @RequestBody ItemDto itemDto) {
-        ItemResponseDto updatedItem = itemService.updateItem(id, itemDto);
-
-        if (updatedItem != null) {
-            return ResponseEntity.ok(new ApiResponse<>(true, "Item updated successfully", updatedItem));
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ApiResponse<>(false, "Item not found", null));
-        }
-    }
-
-    /**
-     * Delete an item by its ID.
-     *
-     * @param id the ID of the item to be deleted
-     * @return a response indicating the result of the deletion
-     */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteItem(@PathVariable Long id) {
-        boolean deleted = itemService.deleteItem(id);
-
-        if (deleted) {
-            return ResponseEntity.status(HttpStatus.NO_CONTENT)
-                    .body(new ApiResponse<>(true, "Item deleted successfully", null));
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ApiResponse<>(false, "Item not found", null));
+        try {
+            ItemResponseDto item = itemService.getItem(itemId);
+            logger.info("Successfully retrieved item with ID: {}", itemId);
+            return createSuccessResponse("Item retrieved successfully", item);
+        } catch (Exception e) {
+            logger.error("Failed to retrieve item with ID: {}", itemId, e);
+            return createNotFoundResponse("Item not found with ID: " + itemId);
         }
     }
 }
