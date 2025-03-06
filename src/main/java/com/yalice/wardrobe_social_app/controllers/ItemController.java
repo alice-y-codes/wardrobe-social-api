@@ -14,7 +14,6 @@ import java.util.List;
 
 /**
  * Controller for item-related operations.
- * Handles creating, updating, deleting, and retrieving wardrobe items.
  */
 @RestController
 @RequestMapping("/api/items")
@@ -37,8 +36,8 @@ public class ItemController extends ApiBaseController {
             @RequestPart("item") ItemDto itemDto,
             @RequestPart(value = "image", required = false) MultipartFile image) {
 
-        return handleItemAction(() -> itemService.createItem(getLoggedInUser().getId(), wardrobeId, itemDto, image),
-                "create item");
+        return handleEntityAction(() -> itemService.createItem(getLoggedInUser().getId(), wardrobeId, itemDto, image),
+                "Item created successfully", "Item");
     }
 
     /**
@@ -50,8 +49,8 @@ public class ItemController extends ApiBaseController {
             @RequestPart("item") ItemDto itemDto,
             @RequestPart(value = "image", required = false) MultipartFile image) {
 
-        return handleItemAction(() -> itemService.updateItem(getLoggedInUser().getId(), itemId, itemDto, image),
-                "update item");
+        return handleEntityAction(() -> itemService.updateItem(getLoggedInUser().getId(), itemId, itemDto, image),
+                "Item updated successfully", "Item");
     }
 
     /**
@@ -59,7 +58,8 @@ public class ItemController extends ApiBaseController {
      */
     @DeleteMapping("/{itemId}")
     public ResponseEntity<ApiResponse<Void>> deleteItem(@PathVariable Long itemId) {
-        return handleVoidAction(() -> itemService.deleteItem(getLoggedInUser().getId(), itemId), "delete item");
+        return handleVoidAction(() -> itemService.deleteItem(getLoggedInUser().getId(), itemId),
+                "Item deleted successfully", "Item");
     }
 
     /**
@@ -67,7 +67,8 @@ public class ItemController extends ApiBaseController {
      */
     @GetMapping("/my-items")
     public ResponseEntity<ApiResponse<List<ItemResponseDto>>> getMyItems() {
-        return handleItemAction(() -> itemService.getUserItems(getLoggedInUser().getId()), "retrieve user items");
+        return handleEntityAction(() -> itemService.getUserItems(getLoggedInUser().getId()),
+                "User items retrieved successfully", "Item");
     }
 
     /**
@@ -75,48 +76,7 @@ public class ItemController extends ApiBaseController {
      */
     @GetMapping("/{itemId}")
     public ResponseEntity<ApiResponse<ItemResponseDto>> getItem(@PathVariable Long itemId) {
-        return handleItemAction(() -> itemService.getItem(itemId), "retrieve item");
-    }
-
-    /**
-     * Handles item-related actions and error handling.
-     */
-    private <T> ResponseEntity<ApiResponse<T>> handleItemAction(ItemSupplier<T> supplier, String action) {
-        try {
-            T result = supplier.get();
-            logger.info("Successfully {}: {}", action, result);
-            return createSuccessResponse("Item " + action + "d successfully", result);
-        } catch (Exception e) {
-            return handleServiceError(e, action);
-        }
-    }
-
-    /**
-     * Handles actions that do not return data.
-     */
-    private ResponseEntity<ApiResponse<Void>> handleVoidAction(VoidSupplier supplier, String action) {
-        try {
-            supplier.execute();
-            logger.info("Successfully {} item", action);
-            return createSuccessResponse("Item " + action + "d successfully", null);
-        } catch (Exception e) {
-            return handleServiceError(e, action);
-        }
-    }
-
-    /**
-     * Functional interface for item operations that return a result.
-     */
-    @FunctionalInterface
-    private interface ItemSupplier<T> {
-        T get() throws Exception;
-    }
-
-    /**
-     * Functional interface for void operations.
-     */
-    @FunctionalInterface
-    private interface VoidSupplier {
-        void execute() throws Exception;
+        return handleEntityAction(() -> itemService.getItem(itemId),
+                "Item retrieved successfully", "Item");
     }
 }

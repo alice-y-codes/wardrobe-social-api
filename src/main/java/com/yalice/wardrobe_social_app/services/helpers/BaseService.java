@@ -1,12 +1,12 @@
 package com.yalice.wardrobe_social_app.services.helpers;
 
+import com.yalice.wardrobe_social_app.dtos.feed.FeedItemDto;
 import com.yalice.wardrobe_social_app.dtos.post.PostResponseDto;
 import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.dtos.item.ItemResponseDto;
 import com.yalice.wardrobe_social_app.dtos.outfit.OutfitResponseDto;
 import com.yalice.wardrobe_social_app.dtos.wardrobe.WardrobeResponseDto;
 import com.yalice.wardrobe_social_app.entities.*;
-import com.yalice.wardrobe_social_app.interfaces.DtoConverterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,17 +17,16 @@ import java.util.stream.Collectors;
  * Base service class that provides common functionality for all services.
  * This includes converting entities to response DTOs.
  */
-public abstract class BaseService implements DtoConverterService {
+public abstract class BaseService {
 
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Override
-    public UserResponseDto convertToUserResponseDto(User user) {
+
+    protected UserResponseDto convertToUserResponseDto(User user) {
         return new UserResponseDto(user.getId(), user.getUsername(), user.getEmail());
     }
 
-    @Override
-    public ItemResponseDto convertToItemResponseDto(Item item) {
+    protected ItemResponseDto convertToItemResponseDto(Item item) {
         return ItemResponseDto.builder()
                 .id(item.getId())
                 .name(item.getName())
@@ -41,8 +40,7 @@ public abstract class BaseService implements DtoConverterService {
                 .build();
     }
 
-    @Override
-    public WardrobeResponseDto convertToWardrobeResponseDto(Wardrobe wardrobe) {
+    protected WardrobeResponseDto convertToWardrobeResponseDto(Wardrobe wardrobe) {
         return WardrobeResponseDto.builder()
                 .id(wardrobe.getId())
                 .name(wardrobe.getName())
@@ -56,7 +54,7 @@ public abstract class BaseService implements DtoConverterService {
      * @param outfit The Outfit entity to be converted.
      * @return OutfitResponseDto The response DTO for the outfit.
      */
-    public OutfitResponseDto convertToOutfitResponseDto(Outfit outfit) {
+    protected OutfitResponseDto convertToOutfitResponseDto(Outfit outfit) {
         Set<ItemResponseDto> itemResponseDtos = outfit.getItems().stream()
                 .map(item -> new ItemResponseDto(item.getId(), item.getName(), item.getBrand(),
                         item.getCategory(), item.getSize(),
@@ -84,7 +82,7 @@ public abstract class BaseService implements DtoConverterService {
      * @param post The Post entity to be converted.
      * @return PostResponseDto The response DTO for the post.
      */
-    public PostResponseDto convertToPostResponseDto(Post post) {
+    protected PostResponseDto convertToPostResponseDto(Post post) {
         return new PostResponseDto(
                 post.getId(),
                 post.getTitle(),
@@ -94,5 +92,21 @@ public abstract class BaseService implements DtoConverterService {
                 post.getVisibility().name(),
                 post.getProfile().getUser().getUsername()
         );
+    }
+
+    protected FeedItemDto convertToFeedItemDto(Post post) {
+        FeedItemDto dto = new FeedItemDto();
+        dto.setId(post.getId());
+        dto.setType("POST");
+        dto.setUser(convertToUserResponseDto(post.getProfile().getUser()));
+        dto.setCreatedAt(post.getCreatedAt());
+        dto.setUpdatedAt(post.getUpdatedAt());
+        dto.setSeason(post.getOutfit().getSeason());
+        dto.setCategory(post.getOutfit().getCategory());
+        dto.setLikesCount(post.getLikes().size());
+        dto.setCommentsCount(post.getComments().size());
+        // TODO: Implement isLikedByCurrentUser logic
+        dto.setLikedByCurrentUser(false);
+        return dto;
     }
 }

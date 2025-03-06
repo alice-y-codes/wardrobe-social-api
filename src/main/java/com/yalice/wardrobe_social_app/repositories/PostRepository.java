@@ -32,12 +32,12 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // Retrieve posts by userId and visibility, ordered by creation date
     @Query("SELECT p FROM Post p WHERE p.user.id = ?1 AND p.visibility IN ?2 ORDER BY p.createdAt DESC")
-    Page<Post> findByUserIdAndVisibilityInOrderByCreatedAtDesc(Long userId, List<PostVisibility> visibility,
+    Page<Post> findByUserIdAndVisibilityInOrderByCreatedAtDesc(Long userId, List<Post.PostVisibility> visibility,
             Pageable pageable);
 
     // Retrieve posts by userId and specific visibility, ordered by creation date
     @Query("SELECT p FROM Post p WHERE p.user.id = ?1 AND p.visibility = ?2 ORDER BY p.createdAt DESC")
-    Page<Post> findByUserIdAndVisibilityOrderByCreatedAtDesc(Long userId, PostVisibility visibility, Pageable pageable);
+    Page<Post> findByUserIdAndVisibilityOrderByCreatedAtDesc(Long userId, Post.PostVisibility visibility, Pageable pageable);
 
     // Retrieve posts for a user's feed (includes posts from friends and public
     // posts)

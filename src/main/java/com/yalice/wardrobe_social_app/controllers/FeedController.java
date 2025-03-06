@@ -4,7 +4,6 @@ import com.yalice.wardrobe_social_app.dtos.feed.FeedItemDto;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FeedService;
-import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.utilities.ApiResponse;
 import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +26,8 @@ public class FeedController extends ApiBaseController {
     private final FeedService feedService;
 
     @Autowired
-    public FeedController(FeedService feedService, UserSearchService userSearchService) {
-        super(new AuthUtils(userSearchService));
+    public FeedController(FeedService feedService, AuthUtils authUtils) {
+        super(authUtils);
         this.feedService = feedService;
     }
 
@@ -43,7 +42,10 @@ public class FeedController extends ApiBaseController {
     public ResponseEntity<ApiResponse<List<FeedItemDto>>> getFeed(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return handleFeedRetrieval(() -> feedService.getFeed(getLoggedInUser().getId(), page, size), page, size);
+        return handleEntityAction(
+                () -> feedService.getFeed(getLoggedInUser().getId(), page, size),
+                "retrieve feed", "Feed"
+        );
     }
 
     /**
@@ -59,7 +61,10 @@ public class FeedController extends ApiBaseController {
             @PathVariable String season,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return handleFeedRetrieval(() -> feedService.getFeedBySeason(getLoggedInUser().getId(), season, page, size), page, size);
+        return handleEntityAction(
+                () -> feedService.getFeedBySeason(getLoggedInUser().getId(), season, page, size),
+                "retrieve seasonal feed", "Feed By Season"
+        );
     }
 
     /**
@@ -75,7 +80,10 @@ public class FeedController extends ApiBaseController {
             @PathVariable String category,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return handleFeedRetrieval(() -> feedService.getFeedByCategory(getLoggedInUser().getId(), category, page, size), page, size);
+        return handleEntityAction(
+                () -> feedService.getFeedByCategory(getLoggedInUser().getId(), category, page, size),
+                "retrieve category feed", "Feed By Category"
+        );
     }
 
     /**
@@ -91,25 +99,5 @@ public class FeedController extends ApiBaseController {
         User currentUser = getLoggedInUser();
         Page<Post> posts = feedService.getUserPosts(userId, currentUser.getId(), pageable);
         return ResponseEntity.ok(new ApiResponse<>(true, "User posts retrieved successfully", posts));
-    }
-
-    // Helper method for handling feed retrieval logic for different filters
-    private ResponseEntity<ApiResponse<List<FeedItemDto>>> handleFeedRetrieval(
-            FeedRetriever feedRetriever, int page, int size) {
-        User currentUser = getLoggedInUser();
-        try {
-            List<FeedItemDto> feedItems = feedRetriever.execute();
-            logger.info("Successfully retrieved {} feed items for user ID: {}", feedItems.size(), currentUser.getId());
-            return createSuccessResponse("Feed retrieved successfully", feedItems);
-        } catch (Exception e) {
-            logger.error("Failed to retrieve feed for user ID: {}", currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to retrieve feed");
-        }
-    }
-
-    // Functional interface for feed retrieval actions
-    @FunctionalInterface
-    interface FeedRetriever {
-        List<FeedItemDto> execute() throws Exception;
     }
 }

@@ -2,7 +2,6 @@ package com.yalice.wardrobe_social_app.controllers;
 
 import com.yalice.wardrobe_social_app.dtos.friendship.FriendRequestDto;
 import com.yalice.wardrobe_social_app.dtos.friendship.FriendResponseDto;
-import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.utilities.ApiResponse;
 import com.yalice.wardrobe_social_app.utilities.AuthUtils;
@@ -36,10 +35,8 @@ public class FriendshipController extends ApiBaseController {
      */
     @PostMapping("/requests")
     public ResponseEntity<ApiResponse<FriendRequestDto>> sendFriendRequest(@RequestParam Long recipientId) {
-        return handleFriendRequestAction(
-                () -> friendService.sendFriendRequest(getLoggedInUser().getId(), recipientId),
-                "send friend request", recipientId
-        );
+        return handleEntityAction(() -> friendService.sendFriendRequest(getLoggedInUser().getId(), recipientId),
+                "send", "friend request");
     }
 
     /**
@@ -50,10 +47,8 @@ public class FriendshipController extends ApiBaseController {
      */
     @PostMapping("/requests/{requestId}/accept")
     public ResponseEntity<ApiResponse<FriendResponseDto>> acceptFriendRequest(@PathVariable Long requestId) {
-        return handleFriendRequestAction(
-                () -> friendService.acceptFriendRequest(getLoggedInUser().getId(), requestId),
-                "accept friend request", requestId
-        );
+        return handleEntityAction(() -> friendService.acceptFriendRequest(getLoggedInUser().getId(), requestId),
+                "accept", "friend request");
     }
 
     /**
@@ -64,13 +59,10 @@ public class FriendshipController extends ApiBaseController {
      */
     @PostMapping("/requests/{requestId}/reject")
     public ResponseEntity<ApiResponse<Void>> rejectFriendRequest(@PathVariable Long requestId) {
-        return handleFriendRequestAction(
-                () -> {
-                    friendService.rejectFriendRequest(getLoggedInUser().getId(), requestId);
-                    return null;
-                },
-                "reject friend request", requestId
-        );
+        return handleEntityAction(() -> {
+            friendService.rejectFriendRequest(getLoggedInUser().getId(), requestId);
+            return null; // No result needed for rejection
+        }, "reject", "friend request");
     }
 
     /**
@@ -80,9 +72,8 @@ public class FriendshipController extends ApiBaseController {
      */
     @GetMapping("/requests/pending")
     public ResponseEntity<ApiResponse<List<FriendRequestDto>>> getPendingFriendRequests() {
-        return handleGetFriendRequestsAction(
-                () -> friendService.getPendingFriendRequests(getLoggedInUser().getId()), "pending friend requests"
-        );
+        return handleEntityAction(() -> friendService.getPendingFriendRequests(getLoggedInUser().getId()),
+                "retrieve", "pending friend requests");
     }
 
     /**
@@ -92,49 +83,7 @@ public class FriendshipController extends ApiBaseController {
      */
     @GetMapping("/friends")
     public ResponseEntity<ApiResponse<List<FriendResponseDto>>> getFriends() {
-        return handleGetFriendRequestsAction(
-                () -> friendService.getFriends(getLoggedInUser().getId()), "friends"
-        );
-    }
-
-    // Helper method to handle friend request actions (send, accept, reject)
-    private <T> ResponseEntity<ApiResponse<T>> handleFriendRequestAction(
-            FriendRequestAction<T> action, String actionName, Long requestId) {
-        User currentUser = getLoggedInUser();
-        try {
-            T response = action.execute();
-            logger.info("Successfully performed '{}' action for user ID: {} and target ID: {}",
-                    actionName, currentUser.getId(), requestId);
-            return createSuccessResponse(actionName + " successful", response);
-        } catch (Exception e) {
-            logger.error("Failed to {} for user ID: {} and target ID: {}", actionName, currentUser.getId(), requestId, e);
-            return createInternalServerErrorResponse("Failed to " + actionName);
-        }
-    }
-
-    // Helper method to handle retrieval of friend requests (pending or friends)
-    private <T> ResponseEntity<ApiResponse<T>> handleGetFriendRequestsAction(
-            FriendRequestsRetriever<T> retriever, String requestType) {
-        User currentUser = getLoggedInUser();
-        try {
-            T response = retriever.retrieve();
-            logger.info("Successfully retrieved {} for user ID: {}", requestType, currentUser.getId());
-            return createSuccessResponse(requestType + " retrieved successfully", response);
-        } catch (Exception e) {
-            logger.error("Failed to retrieve {} for user ID: {}", requestType, currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to retrieve " + requestType);
-        }
-    }
-
-    // Functional interface for friend request actions
-    @FunctionalInterface
-    interface FriendRequestAction<T> {
-        T execute() throws Exception;
-    }
-
-    // Functional interface for retrieving friend requests or friendships
-    @FunctionalInterface
-    interface FriendRequestsRetriever<T> {
-        T retrieve() throws Exception;
+        return handleEntityAction(() -> friendService.getFriends(getLoggedInUser().getId()),
+                "retrieve", "friends");
     }
 }

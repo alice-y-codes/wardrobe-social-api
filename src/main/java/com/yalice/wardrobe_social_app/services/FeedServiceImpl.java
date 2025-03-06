@@ -98,26 +98,10 @@ public class FeedServiceImpl extends BaseService implements FeedService {
 
                 if (isViewerFriend) {
                         return postRepository.findByUserIdAndVisibilityInOrderByCreatedAtDesc(
-                                        userId, List.of(PostVisibility.PUBLIC, PostVisibility.FRIENDS_ONLY), pageable);
+                                        userId, List.of(Post.PostVisibility.PUBLIC, Post.PostVisibility.FRIENDS_ONLY), pageable);
                 } else {
                         return postRepository.findByUserIdAndVisibilityOrderByCreatedAtDesc(
-                                        userId, PostVisibility.PUBLIC, pageable);
+                                        userId, Post.PostVisibility.PUBLIC, pageable);
                 }
-        }
-
-        private FeedItemDto convertToFeedItemDto(Post post) {
-                FeedItemDto dto = new FeedItemDto();
-                dto.setId(post.getId());
-                dto.setType("POST");
-                dto.setUser(convertToUserResponseDto(post.getProfile().getUser()));
-                dto.setCreatedAt(post.getCreatedAt());
-                dto.setUpdatedAt(post.getUpdatedAt());
-                dto.setSeason(post.getOutfit().getSeason());
-                dto.setCategory(post.getOutfit().getCategory());
-                dto.setLikesCount(post.getLikes().size());
-                dto.setCommentsCount(post.getComments().size());
-                // TODO: Implement isLikedByCurrentUser logic
-                dto.setLikedByCurrentUser(false);
-                return dto;
         }
 }

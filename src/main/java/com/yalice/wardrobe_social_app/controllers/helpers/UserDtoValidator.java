@@ -1,12 +1,14 @@
 package com.yalice.wardrobe_social_app.controllers.helpers;
 
 import com.yalice.wardrobe_social_app.dtos.user.UserDto;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.Validator;
 
 @Validated
+@Component
 public class UserDtoValidator implements Validator {
 
     @Override

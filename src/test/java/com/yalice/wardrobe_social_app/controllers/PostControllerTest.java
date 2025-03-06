@@ -70,21 +70,21 @@ class PostControllerTest {
 
         private void initializeTestData() {
                 testUser = User.builder()
-                                .id(1L)
                                 .username("testuser")
                                 .email("test@example.com")
                                 .build();
+                testUser.setId(1L);
 
                 testOutfit = Outfit.builder()
-                                .id(1L)
                                 .name("Test Outfit")
                                 .description("A test outfit")
                                 .season("SUMMER")
                                 .favorite(false)
                                 .isPublic(true)
-                                .createdAt(LocalDateTime.now())
-                                .updatedAt(LocalDateTime.now())
                                 .build();
+                testOutfit.setId(1L);
+                testOutfit.setCreatedAt(LocalDateTime.now());
+                testOutfit.setUpdatedAt(LocalDateTime.now());
 
                 testPostDto = PostDto.builder()
                                 .title("Test Post")

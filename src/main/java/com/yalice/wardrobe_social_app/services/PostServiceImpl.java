@@ -135,7 +135,7 @@ public class PostServiceImpl extends BaseService implements PostService {
 
         boolean isLiked = post.getLikes().contains(profileId);
 
-        boolean hasProfileLiked = postServiceHelper.hasUserLikedPost(postId, profileId);
+        boolean hasProfileLiked = postServiceHelper.hasProfileLikedPost(postId, profileId);
 
         if (isLiked && !hasProfileLiked) {
             Like like = Like.builder()
