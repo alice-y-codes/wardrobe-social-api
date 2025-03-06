@@ -5,6 +5,7 @@ import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.utilities.ApiResponse;
 import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,16 +35,7 @@ public class UserSearchController extends ApiBaseController {
      */
     @GetMapping("/username/{username}")
     public ResponseEntity<ApiResponse<UserResponseDto>> getUserByUsername(@PathVariable String username) {
-        logger.info("Searching for user by username: {}", username);
-
-        try {
-            UserResponseDto user = userSearchService.getUserByUsername(username);
-            logger.info("Successfully found user with username: {}", username);
-            return createSuccessResponse("User found successfully", user);
-        } catch (Exception e) {
-            logger.error("Failed to find user with username: {}", username, e);
-            return createNotFoundResponse("User not found with username: " + username);
-        }
+        return handleUserSearch(() -> userSearchService.getUserByUsername(username), "username", username);
     }
 
     /**
@@ -54,16 +46,7 @@ public class UserSearchController extends ApiBaseController {
      */
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<UserResponseDto>> getUserById(@PathVariable Long userId) {
-        logger.info("Searching for user by ID: {}", userId);
-
-        try {
-            UserResponseDto user = userSearchService.getUserById(userId);
-            logger.info("Successfully found user with ID: {}", userId);
-            return createSuccessResponse("User found successfully", user);
-        } catch (Exception e) {
-            logger.error("Failed to find user with ID: {}", userId, e);
-            return createNotFoundResponse("User not found with ID: " + userId);
-        }
+        return handleUserSearch(() -> userSearchService.getUserById(userId), "ID", String.valueOf(userId));
     }
 
     /**
@@ -80,7 +63,7 @@ public class UserSearchController extends ApiBaseController {
         try {
             List<UserResponseDto> users = userSearchService.searchUsersByUsername(partialUsername);
             logger.info("Found {} users matching partial username: {}", users.size(), partialUsername);
-            return createSuccessResponse("Users found successfully", users);
+            return createSuccessResponse("Users found successfully", users, HttpStatus.FOUND);
         } catch (Exception e) {
             logger.error("Failed to search users with partial username: {}", partialUsername, e);
             return createInternalServerErrorResponse("Failed to search users");
@@ -108,5 +91,24 @@ public class UserSearchController extends ApiBaseController {
             logger.error("Failed to retrieve users for page {} with size {}", page, size, e);
             return createInternalServerErrorResponse("Failed to retrieve users");
         }
+    }
+
+    private ResponseEntity<ApiResponse<UserResponseDto>> handleUserSearch(
+            UserSearchSupplier supplier, String searchType, String searchValue) {
+        logger.info("Searching for user by {}: {}", searchType, searchValue);
+
+        try {
+            UserResponseDto user = supplier.get();
+            logger.info("Successfully found user with {}: {}", searchType, searchValue);
+            return createSuccessResponse("User found successfully", user);
+        } catch (Exception e) {
+            logger.error("Failed to find user with {}: {}", searchType, searchValue, e);
+            return createNotFoundResponse("User not found with " + searchType + ": " + searchValue);
+        }
+    }
+
+    @FunctionalInterface
+    interface UserSearchSupplier {
+        UserResponseDto get() throws Exception;
     }
 }

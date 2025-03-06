@@ -6,7 +6,9 @@ import com.yalice.wardrobe_social_app.exceptions.UnauthorizedAccessException;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 
+@Component
 public class AuthUtils {
 
     private final UserSearchService userSearchService;

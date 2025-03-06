@@ -36,19 +36,10 @@ public class FriendshipController extends ApiBaseController {
      */
     @PostMapping("/requests")
     public ResponseEntity<ApiResponse<FriendRequestDto>> sendFriendRequest(@RequestParam Long recipientId) {
-        logger.info("Attempting to send friend request to user ID: {}", recipientId);
-
-        User currentUser = getLoggedInUser();
-        try {
-            FriendRequestDto request = friendService.sendFriendRequest(currentUser.getId(), recipientId);
-            logger.info("Successfully sent friend request from user ID: {} to user ID: {}",
-                    currentUser.getId(), recipientId);
-            return createSuccessResponse("Friend request sent successfully", request);
-        } catch (Exception e) {
-            logger.error("Failed to send friend request from user ID: {} to user ID: {}",
-                    currentUser.getId(), recipientId, e);
-            return createInternalServerErrorResponse("Failed to send friend request");
-        }
+        return handleFriendRequestAction(
+                () -> friendService.sendFriendRequest(getLoggedInUser().getId(), recipientId),
+                "send friend request", recipientId
+        );
     }
 
     /**
@@ -59,19 +50,10 @@ public class FriendshipController extends ApiBaseController {
      */
     @PostMapping("/requests/{requestId}/accept")
     public ResponseEntity<ApiResponse<FriendResponseDto>> acceptFriendRequest(@PathVariable Long requestId) {
-        logger.info("Attempting to accept friend request with ID: {}", requestId);
-
-        User currentUser = getLoggedInUser();
-        try {
-            FriendResponseDto friendship = friendService.acceptFriendRequest(currentUser.getId(), requestId);
-            logger.info("Successfully accepted friend request with ID: {} by user ID: {}",
-                    requestId, currentUser.getId());
-            return createSuccessResponse("Friend request accepted successfully", friendship);
-        } catch (Exception e) {
-            logger.error("Failed to accept friend request with ID: {} by user ID: {}",
-                    requestId, currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to accept friend request");
-        }
+        return handleFriendRequestAction(
+                () -> friendService.acceptFriendRequest(getLoggedInUser().getId(), requestId),
+                "accept friend request", requestId
+        );
     }
 
     /**
@@ -82,19 +64,13 @@ public class FriendshipController extends ApiBaseController {
      */
     @PostMapping("/requests/{requestId}/reject")
     public ResponseEntity<ApiResponse<Void>> rejectFriendRequest(@PathVariable Long requestId) {
-        logger.info("Attempting to reject friend request with ID: {}", requestId);
-
-        User currentUser = getLoggedInUser();
-        try {
-            friendService.rejectFriendRequest(currentUser.getId(), requestId);
-            logger.info("Successfully rejected friend request with ID: {} by user ID: {}",
-                    requestId, currentUser.getId());
-            return createSuccessResponse("Friend request rejected successfully", null);
-        } catch (Exception e) {
-            logger.error("Failed to reject friend request with ID: {} by user ID: {}",
-                    requestId, currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to reject friend request");
-        }
+        return handleFriendRequestAction(
+                () -> {
+                    friendService.rejectFriendRequest(getLoggedInUser().getId(), requestId);
+                    return null;
+                },
+                "reject friend request", requestId
+        );
     }
 
     /**
@@ -104,19 +80,9 @@ public class FriendshipController extends ApiBaseController {
      */
     @GetMapping("/requests/pending")
     public ResponseEntity<ApiResponse<List<FriendRequestDto>>> getPendingFriendRequests() {
-        logger.info("Retrieving pending friend requests for current user");
-
-        User currentUser = getLoggedInUser();
-        try {
-            List<FriendRequestDto> requests = friendService.getPendingFriendRequests(currentUser.getId());
-            logger.info("Successfully retrieved {} pending friend requests for user ID: {}",
-                    requests.size(), currentUser.getId());
-            return createSuccessResponse("Pending friend requests retrieved successfully", requests);
-        } catch (Exception e) {
-            logger.error("Failed to retrieve pending friend requests for user ID: {}",
-                    currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to retrieve pending friend requests");
-        }
+        return handleGetFriendRequestsAction(
+                () -> friendService.getPendingFriendRequests(getLoggedInUser().getId()), "pending friend requests"
+        );
     }
 
     /**
@@ -126,17 +92,49 @@ public class FriendshipController extends ApiBaseController {
      */
     @GetMapping("/friends")
     public ResponseEntity<ApiResponse<List<FriendResponseDto>>> getFriends() {
-        logger.info("Retrieving friends for current user");
+        return handleGetFriendRequestsAction(
+                () -> friendService.getFriends(getLoggedInUser().getId()), "friends"
+        );
+    }
 
+    // Helper method to handle friend request actions (send, accept, reject)
+    private <T> ResponseEntity<ApiResponse<T>> handleFriendRequestAction(
+            FriendRequestAction<T> action, String actionName, Long requestId) {
         User currentUser = getLoggedInUser();
         try {
-            List<FriendResponseDto> friendships = friendService.getFriends(currentUser.getId());
-            logger.info("Successfully retrieved {} friends for user ID: {}",
-                    friendships.size(), currentUser.getId());
-            return createSuccessResponse("Friends retrieved successfully", friendships);
+            T response = action.execute();
+            logger.info("Successfully performed '{}' action for user ID: {} and target ID: {}",
+                    actionName, currentUser.getId(), requestId);
+            return createSuccessResponse(actionName + " successful", response);
         } catch (Exception e) {
-            logger.error("Failed to retrieve friends for user ID: {}", currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to retrieve friends");
+            logger.error("Failed to {} for user ID: {} and target ID: {}", actionName, currentUser.getId(), requestId, e);
+            return createInternalServerErrorResponse("Failed to " + actionName);
         }
+    }
+
+    // Helper method to handle retrieval of friend requests (pending or friends)
+    private <T> ResponseEntity<ApiResponse<T>> handleGetFriendRequestsAction(
+            FriendRequestsRetriever<T> retriever, String requestType) {
+        User currentUser = getLoggedInUser();
+        try {
+            T response = retriever.retrieve();
+            logger.info("Successfully retrieved {} for user ID: {}", requestType, currentUser.getId());
+            return createSuccessResponse(requestType + " retrieved successfully", response);
+        } catch (Exception e) {
+            logger.error("Failed to retrieve {} for user ID: {}", requestType, currentUser.getId(), e);
+            return createInternalServerErrorResponse("Failed to retrieve " + requestType);
+        }
+    }
+
+    // Functional interface for friend request actions
+    @FunctionalInterface
+    interface FriendRequestAction<T> {
+        T execute() throws Exception;
+    }
+
+    // Functional interface for retrieving friend requests or friendships
+    @FunctionalInterface
+    interface FriendRequestsRetriever<T> {
+        T retrieve() throws Exception;
     }
 }

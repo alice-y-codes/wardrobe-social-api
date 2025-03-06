@@ -16,11 +16,12 @@ public interface ItemService {
      * Creates a new wardrobe item.
      *
      * @param userId  the ID of the user creating the item
+     * @param wardrobeId  the ID of the wardrobe for the item to be held
      * @param itemDto the item data
      * @param image   the item image file (optional)
      * @return the created item
      */
-    ItemResponseDto createItem(Long userId, ItemDto itemDto, Long wardrobeId, MultipartFile image);
+    ItemResponseDto createItem(Long userId, Long wardrobeId, ItemDto itemDto, MultipartFile image);
 
     /**
      * Updates an existing wardrobe item.

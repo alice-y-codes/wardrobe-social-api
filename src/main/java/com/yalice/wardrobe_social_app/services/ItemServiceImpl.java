@@ -34,7 +34,7 @@ public class ItemServiceImpl extends BaseService implements ItemService {
 
     @Override
     @Transactional
-    public ItemResponseDto createItem(Long userId, ItemDto itemDto, Long wardrobeId, MultipartFile image) {
+    public ItemResponseDto createItem(Long userId, Long wardrobeId, ItemDto itemDto,  MultipartFile image) {
         logger.info("Attempting to create item for user ID: {} in wardrobe ID: {}", userId, wardrobeId);
 
         if (itemDto == null || userId == null || wardrobeId == null) {

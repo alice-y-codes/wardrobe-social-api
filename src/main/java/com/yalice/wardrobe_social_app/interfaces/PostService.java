@@ -12,5 +12,5 @@ public interface PostService {
 
     PostResponseDto updatePost(Long postId, Long userId, PostDto postDto);
 
-    boolean toggleLikePost(Long postId, Long userId, boolean isLike);
+    boolean toggleLikePost(Long postId, Long userId);
 }

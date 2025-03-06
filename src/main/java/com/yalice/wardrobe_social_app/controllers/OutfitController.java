@@ -8,7 +8,6 @@ import com.yalice.wardrobe_social_app.interfaces.OutfitService;
 import com.yalice.wardrobe_social_app.utilities.ApiResponse;
 import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -43,18 +42,10 @@ public class OutfitController extends ApiBaseController {
     public ResponseEntity<ApiResponse<OutfitResponseDto>> createOutfit(
             @RequestPart("outfit") OutfitDto outfitDto,
             @RequestPart(value = "image", required = false) MultipartFile image) {
-        logger.info("Attempting to create new outfit for user");
-
-        User currentUser = getLoggedInUser();
-        try {
-            OutfitResponseDto createdOutfit = outfitService.createOutfit(currentUser.getId(), outfitDto, image);
-            logger.info("Successfully created outfit with ID: {} for user ID: {}", createdOutfit.getId(),
-                    currentUser.getId());
-            return createSuccessResponse("Outfit created successfully", createdOutfit);
-        } catch (Exception e) {
-            logger.error("Failed to create outfit for user ID: {}", currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to create outfit");
-        }
+        return handleOutfitOperation(() -> {
+            User currentUser = getLoggedInUser();
+            return outfitService.createOutfit(currentUser.getId(), outfitDto, image);
+        });
     }
 
     /**
@@ -70,17 +61,19 @@ public class OutfitController extends ApiBaseController {
             @PathVariable Long outfitId,
             @RequestPart("outfit") OutfitDto outfitDto,
             @RequestPart(value = "image", required = false) MultipartFile image) {
-        logger.info("Attempting to update outfit with ID: {}", outfitId);
+        return handleOutfitOperation(() -> {
+            User currentUser = getLoggedInUser();
+            return outfitService.updateOutfit(currentUser.getId(), outfitId, outfitDto, image);
+        });
+    }
 
-        User currentUser = getLoggedInUser();
+    private ResponseEntity<ApiResponse<OutfitResponseDto>> handleOutfitOperation(OutfitAction outfitAction) {
         try {
-            OutfitResponseDto updatedOutfit = outfitService.updateOutfit(currentUser.getId(), outfitId, outfitDto,
-                    image);
-            logger.info("Successfully updated outfit with ID: {} for user ID: {}", outfitId, currentUser.getId());
-            return createSuccessResponse("Outfit updated successfully", updatedOutfit);
+            OutfitResponseDto result = outfitAction.execute();
+            return createSuccessResponse("Outfit operation successful", result);
         } catch (Exception e) {
-            logger.error("Failed to update outfit with ID: {} for user ID: {}", outfitId, currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to update outfit");
+            logger.error("Outfit operation failed", e);
+            return createInternalServerErrorResponse("Failed to process outfit operation");
         }
     }
 
@@ -92,77 +85,73 @@ public class OutfitController extends ApiBaseController {
      */
     @DeleteMapping("/{outfitId}")
     public ResponseEntity<ApiResponse<Void>> deleteOutfit(@PathVariable Long outfitId) {
-        logger.info("Attempting to delete outfit with ID: {}", outfitId);
-
-        User currentUser = getLoggedInUser();
-        try {
+        return handleOutfitOperation(() -> {
+            User currentUser = getLoggedInUser();
             outfitService.deleteOutfit(currentUser.getId(), outfitId);
-            logger.info("Successfully deleted outfit with ID: {} for user ID: {}", outfitId, currentUser.getId());
-            return createSuccessResponse("Outfit deleted successfully", null);
-        } catch (Exception e) {
-            logger.error("Failed to delete outfit with ID: {} for user ID: {}", outfitId, currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to delete outfit");
-        }
+            return null; // No return value needed for deletion
+        });
     }
 
     /**
-     * Gets all outfits for the current user.
+     * Retrieves all outfits for the current user.
      *
      * @return ResponseEntity containing the list of outfits
      */
     @GetMapping("/my-outfits")
     public ResponseEntity<ApiResponse<List<OutfitResponseDto>>> getMyOutfits() {
-        logger.info("Retrieving outfits for current user");
-
-        User currentUser = getLoggedInUser();
-        try {
-            List<OutfitResponseDto> outfits = outfitService.getUserOutfits(currentUser.getId());
-            logger.info("Successfully retrieved {} outfits for user ID: {}", outfits.size(), currentUser.getId());
-            return createSuccessResponse("Outfits retrieved successfully", outfits);
-        } catch (Exception e) {
-            logger.error("Failed to retrieve outfits for user ID: {}", currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to retrieve outfits");
-        }
+        return handleOutfitRetrieval(() -> {
+            User currentUser = getLoggedInUser();
+            return outfitService.getUserOutfits(currentUser.getId());
+        });
     }
 
     /**
-     * Gets a specific outfit by ID.
+     * Retrieves a specific outfit by ID.
      *
      * @param outfitId the ID of the outfit to retrieve
      * @return ResponseEntity containing the outfit
      */
     @GetMapping("/{outfitId}")
     public ResponseEntity<ApiResponse<OutfitResponseDto>> getOutfit(@PathVariable Long outfitId) {
-        logger.info("Retrieving outfit with ID: {}", outfitId);
-
-        try {
+        return handleOutfitRetrieval(() -> {
             OutfitResponseDto outfit = outfitService.getOutfit(outfitId);
-            logger.info("Successfully retrieved outfit with ID: {}", outfitId);
-            return createSuccessResponse("Outfit retrieved successfully", outfit);
-        } catch (Exception e) {
-            logger.error("Failed to retrieve outfit with ID: {}", outfitId, e);
-            return createNotFoundResponse("Outfit not found with ID: " + outfitId);
-        }
+            if (outfit == null) throw new RuntimeException("Outfit not found");
+            return outfit;
+        });
     }
 
     /**
-     * Gets all outfits for a specific user.
+     * Retrieves all outfits for a specific user.
      *
      * @param userId the ID of the user
      * @return ResponseEntity containing the list of outfits
      */
     @GetMapping("/users/{userId}")
     public ResponseEntity<ApiResponse<List<OutfitResponseDto>>> getUserOutfits(@PathVariable Long userId) {
-        logger.info("Retrieving outfits for user ID: {}", userId);
+        return handleOutfitRetrieval(() -> outfitService.getUserOutfits(userId));
+    }
 
+    private <T> ResponseEntity<ApiResponse<T>> handleOutfitRetrieval(OutfitRetriever<T> outfitRetriever) {
         try {
-            List<OutfitResponseDto> outfits = outfitService.getUserOutfits(userId);
-            logger.info("Successfully retrieved {} outfits for user ID: {}", outfits.size(), userId);
-            return createSuccessResponse("User outfits retrieved successfully", outfits);
+            T result = outfitRetriever.execute();
+            if (result instanceof List && ((List<?>) result).isEmpty()) {
+                return createNotFoundResponse("No outfits found");
+            }
+            return createSuccessResponse("Outfits retrieved successfully", result);
         } catch (Exception e) {
-            logger.error("Failed to retrieve outfits for user ID: {}", userId, e);
+            logger.error("Failed to retrieve outfits", e);
             return createInternalServerErrorResponse("Failed to retrieve outfits");
         }
+    }
+
+    @FunctionalInterface
+    interface OutfitAction {
+        OutfitResponseDto execute() throws Exception;
+    }
+
+    @FunctionalInterface
+    interface OutfitRetriever<T> {
+        T execute() throws Exception;
     }
 
     /**
@@ -176,15 +165,7 @@ public class OutfitController extends ApiBaseController {
     public ResponseEntity<ApiResponse<OutfitResponseDto>> addItemToOutfit(
             @PathVariable Long outfitId,
             @PathVariable Long itemId) {
-        if (!isUserOwnerOfOutfit(outfitId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new ApiResponse<>(false, "You don't have permission to modify this outfit", null));
-        }
-
-        OutfitResponseDto updatedOutfit = outfitService.addItemToOutfit(outfitId, itemId);
-        return updatedOutfit != null
-                ? ResponseEntity.ok(new ApiResponse<>(true, "Item added to outfit successfully", updatedOutfit))
-                : ResponseEntity.notFound().build();
+        return handleItemModification(outfitId, itemId, true);
     }
 
     /**
@@ -198,34 +179,46 @@ public class OutfitController extends ApiBaseController {
     public ResponseEntity<ApiResponse<OutfitResponseDto>> removeItemFromOutfit(
             @PathVariable Long outfitId,
             @PathVariable Long itemId) {
-        if (!isUserOwnerOfOutfit(outfitId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new ApiResponse<>(false, "You don't have permission to modify this outfit", null));
-        }
+        return handleItemModification(outfitId, itemId, false);
+    }
 
-        OutfitResponseDto updatedOutfit = outfitService.removeItemFromOutfit(outfitId, itemId);
-        return updatedOutfit != null
-                ? ResponseEntity.ok(new ApiResponse<>(true, "Item removed from outfit successfully", updatedOutfit))
-                : ResponseEntity.notFound().build();
+    private ResponseEntity<ApiResponse<OutfitResponseDto>> handleItemModification(Long outfitId, Long itemId, boolean add) {
+        try {
+            if (isUserOwnerOfOutfit(outfitId)) {
+                return createForbiddenResponse("You don't have permission to modify this outfit");
+            }
+
+            OutfitResponseDto updatedOutfit = add
+                    ? outfitService.addItemToOutfit(outfitId, itemId)
+                    : outfitService.removeItemFromOutfit(outfitId, itemId);
+
+            if (updatedOutfit == null) return createNotFoundResponse("Outfit or Item not found");
+            return createSuccessResponse("Item modification successful", updatedOutfit);
+        } catch (Exception e) {
+            logger.error("Item modification failed", e);
+            return createInternalServerErrorResponse("Failed to modify item in outfit");
+        }
     }
 
     /**
-     * Gets outfits by season.
+     * Retrieves outfits by season.
      *
      * @param season the season to filter by
      * @return ResponseEntity containing the list of outfits
      */
     @GetMapping("/season/{season}")
     public ResponseEntity<ApiResponse<List<OutfitResponseDto>>> getOutfitsBySeason(@PathVariable String season) {
-        User currentUserEntity = getLoggedInUser();
-        List<Outfit> outfits = outfitService.getUserOutfits(currentUserEntity.getId()).stream()
-                .map(outfitDto -> outfitService.getOutfitEntityById(outfitDto.getId()))
-                .filter(outfit -> outfit.getSeason().equals(season))
-                .collect(Collectors.toList());
-        List<OutfitResponseDto> responseDtos = outfits.stream()
-                .map(outfit -> outfitService.getOutfit(outfit.getId()))
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(new ApiResponse<>(true, "Seasonal outfits retrieved successfully", responseDtos));
+        return handleOutfitRetrieval(() -> {
+            User currentUserEntity = getLoggedInUser();
+            List<Outfit> outfits = outfitService.getUserOutfits(currentUserEntity.getId()).stream()
+                    .map(outfitDto -> outfitService.getOutfitEntityById(outfitDto.getId()))
+                    .filter(outfit -> outfit.getSeason().equals(season))
+                    .toList();
+
+            return outfits.stream()
+                    .map(outfit -> outfitService.getOutfit(outfit.getId()))
+                    .collect(Collectors.toList());
+        });
     }
 
     /**
@@ -237,6 +230,6 @@ public class OutfitController extends ApiBaseController {
     private boolean isUserOwnerOfOutfit(Long outfitId) {
         User currentUserEntity = getLoggedInUser();
         OutfitResponseDto existingOutfit = outfitService.getOutfit(outfitId);
-        return existingOutfit != null && existingOutfit.getProfileId().equals(currentUserEntity.getId());
+        return existingOutfit == null || !existingOutfit.getProfileId().equals(currentUserEntity.getId());
     }
 }

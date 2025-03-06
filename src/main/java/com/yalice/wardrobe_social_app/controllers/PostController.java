@@ -5,9 +5,8 @@ import com.yalice.wardrobe_social_app.dtos.post.PostResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.PostNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.PostService;
-import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
-import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import com.yalice.wardrobe_social_app.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,13 +28,23 @@ public class PostController {
     private final AuthUtils authUtils;
 
     @Autowired
-    public PostController(PostService postService, UserSearchService userSearchService) {
+    public PostController(PostService postService, AuthUtils authUtils) {
         this.postService = postService;
-        this.authUtils = new AuthUtils(userSearchService);
+        this.authUtils = authUtils;
     }
 
     private User getCurrentUser() {
         return authUtils.getCurrentUserOrElseThrow();
+    }
+
+    private <T> ResponseEntity<ApiResponse<T>> createApiResponse(String message, T data, HttpStatus status) {
+        ApiResponse<T> response = new ApiResponse<>(true, message, data);
+        return ResponseEntity.status(status).body(response);
+    }
+
+    private ResponseEntity<ApiResponse<String>> createApiResponse(String message, HttpStatus status) {
+        ApiResponse<String> response = new ApiResponse<>(true, message, null);
+        return ResponseEntity.status(status).body(response);
     }
 
     /**
@@ -49,8 +58,7 @@ public class PostController {
         User user = getCurrentUser();
         logger.info("User {} is creating a new post.", user.getUsername());
         PostResponseDto createdPost = postService.createPost(user.getId(), postDto);
-        ApiResponse<PostResponseDto> response = new ApiResponse<>(true, "Post created successfully", createdPost);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return createApiResponse("Post created successfully", createdPost, HttpStatus.CREATED);
     }
 
     /**
@@ -64,8 +72,7 @@ public class PostController {
         User user = getCurrentUser();
         logger.info("User {} is requesting post with ID {}.", user.getUsername(), postId);
         PostResponseDto post = postService.getPost(postId, user.getId());
-        ApiResponse<PostResponseDto> response = new ApiResponse<>(true, "Post retrieved successfully", post);
-        return ResponseEntity.ok(response);
+        return createApiResponse("Post retrieved successfully", post, HttpStatus.OK);
     }
 
     /**
@@ -79,8 +86,7 @@ public class PostController {
         User user = getCurrentUser();
         logger.info("User {} is deleting post with ID {}.", user.getUsername(), postId);
         postService.deletePost(postId, user.getId());
-        ApiResponse<String> response = new ApiResponse<>(true, "Post deleted successfully", "Post deleted");
-        return ResponseEntity.ok(response);
+        return createApiResponse("Post deleted successfully", HttpStatus.OK);
     }
 
     /**
@@ -95,41 +101,27 @@ public class PostController {
         User user = getCurrentUser();
         logger.info("User {} is updating post with ID {}.", user.getUsername(), postId);
         PostResponseDto updatedPost = postService.updatePost(postId, user.getId(), postDto);
-        ApiResponse<PostResponseDto> response = new ApiResponse<>(true, "Post updated successfully", updatedPost);
-        return ResponseEntity.ok(response);
+        return createApiResponse("Post updated successfully", updatedPost, HttpStatus.OK);
     }
 
     /**
-     * Likes a specific post.
+     * Toggles like status on a specific post (like if not liked, unlike if already liked).
      *
-     * @param postId the ID of the post to like
+     * @param postId the ID of the post to toggle like status
      * @return ResponseEntity with a success or failure message
      */
     @PostMapping("/{postId}/like")
-    public ResponseEntity<ApiResponse<String>> likePost(@PathVariable Long postId) {
+    public ResponseEntity<ApiResponse<String>> toggleLikePost(@PathVariable Long postId) {
         User user = getCurrentUser();
-        logger.info("User {} is liking post with ID {}.", user.getUsername(), postId);
-        boolean liked = postService.likePost(postId, user.getId());
-        ApiResponse<String> response = new ApiResponse<>(true, liked ? "Post liked successfully" : "Post already liked", liked ? "Post liked" : "Post already liked");
-        return ResponseEntity.ok(response);
+        logger.info("User {} is toggling like status on post with ID {}.", user.getUsername(), postId);
+
+        boolean toggled = postService.toggleLikePost(postId, user.getProfile().getId());
+        String message = toggled ? "Post liked successfully" : "Post unliked successfully";
+        String failureMessage = toggled ? "Post already liked" : "Post was not liked";
+
+        return createApiResponse(toggled ? message : failureMessage, HttpStatus.OK);
     }
 
-    /**
-     * Unlikes a specific post.
-     *
-     * @param postId the ID of the post to unlike
-     * @return ResponseEntity with a success or failure message
-     */
-    @DeleteMapping("/{postId}/like")
-    public ResponseEntity<ApiResponse<String>> unlikePost(@PathVariable Long postId) {
-        User user = getCurrentUser();
-        logger.info("User {} is unliking post with ID {}.", user.getUsername(), postId);
-        boolean unliked = postService.unlikePost(postId, user.getId());
-        ApiResponse<String> response = new ApiResponse<>(true, unliked ? "Post unliked successfully" : "Post was not liked", unliked ? "Post unliked" : "Post was not liked");
-        return ResponseEntity.ok(response);
-    }
-
-    // Global exception handler for PostNotFoundException
     @ExceptionHandler(PostNotFoundException.class)
     public ResponseEntity<ApiResponse<String>> handlePostNotFoundException(PostNotFoundException ex) {
         ApiResponse<String> response = new ApiResponse<>(false, ex.getMessage(), null);

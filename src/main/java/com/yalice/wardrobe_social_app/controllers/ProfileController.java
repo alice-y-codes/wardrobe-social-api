@@ -34,17 +34,10 @@ public class ProfileController extends ApiBaseController {
      */
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<ProfileResponseDto>> getMyProfile() {
-        logger.info("Retrieving profile for current user");
-
-        User currentUser = getLoggedInUser();
-        try {
-            ProfileResponseDto profile = profileService.getProfile(currentUser.getId());
-            logger.info("Successfully retrieved profile for user ID: {}", currentUser.getId());
-            return createSuccessResponse("Profile retrieved successfully", profile);
-        } catch (Exception e) {
-            logger.error("Failed to retrieve profile for user ID: {}", currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to retrieve profile");
-        }
+        return handleProfileRetrieval(() -> {
+            User currentUser = getLoggedInUser();
+            return profileService.getProfile(currentUser.getId());
+        });
     }
 
     /**
@@ -55,16 +48,7 @@ public class ProfileController extends ApiBaseController {
      */
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<ProfileResponseDto>> getProfile(@PathVariable Long userId) {
-        logger.info("Retrieving profile for user ID: {}", userId);
-
-        try {
-            ProfileResponseDto profile = profileService.getProfile(userId);
-            logger.info("Successfully retrieved profile for user ID: {}", userId);
-            return createSuccessResponse("Profile retrieved successfully", profile);
-        } catch (Exception e) {
-            logger.error("Failed to retrieve profile for user ID: {}", userId, e);
-            return createNotFoundResponse("Profile not found for user ID: " + userId);
-        }
+        return handleProfileRetrieval(() -> profileService.getProfile(userId));
     }
 
     /**
@@ -78,17 +62,10 @@ public class ProfileController extends ApiBaseController {
     public ResponseEntity<ApiResponse<ProfileResponseDto>> updateProfile(
             @RequestPart("profile") ProfileDto profileDto,
             @RequestPart(value = "image", required = false) MultipartFile image) {
-        logger.info("Attempting to update profile for current user");
-
-        User currentUser = getLoggedInUser();
-        try {
-            ProfileResponseDto updatedProfile = profileService.updateProfile(currentUser.getId(), profileDto, image);
-            logger.info("Successfully updated profile for user ID: {}", currentUser.getId());
-            return createSuccessResponse("Profile updated successfully", updatedProfile);
-        } catch (Exception e) {
-            logger.error("Failed to update profile for user ID: {}", currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to update profile");
-        }
+        return handleProfileUpdate(() -> {
+            User currentUser = getLoggedInUser();
+            return profileService.updateProfile(currentUser.getId(), profileDto, image);
+        });
     }
 
     /**
@@ -100,17 +77,42 @@ public class ProfileController extends ApiBaseController {
     @PutMapping("/me/visibility")
     public ResponseEntity<ApiResponse<ProfileResponseDto>> updateProfileVisibility(
             @RequestParam boolean isPublic) {
-        logger.info("Attempting to update profile visibility for current user to: {}", isPublic);
+        return handleProfileUpdate(() -> {
+            User currentUser = getLoggedInUser();
+            return profileService.updateProfileVisibility(currentUser.getId(), isPublic);
+        });
+    }
 
-        User currentUser = getLoggedInUser();
+    // Helper method for handling profile retrieval logic
+    private ResponseEntity<ApiResponse<ProfileResponseDto>> handleProfileRetrieval(ProfileRetriever profileRetriever) {
         try {
-            ProfileResponseDto updatedProfile = profileService.updateProfileVisibility(currentUser.getId(), isPublic);
-            logger.info("Successfully updated profile visibility for user ID: {} to: {}",
-                    currentUser.getId(), isPublic);
-            return createSuccessResponse("Profile visibility updated successfully", updatedProfile);
+            ProfileResponseDto profile = profileRetriever.execute();
+            return createSuccessResponse("Profile retrieved successfully", profile);
         } catch (Exception e) {
-            logger.error("Failed to update profile visibility for user ID: {}", currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to update profile visibility");
+            logger.error("Failed to retrieve profile", e);
+            return createInternalServerErrorResponse("Failed to retrieve profile");
         }
+    }
+
+    // Helper method for handling profile update logic
+    private ResponseEntity<ApiResponse<ProfileResponseDto>> handleProfileUpdate(ProfileUpdateAction profileUpdateAction) {
+        try {
+            ProfileResponseDto updatedProfile = profileUpdateAction.execute();
+            return createSuccessResponse("Profile updated successfully", updatedProfile);
+        } catch (Exception e) {
+            logger.error("Failed to update profile", e);
+            return createInternalServerErrorResponse("Failed to update profile");
+        }
+    }
+
+    // Functional interfaces for generic handling
+    @FunctionalInterface
+    interface ProfileRetriever {
+        ProfileResponseDto execute() throws Exception;
+    }
+
+    @FunctionalInterface
+    interface ProfileUpdateAction {
+        ProfileResponseDto execute() throws Exception;
     }
 }

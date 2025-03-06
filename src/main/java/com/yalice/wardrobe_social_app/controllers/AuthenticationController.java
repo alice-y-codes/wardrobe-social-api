@@ -27,9 +27,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth")
 public class AuthenticationController {
 
-    private AuthenticationManager authenticationManager;
-    private UserDetailsServiceImpl userDetailsService;
-    private JwtTokenUtil jwtTokenUtil;
+    private final AuthenticationManager authenticationManager;
+    private final  UserDetailsServiceImpl userDetailsService;
+    private final JwtTokenUtil jwtTokenUtil;
 
     @Autowired
     public AuthenticationController(AuthenticationManager authenticationManager, UserDetailsServiceImpl userDetailsService, JwtTokenUtil jwtTokenUtil) {
@@ -47,11 +47,10 @@ public class AuthenticationController {
      *                              authentication
      * @param response              HTTP response to set the JWT cookie
      * @return ResponseEntity with authentication response or error message
-     * @throws Exception If authentication fails
      */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthenticationRequest authenticationRequest,
-            HttpServletResponse response) throws Exception {
+            HttpServletResponse response) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(

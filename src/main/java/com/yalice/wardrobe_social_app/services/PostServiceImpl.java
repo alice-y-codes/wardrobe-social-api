@@ -62,7 +62,7 @@ public class PostServiceImpl extends BaseService implements PostService {
                 .featureImage(postDto.getFeatureImage())
                 .outfit(outfit)
                 .content(postDto.getContent())
-                .visibility(PostVisibility.valueOf(postDto.getVisibility()))
+                .visibility(Post.PostVisibility.valueOf(postDto.getVisibility()))
                 .build();
 
         post = postRepository.save(post);
@@ -94,7 +94,7 @@ public class PostServiceImpl extends BaseService implements PostService {
         }
 
         existingPost.setContent(postDto.getContent());
-        existingPost.setVisibility(PostVisibility.valueOf(postDto.getVisibility()));
+        existingPost.setVisibility(Post.PostVisibility.valueOf(postDto.getVisibility()));
 
         if (!existingPost.getOutfit().getId().equals(postDto.getOutfitId())) {
             Outfit newOutfit = outfitService.getOutfitEntityById(postDto.getOutfitId());
@@ -124,7 +124,7 @@ public class PostServiceImpl extends BaseService implements PostService {
 
     @Override
     @Transactional
-    public boolean toggleLikePost(Long postId, Long profileId, boolean isLike) {
+    public boolean toggleLikePost(Long postId, Long profileId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found with ID: " + postId));
 
@@ -133,9 +133,11 @@ public class PostServiceImpl extends BaseService implements PostService {
             throw new ResourceNotFoundException("Profile not found with ID: " + profileId);
         }
 
+        boolean isLiked = post.getLikes().contains(profileId);
+
         boolean hasProfileLiked = postServiceHelper.hasUserLikedPost(postId, profileId);
 
-        if (isLike && !hasProfileLiked) {
+        if (isLiked && !hasProfileLiked) {
             Like like = Like.builder()
                     .post(post)
                     .profile(profile)
@@ -146,7 +148,7 @@ public class PostServiceImpl extends BaseService implements PostService {
             postRepository.save(post);
 
             return true;
-        } else if (!isLike && hasProfileLiked) {
+        } else if (!isLiked && hasProfileLiked) {
             Like like = likeRepository.findByPostAndProfile(post, profile)
                     .orElseThrow(() -> new ResourceNotFoundException("Like not found"));
 

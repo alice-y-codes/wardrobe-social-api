@@ -5,8 +5,8 @@ import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FeedService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
-import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import com.yalice.wardrobe_social_app.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.utilities.AuthUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,12 +26,6 @@ public class FeedController extends ApiBaseController {
 
     private final FeedService feedService;
 
-    /**
-     * Constructor for FeedController.
-     *
-     * @param feedService       Service for feed-related operations
-     * @param userSearchService Service for user-related operations
-     */
     @Autowired
     public FeedController(FeedService feedService, UserSearchService userSearchService) {
         super(new AuthUtils(userSearchService));
@@ -39,7 +33,7 @@ public class FeedController extends ApiBaseController {
     }
 
     /**
-     * Gets the user's feed with pagination.
+     * Retrieves the user's feed with pagination.
      *
      * @param page the page number (zero-based)
      * @param size the number of items per page
@@ -49,21 +43,11 @@ public class FeedController extends ApiBaseController {
     public ResponseEntity<ApiResponse<List<FeedItemDto>>> getFeed(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        logger.info("Retrieving feed for current user (page: {}, size: {})", page, size);
-
-        User currentUser = getLoggedInUser();
-        try {
-            List<FeedItemDto> feedItems = feedService.getFeed(currentUser.getId(), page, size);
-            logger.info("Successfully retrieved {} feed items for user ID: {}", feedItems.size(), currentUser.getId());
-            return createSuccessResponse("Feed retrieved successfully", feedItems);
-        } catch (Exception e) {
-            logger.error("Failed to retrieve feed for user ID: {}", currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to retrieve feed");
-        }
+        return handleFeedRetrieval(() -> feedService.getFeed(getLoggedInUser().getId(), page, size), page, size);
     }
 
     /**
-     * Gets the user's feed filtered by season.
+     * Retrieves the user's feed filtered by season with pagination.
      *
      * @param season the season to filter by
      * @param page   the page number (zero-based)
@@ -75,24 +59,11 @@ public class FeedController extends ApiBaseController {
             @PathVariable String season,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        logger.info("Retrieving feed filtered by season '{}' for current user (page: {}, size: {})",
-                season, page, size);
-
-        User currentUser = getLoggedInUser();
-        try {
-            List<FeedItemDto> feedItems = feedService.getFeedBySeason(currentUser.getId(), season, page, size);
-            logger.info("Successfully retrieved {} feed items for season '{}' and user ID: {}",
-                    feedItems.size(), season, currentUser.getId());
-            return createSuccessResponse("Feed retrieved successfully", feedItems);
-        } catch (Exception e) {
-            logger.error("Failed to retrieve feed for season '{}' and user ID: {}",
-                    season, currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to retrieve feed");
-        }
+        return handleFeedRetrieval(() -> feedService.getFeedBySeason(getLoggedInUser().getId(), season, page, size), page, size);
     }
 
     /**
-     * Gets the user's feed filtered by category.
+     * Retrieves the user's feed filtered by category with pagination.
      *
      * @param category the category to filter by
      * @param page     the page number (zero-based)
@@ -104,20 +75,7 @@ public class FeedController extends ApiBaseController {
             @PathVariable String category,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        logger.info("Retrieving feed filtered by category '{}' for current user (page: {}, size: {})",
-                category, page, size);
-
-        User currentUser = getLoggedInUser();
-        try {
-            List<FeedItemDto> feedItems = feedService.getFeedByCategory(currentUser.getId(), category, page, size);
-            logger.info("Successfully retrieved {} feed items for category '{}' and user ID: {}",
-                    feedItems.size(), category, currentUser.getId());
-            return createSuccessResponse("Feed retrieved successfully", feedItems);
-        } catch (Exception e) {
-            logger.error("Failed to retrieve feed for category '{}' and user ID: {}",
-                    category, currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to retrieve feed");
-        }
+        return handleFeedRetrieval(() -> feedService.getFeedByCategory(getLoggedInUser().getId(), category, page, size), page, size);
     }
 
     /**
@@ -129,9 +87,29 @@ public class FeedController extends ApiBaseController {
      */
     @GetMapping("/users/{userId}/posts")
     public ResponseEntity<ApiResponse<Page<Post>>> getUserPosts(@PathVariable Long userId,
-            @PageableDefault(size = 20) Pageable pageable) {
-        User currentUser = this.getLoggedInUser();
+                                                                @PageableDefault(size = 20) Pageable pageable) {
+        User currentUser = getLoggedInUser();
         Page<Post> posts = feedService.getUserPosts(userId, currentUser.getId(), pageable);
         return ResponseEntity.ok(new ApiResponse<>(true, "User posts retrieved successfully", posts));
+    }
+
+    // Helper method for handling feed retrieval logic for different filters
+    private ResponseEntity<ApiResponse<List<FeedItemDto>>> handleFeedRetrieval(
+            FeedRetriever feedRetriever, int page, int size) {
+        User currentUser = getLoggedInUser();
+        try {
+            List<FeedItemDto> feedItems = feedRetriever.execute();
+            logger.info("Successfully retrieved {} feed items for user ID: {}", feedItems.size(), currentUser.getId());
+            return createSuccessResponse("Feed retrieved successfully", feedItems);
+        } catch (Exception e) {
+            logger.error("Failed to retrieve feed for user ID: {}", currentUser.getId(), e);
+            return createInternalServerErrorResponse("Failed to retrieve feed");
+        }
+    }
+
+    // Functional interface for feed retrieval actions
+    @FunctionalInterface
+    interface FeedRetriever {
+        List<FeedItemDto> execute() throws Exception;
     }
 }

@@ -39,18 +39,10 @@ public class CommentController extends ApiBaseController {
     public ResponseEntity<ApiResponse<CommentResponseDto>> createComment(
             @PathVariable Long postId,
             @RequestBody CommentDto commentDto) {
-        logger.info("Attempting to create new comment on post ID: {}", postId);
-
-        User currentUser = getLoggedInUser();
-        try {
-            CommentResponseDto createdComment = commentService.createComment(currentUser.getId(), postId, commentDto);
-            logger.info("Successfully created comment with ID: {} on post ID: {} by user ID: {}",
-                    createdComment.getId(), postId, currentUser.getId());
-            return createSuccessResponse("Comment created successfully", createdComment);
-        } catch (Exception e) {
-            logger.error("Failed to create comment on post ID: {} by user ID: {}", postId, currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to create comment");
-        }
+        return handleCommentOperation(() -> {
+            User currentUser = getLoggedInUser();
+            return commentService.createComment(currentUser.getId(), postId, commentDto);
+        }, "create", postId);
     }
 
     /**
@@ -64,18 +56,10 @@ public class CommentController extends ApiBaseController {
     public ResponseEntity<ApiResponse<CommentResponseDto>> updateComment(
             @PathVariable Long commentId,
             @RequestBody CommentDto commentDto) {
-        logger.info("Attempting to update comment with ID: {}", commentId);
-
-        User currentUser = getLoggedInUser();
-        try {
-            CommentResponseDto updatedComment = commentService.updateComment(currentUser.getId(), commentId,
-                    commentDto);
-            logger.info("Successfully updated comment with ID: {} by user ID: {}", commentId, currentUser.getId());
-            return createSuccessResponse("Comment updated successfully", updatedComment);
-        } catch (Exception e) {
-            logger.error("Failed to update comment with ID: {} by user ID: {}", commentId, currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to update comment");
-        }
+        return handleCommentOperation(() -> {
+            User currentUser = getLoggedInUser();
+            return commentService.updateComment(currentUser.getId(), commentId, commentDto);
+        }, "update", commentId);
     }
 
     /**
@@ -86,17 +70,7 @@ public class CommentController extends ApiBaseController {
      */
     @DeleteMapping("/{commentId}")
     public ResponseEntity<ApiResponse<Void>> deleteComment(@PathVariable Long commentId) {
-        logger.info("Attempting to delete comment with ID: {}", commentId);
-
-        User currentUser = getLoggedInUser();
-        try {
-            commentService.deleteComment(currentUser.getId(), commentId);
-            logger.info("Successfully deleted comment with ID: {} by user ID: {}", commentId, currentUser.getId());
-            return createSuccessResponse("Comment deleted successfully", null);
-        } catch (Exception e) {
-            logger.error("Failed to delete comment with ID: {} by user ID: {}", commentId, currentUser.getId(), e);
-            return createInternalServerErrorResponse("Failed to delete comment");
-        }
+        return handleCommentDeletion(commentId);
     }
 
     /**
@@ -107,16 +81,7 @@ public class CommentController extends ApiBaseController {
      */
     @GetMapping("/posts/{postId}")
     public ResponseEntity<ApiResponse<List<CommentResponseDto>>> getPostComments(@PathVariable Long postId) {
-        logger.info("Retrieving comments for post ID: {}", postId);
-
-        try {
-            List<CommentResponseDto> comments = commentService.getPostComments(postId);
-            logger.info("Successfully retrieved {} comments for post ID: {}", comments.size(), postId);
-            return createSuccessResponse("Comments retrieved successfully", comments);
-        } catch (Exception e) {
-            logger.error("Failed to retrieve comments for post ID: {}", postId, e);
-            return createInternalServerErrorResponse("Failed to retrieve comments");
-        }
+        return handleCommentRetrieval(() -> commentService.getPostComments(postId), "retrieve comments for post", postId);
     }
 
     /**
@@ -127,15 +92,56 @@ public class CommentController extends ApiBaseController {
      */
     @GetMapping("/{commentId}")
     public ResponseEntity<ApiResponse<CommentResponseDto>> getComment(@PathVariable Long commentId) {
-        logger.info("Retrieving comment with ID: {}", commentId);
+        return handleCommentRetrieval(() -> commentService.getComment(commentId), "retrieve comment", commentId);
+    }
 
+    // Helper method for handling comment creation, update, and deletion
+    private ResponseEntity<ApiResponse<CommentResponseDto>> handleCommentOperation(
+            CommentAction commentAction, String operation, Long id) {
         try {
-            CommentResponseDto comment = commentService.getComment(commentId);
-            logger.info("Successfully retrieved comment with ID: {}", commentId);
-            return createSuccessResponse("Comment retrieved successfully", comment);
+            CommentResponseDto comment = commentAction.execute();
+            logger.info("Successfully {} comment with ID: {}", operation, id);
+            return createSuccessResponse("Comment " + operation + "d successfully", comment);
         } catch (Exception e) {
-            logger.error("Failed to retrieve comment with ID: {}", commentId, e);
-            return createNotFoundResponse("Comment not found with ID: " + commentId);
+            logger.error("Failed to {} comment with ID: {}", operation, id, e);
+            return createInternalServerErrorResponse("Failed to " + operation + " comment");
         }
+    }
+
+    // Helper method for handling comment retrieval
+    private ResponseEntity<ApiResponse<CommentResponseDto>> handleCommentRetrieval(
+            CommentRetriever commentRetriever, String operation, Long id) {
+        try {
+            CommentResponseDto comment = commentRetriever.execute();
+            logger.info("Successfully retrieved comment with ID: {}", id);
+            return createSuccessResponse("Comment " + operation + "d successfully", comment);
+        } catch (Exception e) {
+            logger.error("Failed to {} comment with ID: {}", operation, id, e);
+            return createNotFoundResponse("Comment not found with ID: " + id);
+        }
+    }
+
+    // Helper method for handling comment deletion
+    private ResponseEntity<ApiResponse<Void>> handleCommentDeletion(Long commentId) {
+        try {
+            User currentUser = getLoggedInUser();
+            commentService.deleteComment(currentUser.getId(), commentId);
+            logger.info("Successfully deleted comment with ID: {}", commentId);
+            return createSuccessResponse("Comment deleted successfully", null);
+        } catch (Exception e) {
+            logger.error("Failed to delete comment with ID: {}", commentId, e);
+            return createInternalServerErrorResponse("Failed to delete comment");
+        }
+    }
+
+    // Functional interfaces for generic handling
+    @FunctionalInterface
+    interface CommentAction {
+        CommentResponseDto execute() throws Exception;
+    }
+
+    @FunctionalInterface
+    interface CommentRetriever {
+        CommentResponseDto execute() throws Exception;
     }
 }

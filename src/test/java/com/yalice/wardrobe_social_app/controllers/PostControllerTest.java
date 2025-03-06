@@ -25,8 +25,6 @@ import java.util.List;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -224,7 +222,7 @@ class PostControllerTest {
         @Test
         void likePost_Success() throws Exception {
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(postService.toggleLikePost(anyLong(), anyLong(), eq(true))).thenReturn(true);
+                when(postService.toggleLikePost(anyLong(), anyLong())).thenReturn(true);
 
                 mockMvc.perform(post("/api/feed/1/like"))
                                 .andExpect(status().isOk())
@@ -232,7 +230,7 @@ class PostControllerTest {
                                 .andExpect(jsonPath("$.message", is("Post liked successfully")))
                                 .andExpect(jsonPath("$.data", is("Post liked")));
 
-                verify(postService).toggleLikePost(anyLong(), anyLong(), eq(true));
+                verify(postService).toggleLikePost(anyLong(), anyLong());
         }
 
         /**
@@ -245,7 +243,7 @@ class PostControllerTest {
         @Test
         void likePost_AlreadyLiked() throws Exception {
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(postService.toggleLikePost(anyLong(), anyLong(), eq(true))).thenReturn(false);
+                when(postService.toggleLikePost(anyLong(), anyLong())).thenReturn(false);
 
                 mockMvc.perform(post("/api/feed/1/like"))
                                 .andExpect(status().isOk())
@@ -253,7 +251,7 @@ class PostControllerTest {
                                 .andExpect(jsonPath("$.message", is("Post already liked")))
                                 .andExpect(jsonPath("$.data", is("Post already liked")));
 
-                verify(postService).toggleLikePost(anyLong(), anyLong(), eq(true));
+                verify(postService).toggleLikePost(anyLong(), anyLong());
         }
 
         /**
@@ -266,7 +264,7 @@ class PostControllerTest {
         @Test
         void unlikePost_Success() throws Exception {
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(postService.toggleLikePost(anyLong(), anyLong(), eq(false))).thenReturn(true);
+                when(postService.toggleLikePost(anyLong(), anyLong())).thenReturn(true);
 
                 mockMvc.perform(delete("/api/feed/1/like"))
                                 .andExpect(status().isOk())
@@ -274,7 +272,7 @@ class PostControllerTest {
                                 .andExpect(jsonPath("$.message", is("Post unliked successfully")))
                                 .andExpect(jsonPath("$.data", is("Post unliked")));
 
-                verify(postService).toggleLikePost(anyLong(), anyLong(), eq(false));
+                verify(postService).toggleLikePost(anyLong(), anyLong());
         }
 
         /**
@@ -287,7 +285,7 @@ class PostControllerTest {
         @Test
         void unlikePost_NotLiked() throws Exception {
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(postService.toggleLikePost(anyLong(), anyLong(), eq(false))).thenReturn(false);
+                when(postService.toggleLikePost(anyLong(), anyLong())).thenReturn(false);
 
                 mockMvc.perform(delete("/api/feed/1/like"))
                                 .andExpect(status().isOk())
@@ -295,6 +293,6 @@ class PostControllerTest {
                                 .andExpect(jsonPath("$.message", is("Post was not liked")))
                                 .andExpect(jsonPath("$.data", is("Post was not liked")));
 
-                verify(postService).toggleLikePost(anyLong(), anyLong(), eq(false));
+                verify(postService).toggleLikePost(anyLong(), anyLong());
         }
 }
