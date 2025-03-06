@@ -2,13 +2,16 @@ package com.yalice.wardrobe_social_app.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents a user in the wardrobe social application, storing user authentication details
- * and relationships with other entities such as profile, friend requests, and likes.
+ * Represents a user in the wardrobe social application, storing user
+ * authentication details
+ * and relationships with other entities such as profile, friend requests, and
+ * likes.
  */
 @Entity
 @Table(name = "users")
@@ -17,7 +20,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class User extends BaseEntity {
 
     /**
@@ -39,14 +42,16 @@ public class User extends BaseEntity {
     private String password;
 
     /**
-     * The authentication provider used by the user (e.g., Facebook, Google, Apple, or Local).
+     * The authentication provider used by the user (e.g., Facebook, Google, Apple,
+     * or Local).
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Provider provider;
 
     /**
-     * The profile associated with the user, which manages the wardrobe, outfits, and items.
+     * The profile associated with the user, which manages the wardrobe, outfits,
+     * and items.
      */
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @ToString.Exclude

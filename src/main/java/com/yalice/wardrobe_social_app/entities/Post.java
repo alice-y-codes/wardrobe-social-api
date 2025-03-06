@@ -2,6 +2,7 @@ package com.yalice.wardrobe_social_app.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -9,7 +10,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Represents a post created by a user, which may include an outfit and user interactions such as likes and comments.
+ * Represents a post created by a user, which may include an outfit and user
+ * interactions such as likes and comments.
  */
 @Entity
 @Table(name = "posts")
@@ -18,7 +20,7 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Post extends BaseEntity {
 
     /**
@@ -67,6 +69,7 @@ public class Post extends BaseEntity {
      * The number of likes this post has received.
      */
     @Column(nullable = false)
+    @Builder.Default
     private Integer likeCount = 0;
 
     /**
@@ -74,12 +77,16 @@ public class Post extends BaseEntity {
      */
     @ManyToMany
     @JoinTable(name = "post_likes", joinColumns = @JoinColumn(name = "post_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
+    @Builder.Default
     private Set<User> likes = new HashSet<>();
 
     /**
      * The list of comments associated with this post.
      */
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @Builder.Default
     private List<Comment> comments = new ArrayList<>();
 
     /**
@@ -127,5 +134,3 @@ public class Post extends BaseEntity {
         FRIENDS_ONLY
     }
 }
-
-

@@ -2,13 +2,13 @@ package com.yalice.wardrobe_social_app.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Represents a wardrobe associated with a profile. It contains a collection of items and is
- * managed by the profile owner.
+ * Represents a wardrobe that contains clothing items.
  */
 @Entity
 @Table(name = "wardrobes")
@@ -17,17 +17,8 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Wardrobe extends BaseEntity {
-
-    /**
-     * The profile associated with the wardrobe.
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "profile_id", nullable = false)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private Profile profile;
 
     /**
      * The name of the wardrobe.
@@ -36,10 +27,26 @@ public class Wardrobe extends BaseEntity {
     private String name;
 
     /**
-     * The items contained within the wardrobe.
+     * The description of the wardrobe.
+     */
+    @Column(length = 500)
+    private String description;
+
+    /**
+     * The profile that owns this wardrobe.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Profile profile;
+
+    /**
+     * The items contained in this wardrobe.
      */
     @OneToMany(mappedBy = "wardrobe", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private Set<Item> items = new HashSet<>();
+    @Builder.Default
+    private List<Item> items = new ArrayList<>();
 }

@@ -2,6 +2,7 @@ package com.yalice.wardrobe_social_app.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 /**
  * Represents a comment on a post in the wardrobe social app.
@@ -15,7 +16,7 @@ import lombok.*;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Comment extends BaseEntity {
 
     /**
@@ -30,7 +31,8 @@ public class Comment extends BaseEntity {
 
     /**
      * The profile of the user who made the comment.
-     * This field represents the relationship between the comment and a user profile.
+     * This field represents the relationship between the comment and a user
+     * profile.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "profile_id", nullable = false)
@@ -42,6 +44,6 @@ public class Comment extends BaseEntity {
      * The content of the comment.
      * This field contains the actual text of the comment made by the user.
      */
-    @Column(nullable = false, length = 500)
+    @Column(nullable = false, length = 1000)
     private String content;
 }

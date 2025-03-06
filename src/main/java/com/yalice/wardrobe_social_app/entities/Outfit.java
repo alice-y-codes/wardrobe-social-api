@@ -2,12 +2,14 @@ package com.yalice.wardrobe_social_app.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents an outfit created by a user, which consists of a collection of items.
+ * Represents an outfit created by a user, which consists of a collection of
+ * items.
  */
 @Entity
 @Table(name = "outfits")
@@ -16,7 +18,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Outfit extends BaseEntity {
 
     /**

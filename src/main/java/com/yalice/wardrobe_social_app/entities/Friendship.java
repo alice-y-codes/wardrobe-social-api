@@ -2,13 +2,15 @@ package com.yalice.wardrobe_social_app.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
 /**
  * Represents a friendship connection between two users.
  * This entity captures the relationship between two users, including the status
- * of their friendship and timestamps for when the request was created and updated.
+ * of their friendship and timestamps for when the request was created and
+ * updated.
  */
 @Entity
 @Table(name = "friendships")
@@ -17,7 +19,7 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Friendship extends BaseEntity {
 
     /**
@@ -83,6 +85,7 @@ public class Friendship extends BaseEntity {
     public enum FriendshipStatus {
         PENDING,
         ACCEPTED,
-        REJECTED
+        REJECTED,
+        BLOCKED
     }
 }

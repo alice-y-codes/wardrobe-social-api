@@ -2,6 +2,7 @@ package com.yalice.wardrobe_social_app.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -9,7 +10,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Represents a user profile that includes personal details, preferences, and associated collections like wardrobes, outfits, and posts.
+ * Represents a user profile that includes personal details, preferences, and
+ * associated collections like wardrobes, outfits, and posts.
  */
 @Entity
 @Table(name = "profiles")
@@ -18,7 +20,7 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Profile extends BaseEntity {
 
     /**

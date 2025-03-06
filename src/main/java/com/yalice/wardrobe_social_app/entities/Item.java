@@ -2,18 +2,24 @@ package com.yalice.wardrobe_social_app.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Represents an item in a user's wardrobe.
- * This entity captures details about an item, including its name, brand, category, size, and other optional attributes.
+ * Represents a clothing item in a user's wardrobe.
+ * This entity captures details about an item, including its name, brand,
+ * category, size, and other optional attributes.
  */
 @Entity
 @Table(name = "items")
 @Getter
 @Setter
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class Item extends BaseEntity {
 
     /**
@@ -76,4 +82,19 @@ public class Item extends BaseEntity {
      */
     @Column(nullable = false)
     private String imageUrl;
+
+    /**
+     * The description of the item.
+     */
+    @Column(length = 500)
+    private String description;
+
+    /**
+     * The outfits that include this item.
+     */
+    @ManyToMany(mappedBy = "items")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @Builder.Default
+    private List<Outfit> outfits = new ArrayList<>();
 }
