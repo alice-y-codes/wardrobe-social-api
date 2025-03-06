@@ -9,16 +9,8 @@ import java.util.Optional;
 
 @Repository
 public interface ItemRepository extends JpaRepository<Item, Long> {
-    // Find item by name
     Optional<Item> findByName(String itemName);
-
-    // Find items by user ID - using the user_id column in the database
-    List<Item> findByUserId(Long userId);
-
-    // Find item in wardrobe by name
+    List<Item> findByProfileId(Long profileId);
     Optional<Item> findByNameAndWardrobeId(String itemName, Long wardrobeId);
-
-    Optional<Item> findByWardrobeId(Long wardrobeId);
-
     List<Item> findAllByWardrobeId(Long wardrobeId);
 }
