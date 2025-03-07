@@ -108,6 +108,13 @@ public class Post extends BaseEntity {
     }
 
     /**
+     *
+     * @return likes count
+     */
+    public int getLikesCount() {
+        return likes.size();
+    }
+    /**
      * Adds a comment to the post.
      *
      * @param comment the comment to add
@@ -123,6 +130,14 @@ public class Post extends BaseEntity {
      */
     public void removeComment(Comment comment) {
         comments.remove(comment);
+    }
+
+    /**
+     *
+     * @return comment count
+     */
+    public int getCommentsCount() {
+        return comments.size();
     }
 
     /**

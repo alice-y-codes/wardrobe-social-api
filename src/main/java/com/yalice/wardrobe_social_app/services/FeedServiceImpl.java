@@ -1,6 +1,6 @@
 package com.yalice.wardrobe_social_app.services;
 
-import com.yalice.wardrobe_social_app.dtos.feed.FeedItemDto;
+import com.yalice.wardrobe_social_app.dtos.feed.FeedItemResponseDto;
 import com.yalice.wardrobe_social_app.dtos.friendship.FriendResponseDto;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
@@ -27,62 +27,50 @@ public class FeedServiceImpl extends BaseService implements FeedService {
 
         @Autowired
         public FeedServiceImpl(PostRepository postRepository, FriendService friendService,
-                        UserSearchService userSearchService) {
+                               UserSearchService userSearchService) {
                 this.postRepository = postRepository;
                 this.friendService = friendService;
                 this.userSearchService = userSearchService;
         }
 
+        // Helper method to get friendIds for a user
+        private List<Long> getFriendIds(Long userId) {
+                List<FriendResponseDto> friendships = friendService.getFriends(userId);
+                List<Long> friendIds = friendships.stream()
+                        .map(FriendResponseDto::getUserId)
+                        .collect(Collectors.toList());
+                friendIds.add(userId);  // Include the user itself in the friend list
+                return friendIds;
+        }
+
         @Override
-        public List<FeedItemDto> getFeed(Long userId, int page, int size) {
+        public List<FeedItemResponseDto> getFeed(Long userId, int page, int size) {
                 logger.info("Retrieving feed for user ID: {} (page: {}, size: {})", userId, page, size);
 
-                List<FriendResponseDto> friendships = friendService.getFriends(userId);
-                List<Long> friendIds = friendships.stream()
-                                .map(FriendResponseDto::getUserId)
-                                .collect(Collectors.toList());
-                friendIds.add(userId);
+                List<Long> friendIds = getFriendIds(userId);
+                Page<Post> posts = postRepository.findByProfileIdInOrderByCreatedAtDesc(friendIds, Pageable.ofSize(size).withPage(page));
 
-                Page<Post> posts = postRepository.findFeedPostsForUser(friendIds, Pageable.ofSize(size).withPage(page));
-                return posts.getContent().stream()
-                                .map(this::convertToFeedItemDto)
-                                .collect(Collectors.toList());
+                return convertPostsToFeedItems(posts);
         }
 
         @Override
-        public List<FeedItemDto> getFeedBySeason(Long userId, String season, int page, int size) {
-                logger.info("Retrieving feed filtered by season '{}' for user ID: {} (page: {}, size: {})",
-                                season, userId, page, size);
+        public List<FeedItemResponseDto> getFeedBySeason(Long userId, String season, int page, int size) {
+                logger.info("Retrieving feed filtered by season '{}' for user ID: {} (page: {}, size: {})", season, userId, page, size);
 
-                List<FriendResponseDto> friendships = friendService.getFriends(userId);
-                List<Long> friendIds = friendships.stream()
-                                .map(FriendResponseDto::getUserId)
-                                .collect(Collectors.toList());
-                friendIds.add(userId);
+                List<Long> friendIds = getFriendIds(userId);
+                Page<Post> posts = postRepository.findByProfileIdInAndOutfitSeasonOrderByCreatedAtDesc(friendIds, season, Pageable.ofSize(size).withPage(page));
 
-                Page<Post> posts = postRepository.findFeedPostsForUserBySeason(friendIds, season,
-                                Pageable.ofSize(size).withPage(page));
-                return posts.getContent().stream()
-                                .map(this::convertToFeedItemDto)
-                                .collect(Collectors.toList());
+                return convertPostsToFeedItems(posts);
         }
 
         @Override
-        public List<FeedItemDto> getFeedByCategory(Long userId, String category, int page, int size) {
-                logger.info("Retrieving feed filtered by category '{}' for user ID: {} (page: {}, size: {})",
-                                category, userId, page, size);
+        public List<FeedItemResponseDto> getFeedByCategory(Long userId, String category, int page, int size) {
+                logger.info("Retrieving feed filtered by category '{}' for user ID: {} (page: {}, size: {})", category, userId, page, size);
 
-                List<FriendResponseDto> friendships = friendService.getFriends(userId);
-                List<Long> friendIds = friendships.stream()
-                                .map(FriendResponseDto::getUserId)
-                                .collect(Collectors.toList());
-                friendIds.add(userId);
+                List<Long> friendIds = getFriendIds(userId);
+                Page<Post> posts = postRepository.findByProfileIdInAndOutfitCategoryOrderByCreatedAtDesc(friendIds, category, Pageable.ofSize(size).withPage(page));
 
-                Page<Post> posts = postRepository.findFeedPostsForUserByCategory(friendIds, category,
-                                Pageable.ofSize(size).withPage(page));
-                return posts.getContent().stream()
-                                .map(this::convertToFeedItemDto)
-                                .collect(Collectors.toList());
+                return convertPostsToFeedItems(posts);
         }
 
         @Override
@@ -97,11 +85,18 @@ public class FeedServiceImpl extends BaseService implements FeedService {
                 boolean isViewerFriend = userId.equals(viewerId) || friendService.areFriends(userId, viewerId);
 
                 if (isViewerFriend) {
-                        return postRepository.findByUserIdAndVisibilityInOrderByCreatedAtDesc(
-                                        userId, List.of(Post.PostVisibility.PUBLIC, Post.PostVisibility.FRIENDS_ONLY), pageable);
+                        return postRepository.findByProfileIdAndVisibilityInOrderByCreatedAtDesc(
+                                userId, List.of(Post.PostVisibility.PUBLIC, Post.PostVisibility.FRIENDS_ONLY), pageable);
                 } else {
-                        return postRepository.findByUserIdAndVisibilityOrderByCreatedAtDesc(
-                                        userId, Post.PostVisibility.PUBLIC, pageable);
+                        return postRepository.findByProfileIdAndVisibilityOrderByCreatedAtDesc(
+                                userId, Post.PostVisibility.PUBLIC, pageable);
                 }
+        }
+
+        // Helper method to convert posts to FeedItemResponseDto
+        private List<FeedItemResponseDto> convertPostsToFeedItems(Page<Post> posts) {
+                return posts.getContent().stream()
+                        .map(this::convertToFeedItemDto)
+                        .collect(Collectors.toList());
         }
 }

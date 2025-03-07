@@ -1,6 +1,6 @@
 package com.yalice.wardrobe_social_app.services.helpers;
 
-import com.yalice.wardrobe_social_app.dtos.feed.FeedItemDto;
+import com.yalice.wardrobe_social_app.dtos.feed.FeedItemResponseDto;
 import com.yalice.wardrobe_social_app.dtos.post.PostResponseDto;
 import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.dtos.item.ItemResponseDto;
@@ -46,52 +46,57 @@ class BaseServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        // Mock the basic entities
-        user = new User();
-        user.setId(1L);
-        user.setUsername("testuser");
-        user.setEmail("testuser@example.com");
+        // Mock the basic entities using builders
+        user = User.builder()
+                .id(1L)
+                .username("testuser")
+                .email("testuser@example.com")
+                .build();
 
-        profile = new Profile();
-        profile.setId(1L);
-        profile.setUser(user);
+        profile = Profile.builder()
+                .id(1L)
+                .user(user)
+                .build();
 
-        wardrobe = new Wardrobe();
-        wardrobe.setId(1L);
-        wardrobe.setName("Test Wardrobe");
-        wardrobe.setProfile(profile);
+        wardrobe = Wardrobe.builder()
+                .id(1L)
+                .name("Test Wardrobe")
+                .profile(profile)
+                .build();
 
-        item = new Item();
-        item.setId(1L);
-        item.setName("Test Item");
-        item.setBrand("Test Brand");
-        item.setCategory("Category");
-        item.setSize("M");
-        item.setColor("Red");
-        item.setImageUrl("https://example.com/item.jpg");
-        item.setWardrobe(wardrobe);
-        item.setProfile(profile);
+        item = Item.builder()
+                .id(1L)
+                .name("Test Item")
+                .brand("Test Brand")
+                .category("Category")
+                .size("M")
+                .color("Red")
+                .imageUrl("https://example.com/item.jpg")
+                .wardrobe(wardrobe)
+                .profile(profile)
+                .build();
 
         items = new HashSet<>();
         items.add(item);
 
-        outfit = new Outfit();
-        outfit.setId(1L);
-        outfit.setName("Test Outfit");
-        outfit.setDescription("Description of test outfit");
-        outfit.setSeason("Summer");
-        outfit.setFavorite(true);
-        outfit.setPublic(true);
-        outfit.setItems(items);
-        outfit.setProfile(profile);
+        outfit = Outfit.builder()
+                .id(1L)
+                .name("Test Outfit")
+                .description("Description of test outfit")
+                .season("Summer")
+                .favorite(true)
+                .items(items)
+                .profile(profile)
+                .build();
 
-        post = new Post();
-        post.setId(1L);
-        post.setTitle("Test Post");
-        post.setContent("Content of test post");
-        post.setFeatureImage("https://example.com/post.jpg");
-        post.setOutfit(outfit);
-        post.setProfile(profile);
+        post = Post.builder()
+                .id(1L)
+                .title("Test Post")
+                .content("Content of test post")
+                .featureImage("https://example.com/post.jpg")
+                .outfit(outfit)
+                .profile(profile)
+                .build();
     }
 
     @Test
@@ -162,18 +167,21 @@ class BaseServiceTest {
 
     @Test
     void testConvertToFeedItemDto() {
-        FeedItemDto feedItemDto = baseService.convertToFeedItemDto(post);
+        FeedItemResponseDto feedItemResponseDto = baseService.convertToFeedItemDto(post);
 
-        assertNotNull(feedItemDto);
-        assertEquals(post.getId(), feedItemDto.getId());
-        assertEquals("POST", feedItemDto.getType());
-        assertEquals(post.getProfile().getUser().getId(), feedItemDto.getUser().getId());
-        assertEquals(post.getCreatedAt(), feedItemDto.getCreatedAt());
-        assertEquals(post.getUpdatedAt(), feedItemDto.getUpdatedAt());
-        assertEquals(post.getOutfit().getSeason(), feedItemDto.getSeason());
-        assertEquals(post.getOutfit().getCategory(), feedItemDto.getCategory());
-        assertEquals(post.getLikes().size(), feedItemDto.getLikesCount());
-        assertEquals(post.getComments().size(), feedItemDto.getCommentsCount());
-        assertFalse(feedItemDto.isLikedByCurrentUser());
+        assertNotNull(feedItemResponseDto);
+        assertEquals(post.getId(), feedItemResponseDto.getId());
+        assertEquals(post.getTitle(), feedItemResponseDto.getTitle());
+        assertEquals(post.getContent(), feedItemResponseDto.getContent());
+        assertEquals(post.getOutfit().getSeason(), feedItemResponseDto.getSeason());
+        assertEquals(post.getOutfit().getCategory(), feedItemResponseDto.getCategory());
+        assertEquals(post.getLikes().size(), feedItemResponseDto.getLikesCount());
+        assertEquals(post.getComments().size(), feedItemResponseDto.getCommentsCount());
+        assertEquals(post.getFeatureImage(), feedItemResponseDto.getFeatureImage());
+        assertEquals(post.getOutfit().getImageUrl(), feedItemResponseDto.getOutfitImage());
+        assertTrue(feedItemResponseDto.getItemImages().contains(item.getImageUrl()));
+        assertEquals(post.getProfile().getUser().getId(), feedItemResponseDto.getUser().getId());
+        assertEquals(post.getCreatedAt(), feedItemResponseDto.getCreatedAt());
+        assertEquals(post.getUpdatedAt(), feedItemResponseDto.getUpdatedAt());
     }
 }

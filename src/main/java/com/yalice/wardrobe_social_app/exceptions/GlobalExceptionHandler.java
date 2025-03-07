@@ -1,6 +1,6 @@
 package com.yalice.wardrobe_social_app.exceptions;
 
-import com.yalice.wardrobe_social_app.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

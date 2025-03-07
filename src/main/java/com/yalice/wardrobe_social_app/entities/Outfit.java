@@ -5,7 +5,9 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Represents an outfit created by a user, which consists of a collection of
@@ -77,7 +79,7 @@ public class Outfit extends BaseEntity {
      */
     @ManyToMany
     @JoinTable(name = "outfit_items", joinColumns = @JoinColumn(name = "outfit_id"), inverseJoinColumns = @JoinColumn(name = "item_id"))
-    private List<Item> items = new ArrayList<>();
+    private Set<Item> items = new HashSet<>();
 
     /**
      * Adds an item to the outfit.
@@ -86,9 +88,7 @@ public class Outfit extends BaseEntity {
      * @param item the item to add to the outfit
      */
     public void addOutfitItem(Item item) {
-        if (!items.contains(item)) {
-            items.add(item);
-        }
+        items.add(item);
     }
 
     /**

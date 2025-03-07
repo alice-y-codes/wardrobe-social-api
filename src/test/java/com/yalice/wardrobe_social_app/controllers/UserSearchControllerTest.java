@@ -3,7 +3,7 @@ package com.yalice.wardrobe_social_app.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
-import com.yalice.wardrobe_social_app.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

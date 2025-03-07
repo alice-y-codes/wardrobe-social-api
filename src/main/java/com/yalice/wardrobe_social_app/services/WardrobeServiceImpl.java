@@ -2,13 +2,11 @@ package com.yalice.wardrobe_social_app.services;
 
 import com.yalice.wardrobe_social_app.dtos.wardrobe.WardrobeDto;
 import com.yalice.wardrobe_social_app.dtos.wardrobe.WardrobeResponseDto;
-import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.entities.Profile;
 import com.yalice.wardrobe_social_app.entities.Wardrobe;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.WardrobeService;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
-import com.yalice.wardrobe_social_app.repositories.UserRepository;
 import com.yalice.wardrobe_social_app.repositories.WardrobeRepository;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
 import org.springframework.stereotype.Service;
@@ -20,29 +18,24 @@ import java.util.List;
 public class WardrobeServiceImpl extends BaseService implements WardrobeService {
 
     private final WardrobeRepository wardrobeRepository;
-    private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
 
-    public WardrobeServiceImpl(WardrobeRepository wardrobeRepository, UserRepository userRepository, ProfileRepository profileRepository) {
+    public WardrobeServiceImpl(WardrobeRepository wardrobeRepository, ProfileRepository profileRepository) {
         this.wardrobeRepository = wardrobeRepository;
-        this.userRepository = userRepository;
         this.profileRepository = profileRepository;
     }
 
     @Override
     @Transactional
-    public WardrobeResponseDto createWardrobe(Long userId, WardrobeDto wardrobeDto) {
-        logger.info("Creating wardrobe '{}' for user ID: {}", wardrobeDto.getName(), userId);
+    public WardrobeResponseDto createWardrobe(Long profileId, WardrobeDto wardrobeDto) {
+        logger.info("Creating wardrobe '{}' for profile ID: {}", wardrobeDto.getName(), profileId);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+        Profile profile = profileRepository.findById(profileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with ID: " + profileId));
 
-        Profile profile = profileRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Profile not found for user ID: " + userId));
-
-        boolean exists = wardrobeRepository.existsByUserIdAndName(userId, wardrobeDto.getName());
+        boolean exists = wardrobeRepository.existsByProfileIdAndName(profileId, wardrobeDto.getName());
         if (exists) {
-            throw new IllegalStateException("User already has a wardrobe with this name");
+            throw new IllegalStateException("Profile already has a wardrobe with this name");
         }
 
         Wardrobe wardrobe = Wardrobe.builder()
@@ -51,7 +44,7 @@ public class WardrobeServiceImpl extends BaseService implements WardrobeService 
                 .build();
 
         wardrobe = wardrobeRepository.save(wardrobe);
-        logger.info("Wardrobe '{}' created successfully for user '{}'.", wardrobe.getName(), user.getUsername());
+        logger.info("Wardrobe '{}' created successfully for profile ID '{}'.", wardrobe.getName(), profileId);
         return new WardrobeResponseDto(wardrobe.getId(), wardrobe.getName(), wardrobe.getProfile().getId());
     }
 
@@ -67,14 +60,13 @@ public class WardrobeServiceImpl extends BaseService implements WardrobeService 
     }
 
     @Override
-    public List<WardrobeResponseDto> getUserWardrobes(Long userId) {
-        logger.info("Fetching wardrobes for user ID: {}", userId);
+    public List<WardrobeResponseDto> getProfileWardrobes(Long profileId) {
+        logger.info("Fetching wardrobes for profile ID: {}", profileId);
 
-        if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("User not found with ID: " + userId);
-        }
+        Profile profile = profileRepository.findById(profileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with ID: " + profileId));
 
-        List<Wardrobe> wardrobes = wardrobeRepository.findAllByUserId(userId);
+        List<Wardrobe> wardrobes = wardrobeRepository.findAllByProfileId(profileId);
 
         return wardrobes.stream()
                 .map(this::convertToWardrobeResponseDto).toList();

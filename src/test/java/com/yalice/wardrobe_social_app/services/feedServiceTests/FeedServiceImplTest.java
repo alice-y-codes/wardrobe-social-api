@@ -1,6 +1,6 @@
 package com.yalice.wardrobe_social_app.services.feedServiceTests;
 
-import com.yalice.wardrobe_social_app.dtos.feed.FeedItemDto;
+import com.yalice.wardrobe_social_app.dtos.feed.FeedItemResponseDto;
 import com.yalice.wardrobe_social_app.dtos.friendship.FriendResponseDto;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
@@ -49,112 +49,95 @@ class FeedServiceImplTest {
         size = 5;
     }
 
-    @Test
-    void testGetFeed() {
-        // Mock friends' data
-        List<FriendResponseDto> friendships = List.of(new FriendResponseDto(2L), new FriendResponseDto(3L));
-        when(friendService.getFriends(userId)).thenReturn(friendships);
+    private List<FriendResponseDto> mockFriendships() {
+        return List.of(
+                FriendResponseDto.builder().id(2L).build(),
+                FriendResponseDto.builder().id(3L).build()
+        );
+    }
 
-        // Mock Post data
+    private Page<Post> mockPosts(String title) {
         Post post = new Post();
         post.setId(1L);
-        post.setTitle("Outfit Post");
+        post.setTitle(title);
         List<Post> posts = List.of(post);
-        Page<Post> postPage = new PageImpl<>(posts, PageRequest.of(page, size), posts.size());
+        return new PageImpl<>(posts, PageRequest.of(page, size), posts.size());
+    }
 
-        when(postRepository.findFeedPostsForUser(anyList(), any())).thenReturn(postPage);
+    @Test
+    void testGetFeed() {
+        // Arrange
+        when(friendService.getFriends(userId)).thenReturn(mockFriendships());
+        when(postRepository.findFeedPostsForUser(anyList(), any())).thenReturn(mockPosts("Outfit Post"));
 
-        List<FeedItemDto> feed = feedService.getFeed(userId, page, size);
+        // Act
+        List<FeedItemResponseDto> feed = feedService.getFeed(userId, page, size);
 
+        // Assert
         assertNotNull(feed);
         assertEquals(1, feed.size());
-        assertEquals("Outfit Post", feed.get(0).getTitle());
+        assertEquals("Outfit Post", feed.getFirst().getTitle());
     }
 
     @Test
     void testGetFeedBySeason() {
+        // Arrange
         String season = "Winter";
+        when(friendService.getFriends(userId)).thenReturn(mockFriendships());
+        when(postRepository.findFeedPostsForUserBySeason(anyList(), eq(season), any())).thenReturn(mockPosts("Winter Outfit Post"));
 
-        // Mock friends' data
-        List<FriendResponseDto> friendships = List.of(new FriendResponseDto(2L), new FriendResponseDto(3L));
-        when(friendService.getFriends(userId)).thenReturn(friendships);
+        // Act
+        List<FeedItemResponseDto> feed = feedService.getFeedBySeason(userId, season, page, size);
 
-        // Mock Post data
-        Post post = new Post();
-        post.setId(1L);
-        post.setTitle("Winter Outfit Post");
-        List<Post> posts = List.of(post);
-        Page<Post> postPage = new PageImpl<>(posts, PageRequest.of(page, size), posts.size());
-
-        when(postRepository.findFeedPostsForUserBySeason(anyList(), eq(season), any())).thenReturn(postPage);
-
-        List<FeedItemDto> feed = feedService.getFeedBySeason(userId, season, page, size);
-
+        // Assert
         assertNotNull(feed);
         assertEquals(1, feed.size());
-        assertEquals("Winter Outfit Post", feed.get(0).getTitle());
+        assertEquals("Winter", feed.getFirst().getSeason());
     }
 
     @Test
     void testGetFeedByCategory() {
+        // Arrange
         String category = "Casual";
+        when(friendService.getFriends(userId)).thenReturn(mockFriendships());
+        when(postRepository.findFeedPostsForUserByCategory(anyList(), eq(category), any())).thenReturn(mockPosts("Casual Outfit Post"));
 
-        // Mock friends' data
-        List<FriendResponseDto> friendships = List.of(new FriendResponseDto(2L), new FriendResponseDto(3L));
-        when(friendService.getFriends(userId)).thenReturn(friendships);
+        // Act
+        List<FeedItemResponseDto> feed = feedService.getFeedByCategory(userId, category, page, size);
 
-        // Mock Post data
-        Post post = new Post();
-        post.setId(1L);
-        post.setTitle("Casual Outfit Post");
-        List<Post> posts = List.of(post);
-        Page<Post> postPage = new PageImpl<>(posts, PageRequest.of(page, size), posts.size());
-
-        when(postRepository.findFeedPostsForUserByCategory(anyList(), eq(category), any())).thenReturn(postPage);
-
-        List<FeedItemDto> feed = feedService.getFeedByCategory(userId, category, page, size);
-
+        // Assert
         assertNotNull(feed);
         assertEquals(1, feed.size());
-        assertEquals("Casual Outfit Post", feed.get(0).getTitle());
+        assertEquals("Casual Outfit Post", feed.getFirst().getTitle());
     }
 
     @Test
     void testGetUserPosts() {
-        Long userId = 1L;
-        Long viewerId = 1L;
-
-        // Mock user data
+        // Arrange
         User user = new User();
         user.setId(userId);
         when(userSearchService.getUserEntityById(userId)).thenReturn(user);
-
-        // Mock Post data
-        Post post = new Post();
-        post.setId(1L);
-        post.setTitle("User Post");
-        List<Post> posts = List.of(post);
-        Page<Post> postPage = new PageImpl<>(posts, PageRequest.of(page, size), posts.size());
-
         when(postRepository.findByUserIdAndVisibilityInOrderByCreatedAtDesc(eq(userId), any(), any()))
-                .thenReturn(postPage);
+                .thenReturn(mockPosts("User Post"));
 
+        // Act
         Page<Post> userPosts = feedService.getUserPosts(userId, viewerId, PageRequest.of(page, size));
 
+        // Assert
         assertNotNull(userPosts);
         assertEquals(1, userPosts.getTotalElements());
-        assertEquals("User Post", userPosts.getContent().get(0).getTitle());
+        assertEquals("User Post", userPosts.getContent().getFirst().getTitle());
     }
 
     @Test
     void testGetUserPostsNotFound() {
+        // Arrange
         Long userId = 999L;
-
         when(userSearchService.getUserEntityById(userId)).thenReturn(null);
 
+        // Act & Assert
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
                 () -> feedService.getUserPosts(userId, viewerId, PageRequest.of(page, size)));
-
         assertEquals("User not found with id: 999", exception.getMessage());
     }
 }

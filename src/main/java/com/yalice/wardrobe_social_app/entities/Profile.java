@@ -104,6 +104,12 @@ public class Profile extends BaseEntity {
     private List<Item> items = new ArrayList<>();
 
     /**
+     * The likes on this profile's content (posts, outfits, etc.).
+     */
+    @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private Set<Like> likes = new HashSet<>();
+
+    /**
      * Enum representing the visibility of the profile.
      */
     public enum ProfileVisibility {

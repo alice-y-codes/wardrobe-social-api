@@ -3,9 +3,9 @@ package com.yalice.wardrobe_social_app.controllers;
 import com.yalice.wardrobe_social_app.dtos.authentication.AuthenticationRequest;
 import com.yalice.wardrobe_social_app.dtos.authentication.AuthenticationResponse;
 import com.yalice.wardrobe_social_app.services.UserDetailsServiceImpl;
-import com.yalice.wardrobe_social_app.utilities.ApiResponse;
-import com.yalice.wardrobe_social_app.utilities.AuthUtils;
-import com.yalice.wardrobe_social_app.utilities.JwtTokenUtil;
+import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.security.JwtService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,26 +31,24 @@ public class AuthenticationController extends ApiBaseController {
 
     private final AuthenticationManager authenticationManager;
     private final UserDetailsServiceImpl userDetailsService;
-    private final JwtTokenUtil jwtTokenUtil;
+    private final JwtService jwtService;
 
     @Autowired
     public AuthenticationController(AuthenticationManager authenticationManager,
                                     UserDetailsServiceImpl userDetailsService,
-                                    JwtTokenUtil jwtTokenUtil,
+                                    JwtService jwtService,
                                     AuthUtils authUtils) {
         super(authUtils); // Call to ApiBaseController constructor
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
-        this.jwtTokenUtil = jwtTokenUtil;
+        this.jwtService = jwtService;
     }
 
     /**
      * Handles user login requests.
-     * Authenticates the user and generates a JWT token upon successful
-     * authentication.
+     * Authenticates the user and generates a JWT token upon successful authentication.
      *
-     * @param authenticationRequest Contains the username and password for
-     *                              authentication
+     * @param authenticationRequest Contains the username and password for authentication
      * @param response              HTTP response to set the JWT cookie
      * @return ResponseEntity with authentication response or error message
      */
@@ -69,21 +67,19 @@ public class AuthenticationController extends ApiBaseController {
             final UserDetails userDetails = userDetailsService
                     .loadUserByUsername(authenticationRequest.getUsername());
 
-            final String token = jwtTokenUtil.generateToken(userDetails);
+            final String token = jwtService.generateToken(userDetails);
 
             // Create a cookie with the JWT token
             Cookie jwtCookie = new Cookie("jwt", token);
             jwtCookie.setHttpOnly(true);
             jwtCookie.setPath("/");
 
-            // Don't set max age for session cookie
             response.addCookie(jwtCookie);
 
             // Return success response with the token and username
             AuthenticationResponse authResponse = new AuthenticationResponse(token, userDetails.getUsername());
             return createSuccessResponse("Login successful", authResponse);
         } catch (BadCredentialsException e) {
-            // Use the error handling from ApiBaseController
             return createUnauthorizedResponse("Invalid username or password");
         }
     }
@@ -106,7 +102,6 @@ public class AuthenticationController extends ApiBaseController {
 
         SecurityContextHolder.clearContext();
 
-        // Return success response
         return createSuccessResponse("Logged out successfully", null);
     }
 }

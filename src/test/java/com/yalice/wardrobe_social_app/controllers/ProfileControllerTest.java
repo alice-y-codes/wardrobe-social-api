@@ -6,7 +6,7 @@ import com.yalice.wardrobe_social_app.dtos.profile.ProfileResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 import com.yalice.wardrobe_social_app.interfaces.ProfileService;
-import com.yalice.wardrobe_social_app.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

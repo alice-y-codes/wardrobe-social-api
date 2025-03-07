@@ -1,6 +1,6 @@
 package com.yalice.wardrobe_social_app.services.helpers;
 
-import com.yalice.wardrobe_social_app.dtos.feed.FeedItemDto;
+import com.yalice.wardrobe_social_app.dtos.feed.FeedItemResponseDto;
 import com.yalice.wardrobe_social_app.dtos.post.PostResponseDto;
 import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.dtos.item.ItemResponseDto;
@@ -94,19 +94,29 @@ public abstract class BaseService {
         );
     }
 
-    protected FeedItemDto convertToFeedItemDto(Post post) {
-        FeedItemDto dto = new FeedItemDto();
-        dto.setId(post.getId());
-        dto.setType("POST");
-        dto.setUser(convertToUserResponseDto(post.getProfile().getUser()));
-        dto.setCreatedAt(post.getCreatedAt());
-        dto.setUpdatedAt(post.getUpdatedAt());
-        dto.setSeason(post.getOutfit().getSeason());
-        dto.setCategory(post.getOutfit().getCategory());
-        dto.setLikesCount(post.getLikes().size());
-        dto.setCommentsCount(post.getComments().size());
-        // TODO: Implement isLikedByCurrentUser logic
-        dto.setLikedByCurrentUser(false);
-        return dto;
+    protected FeedItemResponseDto convertToFeedItemDto(Post post) {
+        return FeedItemResponseDto.builder()
+                .id(post.getId())
+                .title(post.getTitle())
+                .content(post.getContent())
+                .season(post.getOutfit().getSeason())
+                .category(post.getOutfit().getCategory())
+                .likesCount(post.getLikes().size())
+                .commentsCount(post.getComments().size())
+                .featureImage(post.getFeatureImage())
+                .outfitImage(post.getOutfit().getImageUrl())
+                .itemImages(getItemImages(post))
+                .user(convertToUserResponseDto(post.getProfile().getUser()))
+                .createdAt(post.getCreatedAt())
+                .updatedAt(post.getUpdatedAt())
+                .build();
     }
+
+    private Set<String> getItemImages(Post post) {
+        return post.getOutfit().getItems().stream()
+                .map(Item::getImageUrl)
+                .collect(Collectors.toSet());
+    }
+
+
 }

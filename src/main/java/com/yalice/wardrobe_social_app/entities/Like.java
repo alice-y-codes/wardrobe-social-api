@@ -32,7 +32,7 @@ public class Like extends BaseEntity {
      * The profile that created the like.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "profile_id", nullable = false)
+    @JoinColumn(name = "profile_id", nullable = false) // Profile instead of User
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Profile profile;

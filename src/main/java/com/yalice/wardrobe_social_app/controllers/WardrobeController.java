@@ -3,8 +3,8 @@ package com.yalice.wardrobe_social_app.controllers;
 import com.yalice.wardrobe_social_app.dtos.wardrobe.WardrobeDto;
 import com.yalice.wardrobe_social_app.dtos.wardrobe.WardrobeResponseDto;
 import com.yalice.wardrobe_social_app.interfaces.WardrobeService;
-import com.yalice.wardrobe_social_app.utilities.ApiResponse;
-import com.yalice.wardrobe_social_app.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +36,7 @@ public class WardrobeController extends ApiBaseController {
     @PostMapping
     public ResponseEntity<ApiResponse<WardrobeResponseDto>> createWardrobe(@RequestBody WardrobeDto wardrobeDto) {
         return handleEntityAction(
-                () -> wardrobeService.createWardrobe(getLoggedInUser().getId(), wardrobeDto),
+                () -> wardrobeService.createWardrobe(getLoggedInUser().getProfile().getId(), wardrobeDto),
                 "create wardrobe", "Wardrobe"
         );
     }
@@ -49,7 +49,7 @@ public class WardrobeController extends ApiBaseController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<WardrobeResponseDto>>> getUserWardrobes() {
         return handleEntityAction(
-                () -> wardrobeService.getUserWardrobes(getLoggedInUser().getId()),
+                () -> wardrobeService.getProfileWardrobes(getLoggedInUser().getProfile().getId()),
                 "retrieve user wardrobes", "Wardrobe"
         );
     }

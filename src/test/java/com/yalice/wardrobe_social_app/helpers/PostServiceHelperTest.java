@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.Post.PostVisibility;
+import com.yalice.wardrobe_social_app.entities.Profile;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.services.helpers.PostServiceHelper;
@@ -23,22 +24,21 @@ class PostServiceHelperTest {
     private FriendService friendService;
 
     private Post post;
-    private User postOwner;
+    private Profile postOwner;
     private Long viewerId;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        postOwner = User.builder()
+        postOwner = Profile.builder()
                 .id(1L)
-                .username("Owner Name")
                 .build();
 
         post = Post.builder()
                 .id(1L)
                 .content("Post Content")
-                .user(postOwner)
+                .profile(postOwner)
                 .build();
     }
 

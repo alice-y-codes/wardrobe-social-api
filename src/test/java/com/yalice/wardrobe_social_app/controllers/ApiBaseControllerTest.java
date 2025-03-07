@@ -1,14 +1,16 @@
 package com.yalice.wardrobe_social_app.controllers;
 
-import com.yalice.wardrobe_social_app.controllers.ApiBaseController;
-import com.yalice.wardrobe_social_app.utilities.ApiResponse;
-import com.yalice.wardrobe_social_app.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 import org.springframework.http.ResponseEntity;
+
+import java.util.Objects;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -42,7 +44,7 @@ public class ApiBaseControllerTest {
     }
 
     @Test
-    public void testHandleEntityCreation_Success() throws Exception {
+    public void testHandleEntityCreation_Success() {
         // Define a simple supplier that returns a mock entity
         ApiBaseController.EntitySupplier<String> supplier = () -> "Created Entity";
 
@@ -50,13 +52,13 @@ public class ApiBaseControllerTest {
         ResponseEntity<ApiResponse<String>> response = apiBaseControllerTestImpl.handleEntityCreation(supplier, "Entity");
 
         // Assert the success response
-        assertTrue(response.getBody().isSuccess());
+        assertTrue(Objects.requireNonNull(response.getBody()).isSuccess());
         assertEquals("Entity created successfully", response.getBody().getMessage());
         assertEquals("Created Entity", response.getBody().getData());
     }
 
     @Test
-    public void testHandleEntityCreation_Exception() throws Exception {
+    public void testHandleEntityCreation_Exception() {
         // Define a supplier that throws an exception
         ApiBaseController.EntitySupplier<String> supplier = () -> {
             throw new Exception("Creation failed");
@@ -66,7 +68,7 @@ public class ApiBaseControllerTest {
         ResponseEntity<ApiResponse<String>> response = apiBaseControllerTestImpl.handleEntityCreation(supplier, "Entity");
 
         // Assert the error response
-        assertFalse(response.getBody().isSuccess());
+        assertFalse(Objects.requireNonNull(response.getBody()).isSuccess());
         assertEquals("Failed to create Entity", response.getBody().getMessage());
     }
 
@@ -79,8 +81,8 @@ public class ApiBaseControllerTest {
         ResponseEntity<ApiResponse<Void>> response = apiBaseControllerTestImpl.handleResourceNotFound(exception);
 
         // Assert the "Resource Not Found" error response
-        assertEquals(404, response.getStatusCodeValue());
-        assertFalse(response.getBody().isSuccess());
+        assertEquals(404, response.getStatusCode().value());
+        assertFalse(Objects.requireNonNull(response.getBody()).isSuccess());
         assertEquals("Resource not found: Entity not found", response.getBody().getMessage());
     }
 

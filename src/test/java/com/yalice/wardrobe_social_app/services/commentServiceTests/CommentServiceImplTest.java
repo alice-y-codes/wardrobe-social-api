@@ -44,18 +44,25 @@ public class CommentServiceImplTest {
     public void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        profile = new Profile();
-        profile.setId(1L);
-        profile.setUser(new User(1L, "testuser"));
+        profile = Profile.builder()
+                .id(1L)
+                .user(User.builder()
+                        .id(1L)
+                        .username("testuser")
+                        .build())
+                .build();
 
-        post = new Post();
-        post.setId(1L);
+        post = Post.builder()
+                .id(1L)
+                .build();
 
-        comment = new Comment();
-        comment.setId(1L);
-        comment.setProfile(profile);
-        comment.setPost(post);
-        comment.setContent("This is a test comment.");
+        comment = Comment.builder()
+                .id(1L)
+                .profile(profile)
+                .post(post)
+                .content("This is a test comment.")
+                .build();
+
     }
 
     @Test

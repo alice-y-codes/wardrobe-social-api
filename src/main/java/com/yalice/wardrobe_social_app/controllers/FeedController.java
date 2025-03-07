@@ -1,11 +1,11 @@
 package com.yalice.wardrobe_social_app.controllers;
 
-import com.yalice.wardrobe_social_app.dtos.feed.FeedItemDto;
+import com.yalice.wardrobe_social_app.dtos.feed.FeedItemResponseDto;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FeedService;
-import com.yalice.wardrobe_social_app.utilities.ApiResponse;
-import com.yalice.wardrobe_social_app.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,7 +39,7 @@ public class FeedController extends ApiBaseController {
      * @return ResponseEntity containing the feed items
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<List<FeedItemDto>>> getFeed(
+    public ResponseEntity<ApiResponse<List<FeedItemResponseDto>>> getFeed(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return handleEntityAction(
@@ -57,7 +57,7 @@ public class FeedController extends ApiBaseController {
      * @return ResponseEntity containing the filtered feed items
      */
     @GetMapping("/season/{season}")
-    public ResponseEntity<ApiResponse<List<FeedItemDto>>> getFeedBySeason(
+    public ResponseEntity<ApiResponse<List<FeedItemResponseDto>>> getFeedBySeason(
             @PathVariable String season,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
@@ -76,7 +76,7 @@ public class FeedController extends ApiBaseController {
      * @return ResponseEntity containing the filtered feed items
      */
     @GetMapping("/category/{category}")
-    public ResponseEntity<ApiResponse<List<FeedItemDto>>> getFeedByCategory(
+    public ResponseEntity<ApiResponse<List<FeedItemResponseDto>>> getFeedByCategory(
             @PathVariable String category,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {

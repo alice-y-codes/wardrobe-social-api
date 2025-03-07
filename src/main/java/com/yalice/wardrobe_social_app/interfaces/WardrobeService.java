@@ -8,8 +8,8 @@ import java.util.List;
 
 @Service
 public interface WardrobeService {
-    WardrobeResponseDto createWardrobe(Long userId, WardrobeDto wardrobeDto);
-    List<WardrobeResponseDto> getUserWardrobes(Long userId);
+    WardrobeResponseDto createWardrobe(Long profileId, WardrobeDto wardrobeDto);
+    List<WardrobeResponseDto> getProfileWardrobes(Long profileId);
     WardrobeResponseDto getWardrobeById(Long wardrobeId);
     WardrobeResponseDto updateWardrobe(Long wardrobeId, WardrobeDto wardrobeDto);
     boolean deleteWardrobe(Long wardrobeId);

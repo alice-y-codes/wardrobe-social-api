@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Represents a user in the wardrobe social application, storing user
@@ -61,11 +61,11 @@ public class User extends BaseEntity {
     /**
      * The friend requests sent by the user.
      */
-    @OneToMany(mappedBy = "requester", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private List<Friendship> sentFriendRequests = new ArrayList<>();
+    private Set<Friendship> sentFriendRequests = new HashSet<>();
 
     /**
      * The friend requests received by the user.
@@ -74,16 +74,7 @@ public class User extends BaseEntity {
     @Builder.Default
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private List<Friendship> receivedFriendRequests = new ArrayList<>();
-
-    /**
-     * The list of likes given by the user.
-     */
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @Builder.Default
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private List<Like> likes = new ArrayList<>();
+    private Set<Friendship> receivedFriendRequests = new HashSet<>();
 
     /**
      * Enumeration of supported authentication providers.

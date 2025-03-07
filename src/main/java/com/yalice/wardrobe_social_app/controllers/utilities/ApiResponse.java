@@ -1,4 +1,4 @@
-package com.yalice.wardrobe_social_app.utilities;
+package com.yalice.wardrobe_social_app.controllers.utilities;
 
 import lombok.Getter;
 import lombok.Setter;

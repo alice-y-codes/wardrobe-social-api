@@ -10,6 +10,6 @@ import java.util.Optional;
 @Repository
 public interface WardrobeRepository extends JpaRepository<Wardrobe, Long> {
     Optional<Wardrobe> findByProfileId(Long profileId);
-    Boolean existsByUserIdAndName(Long userId, String wardrobeName);
-    List<Wardrobe> findAllByUserId(Long userId);
+    Boolean existsByProfileIdAndName(Long profileId, String wardrobeName);
+    List<Wardrobe> findAllByProfileId(Long profileId);
 }

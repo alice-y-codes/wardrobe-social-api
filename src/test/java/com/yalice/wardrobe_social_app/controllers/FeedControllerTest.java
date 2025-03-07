@@ -1,11 +1,11 @@
 package com.yalice.wardrobe_social_app.controllers;
 
-import com.yalice.wardrobe_social_app.dtos.feed.FeedItemDto;
+import com.yalice.wardrobe_social_app.dtos.feed.FeedItemResponseDto;
+import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FeedService;
-import com.yalice.wardrobe_social_app.utilities.ApiResponse;
-import com.yalice.wardrobe_social_app.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -43,7 +44,7 @@ class FeedControllerTest {
 
         private User testUser;
         private Post testPost;
-        private FeedItemDto testFeedItemDto;
+        private FeedItemResponseDto testFeedItemResponseDto;
         private Page<Post> testPostPage;
 
         @BeforeEach
@@ -55,6 +56,7 @@ class FeedControllerTest {
         }
 
         private void initializeTestData() {
+                // Mock the current user
                 testUser = User.builder()
                         .id(1L)
                         .username("testuser")
@@ -62,15 +64,27 @@ class FeedControllerTest {
                         .build();
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
 
-                testFeedItemDto = new FeedItemDto();
-                testFeedItemDto.setId(1L);
-                testFeedItemDto.setType("OUTFIT");
-                testFeedItemDto.setSeason("SUMMER");
-                testFeedItemDto.setCategory("CASUAL");
-                testFeedItemDto.setLikesCount(5);
-                testFeedItemDto.setCommentsCount(2);
-                testFeedItemDto.setLikedByCurrentUser(false);
+                // Initialize FeedItemResponseDto with the new properties
+                testFeedItemResponseDto = FeedItemResponseDto.builder()
+                        .id(1L)
+                        .title("Test Feed Item")
+                        .content("This is a test feed item")
+                        .season("SUMMER")
+                        .category("CASUAL")
+                        .likesCount(5)
+                        .commentsCount(2)
+                        .featureImage("https://example.com/feature.jpg")
+                        .outfitImage("https://example.com/outfit.jpg")
+                        .itemImages(Set.of("https://example.com/item1.jpg", "https://example.com/item2.jpg"))
+                        .user(UserResponseDto.builder()
+                                .id(testUser.getId())
+                                .username(testUser.getUsername())
+                                .build())
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build();
 
+                // Initialize Post
                 testPost = Post.builder()
                         .id(1L)
                         .title("Test Post")
@@ -79,8 +93,10 @@ class FeedControllerTest {
                         .updatedAt(LocalDateTime.now())
                         .build();
 
+                // Initialize Post page
                 testPostPage = new PageImpl<>(Arrays.asList(testPost), PageRequest.of(0, 20), 1);
         }
+
 
         @AfterEach
         void tearDown() {
@@ -89,7 +105,7 @@ class FeedControllerTest {
 
         @Test
         void getFeed_Success() throws Exception {
-                List<FeedItemDto> feedItems = Arrays.asList(testFeedItemDto);
+                List<FeedItemResponseDto> feedItems = Arrays.asList(testFeedItemResponseDto);
                 when(feedService.getFeed(anyLong(), anyInt(), anyInt())).thenReturn(feedItems);
 
                 mockMvc.perform(get("/api/feed")
@@ -108,7 +124,7 @@ class FeedControllerTest {
 
         @Test
         void getFeedBySeason_Success() throws Exception {
-                List<FeedItemDto> feedItems = Arrays.asList(testFeedItemDto);
+                List<FeedItemResponseDto> feedItems = Arrays.asList(testFeedItemResponseDto);
                 when(feedService.getFeedBySeason(anyLong(), anyString(), anyInt(), anyInt())).thenReturn(feedItems);
 
                 mockMvc.perform(get("/api/feed/season/SUMMER")
@@ -127,7 +143,7 @@ class FeedControllerTest {
 
         @Test
         void getFeedByCategory_Success() throws Exception {
-                List<FeedItemDto> feedItems = Arrays.asList(testFeedItemDto);
+                List<FeedItemResponseDto> feedItems = Arrays.asList(testFeedItemResponseDto);
                 when(feedService.getFeedByCategory(anyLong(), anyString(), anyInt(), anyInt())).thenReturn(feedItems);
 
                 mockMvc.perform(get("/api/feed/category/CASUAL")
