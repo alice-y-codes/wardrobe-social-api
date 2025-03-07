@@ -1,7 +1,6 @@
 package com.yalice.wardrobe_social_app.repositories;
 
 import com.yalice.wardrobe_social_app.entities.Post;
-import com.yalice.wardrobe_social_app.entities.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -2,9 +2,7 @@ package com.yalice.wardrobe_social_app.repositories;
 
 import com.yalice.wardrobe_social_app.entities.Friendship;
 import com.yalice.wardrobe_social_app.entities.Friendship.FriendshipStatus;
-import com.yalice.wardrobe_social_app.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
