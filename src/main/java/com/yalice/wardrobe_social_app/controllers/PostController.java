@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
  * Controller responsible for handling post-related operations.
  */
 @RestController
-@RequestMapping("/api/feed")
+@RequestMapping("/feed")
 public class PostController extends ApiBaseController {
 
     private final PostService postService;

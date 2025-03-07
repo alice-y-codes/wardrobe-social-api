@@ -16,7 +16,7 @@ import java.util.List;
  * Controller for handling outfit-related operations.
  */
 @RestController
-@RequestMapping("/api/outfits")
+@RequestMapping("/outfits")
 public class OutfitController extends ApiBaseController {
 
     private final OutfitService outfitService;

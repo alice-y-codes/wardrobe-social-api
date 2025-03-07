@@ -16,7 +16,7 @@ import java.util.List;
  * Provides endpoints for creating, updating, retrieving, and deleting comments.
  */
 @RestController
-@RequestMapping("/api/comments")
+@RequestMapping("/comments")
 public class CommentController extends ApiBaseController {
 
     private final CommentService commentService;

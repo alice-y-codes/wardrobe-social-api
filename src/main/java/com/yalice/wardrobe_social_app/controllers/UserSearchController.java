@@ -14,7 +14,7 @@ import java.util.List;
  * Controller responsible for handling user search operations.
  */
 @RestController
-@RequestMapping("/api/users/search")
+@RequestMapping("/users/search")
 public class UserSearchController extends ApiBaseController {
 
     private final UserSearchService userSearchService;

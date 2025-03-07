@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
  * Controller responsible for handling user management operations.
  */
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/users")
 public class UserManagementController extends ApiBaseController {
 
     private final UserManagementService userManagementService;

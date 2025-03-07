@@ -16,7 +16,7 @@ import java.util.List;
  * Provides endpoints for managing friend requests and friendships.
  */
 @RestController
-@RequestMapping("/api/friendships")
+@RequestMapping("/friendships")
 public class FriendshipController extends ApiBaseController {
 
     private final FriendService friendService;

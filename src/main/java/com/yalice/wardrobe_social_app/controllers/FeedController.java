@@ -20,7 +20,7 @@ import java.util.List;
  * Provides endpoints for retrieving and managing the user's feed.
  */
 @RestController
-@RequestMapping("/api/feed")
+@RequestMapping("/feed")
 public class FeedController extends ApiBaseController {
 
     private final FeedService feedService;

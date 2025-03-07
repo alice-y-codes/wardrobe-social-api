@@ -16,7 +16,7 @@ import java.util.List;
  * Controller for item-related operations.
  */
 @RestController
-@RequestMapping("/api/items")
+@RequestMapping("/items")
 public class ItemController extends ApiBaseController {
 
     private final ItemService itemService;

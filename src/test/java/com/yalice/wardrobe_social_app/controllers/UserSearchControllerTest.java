@@ -1,9 +1,10 @@
 package com.yalice.wardrobe_social_app.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
-import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -12,18 +13,21 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.Matchers.*;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class UserSearchControllerTest {
+
+    private static final String BASE_URL = "/api/users";
+    private static final String USERNAME = "user1";
+    private static final Long USER_ID = 1L;
+    private static final String PARTIAL_USERNAME = "user";
+    private static final int PAGE = 0;
+    private static final int SIZE = 20;
 
     private MockMvc mockMvc;
 
@@ -36,8 +40,8 @@ class UserSearchControllerTest {
     @InjectMocks
     private UserSearchController userSearchController;
 
-    private UserResponseDto testUserResponseDto;
-    private List<UserResponseDto> testUserList;
+    private UserResponseDto userResponseDto;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
@@ -46,153 +50,133 @@ class UserSearchControllerTest {
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
 
-        initializeTestData();
-    }
-
-    private void initializeTestData() {
-        testUserResponseDto = UserResponseDto.builder()
-                .id(1L)
-                .username("testuser")
-                .email("test@example.com")
+        userResponseDto = UserResponseDto.builder()
+                .id(USER_ID)
+                .username(USERNAME)
                 .build();
-
-        testUserList = Arrays.asList(
-                testUserResponseDto,
-                UserResponseDto.builder()
-                        .id(2L)
-                        .username("otheruser")
-                        .email("other@example.com")
-                        .build());
     }
 
     @Test
-    void getUserByUsername_Success() throws Exception {
-        when(userSearchService.getUserByUsername(anyString())).thenReturn(testUserResponseDto);
+    void getUserByUsername_success() throws Exception {
+        when(userSearchService.getUserByUsername(USERNAME)).thenReturn(userResponseDto);
 
-        mockMvc.perform(get("/api/users/search/username/testuser"))
+        mockMvc.perform(get(BASE_URL + "/username/{username}", USERNAME)
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
-                .andExpect(jsonPath("$.message", is("User found successfully")))
-                .andExpect(jsonPath("$.data.id", is(1)))
-                .andExpect(jsonPath("$.data.username", is("testuser")))
-                .andExpect(jsonPath("$.data.email", is("test@example.com")));
+                .andExpect(jsonPath("$.message", is("User (username: user1)")))
+                .andExpect(jsonPath("$.data.id", is(USER_ID.intValue())))
+                .andExpect(jsonPath("$.data.username", is(USERNAME)));
 
-        verify(userSearchService).getUserByUsername(anyString());
+        verify(userSearchService).getUserByUsername(USERNAME);
     }
 
     @Test
-    void getUserByUsername_NotFound() throws Exception {
-        when(userSearchService.getUserByUsername(anyString()))
-                .thenThrow(new RuntimeException("User not found"));
+    void getUserByUsername_notFound() throws Exception {
+        when(userSearchService.getUserByUsername(USERNAME)).thenReturn(null);
 
-        mockMvc.perform(get("/api/users/search/username/nonexistent"))
+        mockMvc.perform(get(BASE_URL + "/username/{username}", USERNAME)
+                        .contentType("application/json"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success", is(false)))
-                .andExpect(jsonPath("$.message", is("User not found with username: nonexistent")));
+                .andExpect(jsonPath("$.message", is("User (username: user1) not found")));
 
-        verify(userSearchService).getUserByUsername(anyString());
+        verify(userSearchService).getUserByUsername(USERNAME);
     }
 
     @Test
-    void getUserById_Success() throws Exception {
-        when(userSearchService.getUserById(anyLong())).thenReturn(testUserResponseDto);
+    void getUserById_success() throws Exception {
+        when(userSearchService.getUserById(USER_ID)).thenReturn(userResponseDto);
 
-        mockMvc.perform(get("/api/users/search/1"))
+        mockMvc.perform(get(BASE_URL + "/{userId}", USER_ID)
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
-                .andExpect(jsonPath("$.message", is("User found successfully")))
-                .andExpect(jsonPath("$.data.id", is(1)))
-                .andExpect(jsonPath("$.data.username", is("testuser")))
-                .andExpect(jsonPath("$.data.email", is("test@example.com")));
+                .andExpect(jsonPath("$.message", is("User (ID: 1)")))
+                .andExpect(jsonPath("$.data.id", is(USER_ID.intValue())))
+                .andExpect(jsonPath("$.data.username", is(USERNAME)));
 
-        verify(userSearchService).getUserById(anyLong());
+        verify(userSearchService).getUserById(USER_ID);
     }
 
     @Test
-    void getUserById_NotFound() throws Exception {
-        when(userSearchService.getUserById(anyLong()))
-                .thenThrow(new RuntimeException("User not found"));
+    void getUserById_notFound() throws Exception {
+        when(userSearchService.getUserById(USER_ID)).thenReturn(null);
 
-        mockMvc.perform(get("/api/users/search/999"))
+        mockMvc.perform(get(BASE_URL + "/{userId}", USER_ID)
+                        .contentType("application/json"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success", is(false)))
-                .andExpect(jsonPath("$.message", is("User not found with ID: 999")));
+                .andExpect(jsonPath("$.message", is("User (ID: 1) not found")));
 
-        verify(userSearchService).getUserById(anyLong());
+        verify(userSearchService).getUserById(USER_ID);
     }
 
     @Test
-    void searchUsersByUsername_Success() throws Exception {
-        when(userSearchService.searchUsersByUsername(anyString())).thenReturn(testUserList);
+    void searchUsersByUsername_success() throws Exception {
+        List<UserResponseDto> userList = List.of(userResponseDto);
+        when(userSearchService.searchUsersByUsername(PARTIAL_USERNAME)).thenReturn(userList);
 
-        mockMvc.perform(get("/api/users/search/search")
-                .param("partialUsername", "test"))
+        mockMvc.perform(get(BASE_URL + "/search")
+                        .param("username", PARTIAL_USERNAME)
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
-                .andExpect(jsonPath("$.message", is("Users found successfully")))
-                .andExpect(jsonPath("$.data", hasSize(2)))
-                .andExpect(jsonPath("$.data[0].username", is("testuser")))
-                .andExpect(jsonPath("$.data[1].username", is("otheruser")));
+                .andExpect(jsonPath("$.message", is("Users matching partial username: user")))
+                .andExpect(jsonPath("$.data[0].id", is(USER_ID.intValue())))
+                .andExpect(jsonPath("$.data[0].username", is(USERNAME)));
 
-        verify(userSearchService).searchUsersByUsername(anyString());
+        verify(userSearchService).searchUsersByUsername(PARTIAL_USERNAME);
     }
 
     @Test
-    void searchUsersByUsername_Error() throws Exception {
-        when(userSearchService.searchUsersByUsername(anyString()))
-                .thenThrow(new RuntimeException("Search failed"));
+    void searchUsersByUsername_emptyList() throws Exception {
+        List<UserResponseDto> userList = List.of();
+        when(userSearchService.searchUsersByUsername(PARTIAL_USERNAME)).thenReturn(userList);
 
-        mockMvc.perform(get("/api/users/search/search")
-                .param("partialUsername", "test"))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.success", is(false)))
-                .andExpect(jsonPath("$.message", is("Failed to search users")));
-
-        verify(userSearchService).searchUsersByUsername(anyString());
-    }
-
-    @Test
-    void getAllUsers_Success() throws Exception {
-        when(userSearchService.getAllUsers(anyInt(), anyInt())).thenReturn(testUserList);
-
-        mockMvc.perform(get("/api/users/search/all")
-                .param("page", "0")
-                .param("size", "20"))
+        mockMvc.perform(get(BASE_URL + "/search")
+                        .param("username", PARTIAL_USERNAME)
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
-                .andExpect(jsonPath("$.message", is("Users retrieved successfully")))
-                .andExpect(jsonPath("$.data", hasSize(2)))
-                .andExpect(jsonPath("$.data[0].username", is("testuser")))
-                .andExpect(jsonPath("$.data[1].username", is("otheruser")));
+                .andExpect(jsonPath("$.message", is("Users matching partial username: user")))
+                .andExpect(jsonPath("$.data", hasSize(0)));
 
-        verify(userSearchService).getAllUsers(anyInt(), anyInt());
+        verify(userSearchService).searchUsersByUsername(PARTIAL_USERNAME);
     }
 
     @Test
-    void getAllUsers_Error() throws Exception {
-        when(userSearchService.getAllUsers(anyInt(), anyInt()))
-                .thenThrow(new RuntimeException("Failed to retrieve users"));
+    void getAllUsers_success() throws Exception {
+        List<UserResponseDto> userList = List.of(userResponseDto);
+        when(userSearchService.getAllUsers(PAGE, SIZE)).thenReturn(userList);
 
-        mockMvc.perform(get("/api/users/search/all")
-                .param("page", "0")
-                .param("size", "20"))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.success", is(false)))
-                .andExpect(jsonPath("$.message", is("Failed to retrieve users")));
-
-        verify(userSearchService).getAllUsers(anyInt(), anyInt());
-    }
-
-    @Test
-    void getAllUsers_DefaultPagination() throws Exception {
-        when(userSearchService.getAllUsers(anyInt(), anyInt())).thenReturn(testUserList);
-
-        mockMvc.perform(get("/api/users/search/all"))
+        mockMvc.perform(get(BASE_URL + "/all")
+                        .param("page", String.valueOf(PAGE))
+                        .param("size", String.valueOf(SIZE))
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
-                .andExpect(jsonPath("$.message", is("Users retrieved successfully")))
-                .andExpect(jsonPath("$.data", hasSize(2)));
+                .andExpect(jsonPath("$.message", is("All users (page: 0, size: 20)")))
+                .andExpect(jsonPath("$.data[0].id", is(USER_ID.intValue())))
+                .andExpect(jsonPath("$.data[0].username", is(USERNAME)));
 
-        verify(userSearchService).getAllUsers(0, 20); // Default values
+        verify(userSearchService).getAllUsers(PAGE, SIZE);
+    }
+
+    @Test
+    void getAllUsers_emptyList() throws Exception {
+        List<UserResponseDto> userList = List.of();
+        when(userSearchService.getAllUsers(PAGE, SIZE)).thenReturn(userList);
+
+        mockMvc.perform(get(BASE_URL + "/all")
+                        .param("page", String.valueOf(PAGE))
+                        .param("size", String.valueOf(SIZE))
+                        .contentType("application/json"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.message", is("All users (page: 0, size: 20)")))
+                .andExpect(jsonPath("$.data", hasSize(0)));
+
+        verify(userSearchService).getAllUsers(PAGE, SIZE);
     }
 }

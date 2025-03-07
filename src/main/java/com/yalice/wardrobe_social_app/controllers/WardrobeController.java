@@ -16,7 +16,7 @@ import java.util.List;
  * Provides endpoints for managing user wardrobes.
  */
 @RestController
-@RequestMapping("/api/wardrobes")
+@RequestMapping("/wardrobes")
 public class WardrobeController extends ApiBaseController {
 
     private final WardrobeService wardrobeService;

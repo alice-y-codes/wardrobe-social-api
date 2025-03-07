@@ -10,10 +10,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
  * Base controller class that provides common functionality for all API controllers.
  */
+@RequestMapping("/api")
 public abstract class ApiBaseController {
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
     protected final AuthUtils authUtils;
@@ -93,6 +95,10 @@ public abstract class ApiBaseController {
     protected <T> ResponseEntity<ApiResponse<T>> createInternalServerErrorResponse(String message) {
         return createErrorResponse(message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+    protected <T> ResponseEntity<ApiResponse<T>> createUnauthorizedResponse(String message) {
+        return createErrorResponse(message, HttpStatus.UNAUTHORIZED);
+    }
+
 
     // ========== ERROR HANDLING ==========
     protected <T> ResponseEntity<ApiResponse<T>> handleValidationErrors(BindingResult result) {

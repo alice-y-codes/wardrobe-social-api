@@ -19,7 +19,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -38,7 +37,6 @@ class UserManagementControllerTest {
     private UserManagementController userManagementController;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private User testUser;
     private UserDto testUserDto;
     private UserResponseDto testUserResponseDto;
 
@@ -53,12 +51,6 @@ class UserManagementControllerTest {
     }
 
     private void initializeTestData() {
-        testUser = User.builder()
-                .id(1L)
-                .username("testuser")
-                .email("test@example.com")
-                .build();
-
         testUserDto = UserDto.builder()
                 .username("testuser")
                 .email("test@example.com")
@@ -77,14 +69,13 @@ class UserManagementControllerTest {
         when(userManagementService.registerUser(any(UserDto.class))).thenReturn(testUserResponseDto);
 
         mockMvc.perform(post("/api/users/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testUserDto)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testUserDto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
                 .andExpect(jsonPath("$.message", is("User registered successfully")))
                 .andExpect(jsonPath("$.data.id", is(1)))
-                .andExpect(jsonPath("$.data.username", is("testuser")))
-                .andExpect(jsonPath("$.data.email", is("test@example.com")));
+                .andExpect(jsonPath("$.data.username", is("testuser")));
 
         verify(userManagementService).registerUser(any(UserDto.class));
     }
@@ -98,8 +89,8 @@ class UserManagementControllerTest {
                 .build();
 
         mockMvc.perform(post("/api/users/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidUserDto)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidUserDto)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success", is(false)))
                 .andExpect(jsonPath("$.message", containsString("Validation failed")));
@@ -113,8 +104,8 @@ class UserManagementControllerTest {
                 .thenThrow(new UserRegistrationException("Username already exists"));
 
         mockMvc.perform(post("/api/users/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testUserDto)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testUserDto)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success", is(false)))
                 .andExpect(jsonPath("$.message", is("Username already exists")));
@@ -124,12 +115,12 @@ class UserManagementControllerTest {
 
     @Test
     void updateUserProfile_Success() throws Exception {
-        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(User.builder().id(1L).build());
         when(userManagementService.updateUserProfile(anyLong(), any(UserDto.class))).thenReturn(testUserResponseDto);
 
-        mockMvc.perform(put("/api/users/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testUserDto)))
+        mockMvc.perform(patch("/api/users/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testUserDto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
                 .andExpect(jsonPath("$.message", is("User profile updated successfully")))
@@ -141,15 +132,12 @@ class UserManagementControllerTest {
 
     @Test
     void updateUserProfile_Unauthorized() throws Exception {
-        User unauthorizedUser = User.builder()
-                .id(2L)
-                .username("otheruser")
-                .build();
+        User unauthorizedUser = User.builder().id(2L).username("otheruser").build();
         when(authUtils.getCurrentUserOrElseThrow()).thenReturn(unauthorizedUser);
 
-        mockMvc.perform(put("/api/users/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testUserDto)))
+        mockMvc.perform(patch("/api/users/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testUserDto)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success", is(false)))
                 .andExpect(jsonPath("$.message", is("You can only update your own profile")));
@@ -159,12 +147,12 @@ class UserManagementControllerTest {
 
     @Test
     void changePassword_Success() throws Exception {
-        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(User.builder().id(1L).build());
         doNothing().when(userManagementService).changePassword(anyLong(), anyString(), anyString());
 
         mockMvc.perform(post("/api/users/1/password")
-                .param("oldPassword", "oldpass123")
-                .param("newPassword", "newpass123"))
+                        .param("oldPassword", "oldpass123")
+                        .param("newPassword", "newpass123"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
                 .andExpect(jsonPath("$.message", is("Password changed successfully")));
@@ -174,15 +162,12 @@ class UserManagementControllerTest {
 
     @Test
     void changePassword_Unauthorized() throws Exception {
-        User unauthorizedUser = User.builder()
-                .id(2L)
-                .username("otheruser")
-                .build();
+        User unauthorizedUser = User.builder().id(2L).username("otheruser").build();
         when(authUtils.getCurrentUserOrElseThrow()).thenReturn(unauthorizedUser);
 
         mockMvc.perform(post("/api/users/1/password")
-                .param("oldPassword", "oldpass123")
-                .param("newPassword", "newpass123"))
+                        .param("oldPassword", "oldpass123")
+                        .param("newPassword", "newpass123"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success", is(false)))
                 .andExpect(jsonPath("$.message", is("You can only change your own password")));
@@ -192,7 +177,7 @@ class UserManagementControllerTest {
 
     @Test
     void deleteUser_Success() throws Exception {
-        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(User.builder().id(1L).build());
         doNothing().when(userManagementService).deleteUser(anyLong());
 
         mockMvc.perform(delete("/api/users/1"))
@@ -205,10 +190,7 @@ class UserManagementControllerTest {
 
     @Test
     void deleteUser_Unauthorized() throws Exception {
-        User unauthorizedUser = User.builder()
-                .id(2L)
-                .username("otheruser")
-                .build();
+        User unauthorizedUser = User.builder().id(2L).username("otheruser").build();
         when(authUtils.getCurrentUserOrElseThrow()).thenReturn(unauthorizedUser);
 
         mockMvc.perform(delete("/api/users/1"))

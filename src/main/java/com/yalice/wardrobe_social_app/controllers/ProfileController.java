@@ -14,7 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
  * Controller responsible for handling profile-related operations.
  */
 @RestController
-@RequestMapping("/api/profiles")
+@RequestMapping("/profiles")
 public class ProfileController extends ApiBaseController {
 
     private final ProfileService profileService;
