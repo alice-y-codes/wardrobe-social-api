@@ -1,10 +1,10 @@
 package com.yalice.wardrobe_social_app.controllers;
 
+import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import com.yalice.wardrobe_social_app.dtos.comment.CommentDto;
 import com.yalice.wardrobe_social_app.dtos.comment.CommentResponseDto;
 import com.yalice.wardrobe_social_app.interfaces.CommentService;
-import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
-import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +16,7 @@ import java.util.List;
  * Provides endpoints for creating, updating, retrieving, and deleting comments.
  */
 @RestController
-@RequestMapping("/comments")
+@RequestMapping("/api/comments")
 public class CommentController extends ApiBaseController {
 
     private final CommentService commentService;

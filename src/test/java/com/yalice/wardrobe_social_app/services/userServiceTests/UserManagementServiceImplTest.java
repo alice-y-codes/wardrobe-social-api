@@ -9,6 +9,7 @@ import com.yalice.wardrobe_social_app.repositories.UserRepository;
 import com.yalice.wardrobe_social_app.services.UserManagementServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -71,16 +72,32 @@ class UserManagementServiceImplTest {
 
     @Test
     void testUpdateUserProfile_Success() {
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(userRepository.save(any(User.class))).thenReturn(user);
+        // Arrange: Create an existing user and set initial values
+        User existingUser = new User();
+        existingUser.setId(1L);
+        existingUser.setUsername("oldusername");
+        existingUser.setEmail("oldemail@example.com");
 
-        UserDto updatedUserDto = new UserDto("newusername", "newemail@example.com", null);
-        UserResponseDto updatedUserResponseDto = userManagementService.updateUserProfile(user.getId(), updatedUserDto);
+        when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
+        UserDto updatedUserDto = new UserDto("newusername", "newpassword", "newemail@example.com");
+
+        UserResponseDto updatedUserResponseDto = userManagementService.updateUserProfile(existingUser.getId(), updatedUserDto);
+
+        // Assert: Verify the updated values
         assertNotNull(updatedUserResponseDto);
         assertEquals("newusername", updatedUserResponseDto.getUsername());
         assertEquals("newemail@example.com", updatedUserResponseDto.getEmail());
+
+        // Capture the saved User object to verify the email was set correctly
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+
+        User savedUser = userCaptor.getValue();
+        assertEquals("newemail@example.com", savedUser.getEmail());
     }
+
 
     @Test
     void testUpdateUserProfile_UserNotFound() {

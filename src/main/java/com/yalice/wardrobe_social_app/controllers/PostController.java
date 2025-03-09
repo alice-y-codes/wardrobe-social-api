@@ -1,11 +1,11 @@
 package com.yalice.wardrobe_social_app.controllers;
 
+import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import com.yalice.wardrobe_social_app.dtos.post.PostDto;
 import com.yalice.wardrobe_social_app.dtos.post.PostResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.PostService;
-import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
-import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
  * Controller responsible for handling post-related operations.
  */
 @RestController
-@RequestMapping("/feed")
+@RequestMapping("/api/feed")
 public class PostController extends ApiBaseController {
 
     private final PostService postService;

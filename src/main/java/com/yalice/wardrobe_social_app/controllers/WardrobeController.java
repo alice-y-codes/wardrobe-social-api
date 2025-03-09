@@ -1,10 +1,10 @@
 package com.yalice.wardrobe_social_app.controllers;
 
+import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import com.yalice.wardrobe_social_app.dtos.wardrobe.WardrobeDto;
 import com.yalice.wardrobe_social_app.dtos.wardrobe.WardrobeResponseDto;
 import com.yalice.wardrobe_social_app.interfaces.WardrobeService;
-import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
-import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +16,7 @@ import java.util.List;
  * Provides endpoints for managing user wardrobes.
  */
 @RestController
-@RequestMapping("/wardrobes")
+@RequestMapping("/api/wardrobes")
 public class WardrobeController extends ApiBaseController {
 
     private final WardrobeService wardrobeService;
@@ -47,7 +47,7 @@ public class WardrobeController extends ApiBaseController {
      * @return ResponseEntity containing the list of wardrobes
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<List<WardrobeResponseDto>>> getUserWardrobes() {
+    public ResponseEntity<ApiResponse<List<WardrobeResponseDto>>> getProfileWardrobes() {
         return handleEntityAction(
                 () -> wardrobeService.getProfileWardrobes(getLoggedInUser().getProfile().getId()),
                 "retrieve user wardrobes", "Wardrobe"

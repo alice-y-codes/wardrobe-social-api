@@ -2,9 +2,7 @@ package com.yalice.wardrobe_social_app.services.outfitServiceTests;
 
 import com.yalice.wardrobe_social_app.dtos.outfit.OutfitDto;
 import com.yalice.wardrobe_social_app.dtos.outfit.OutfitResponseDto;
-import com.yalice.wardrobe_social_app.entities.Item;
-import com.yalice.wardrobe_social_app.entities.Outfit;
-import com.yalice.wardrobe_social_app.entities.Profile;
+import com.yalice.wardrobe_social_app.entities.*;
 import com.yalice.wardrobe_social_app.interfaces.ItemService;
 import com.yalice.wardrobe_social_app.repositories.OutfitRepository;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
@@ -12,7 +10,9 @@ import com.yalice.wardrobe_social_app.services.OutfitServiceImpl;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -42,19 +42,28 @@ class OutfitServiceImplTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        Wardrobe wardrobe = new Wardrobe();
+        wardrobe.setId(1L); // Set the Wardrobe ID
 
         // Create mock profile and outfit objects
         profile = new Profile();
         profile.setId(1L);
 
+        User user = new User();
+        user.setUsername("testUser");
+        user.setId(1L);
+        profile.setUser(user);
+
         outfit = new Outfit();
         outfit.setId(1L);
         outfit.setProfile(profile);
-        outfit.setName("Test Outfit");
+        outfit.setName("Summer Outfit");
 
         item = new Item();
         item.setId(1L);
         item.setName("Test Item");
+        item.setWardrobe(wardrobe);
+        item.setProfile(profile);
 
         when(profileRepository.findByUserId(1L)).thenReturn(Optional.of(profile));
         when(outfitRepository.findById(1L)).thenReturn(Optional.of(outfit));
@@ -162,7 +171,7 @@ class OutfitServiceImplTest {
         // Verify
         assertNotNull(response);
         assertEquals(1, response.size());
-        assertEquals("Test Outfit", response.get(0).getName());
+        assertEquals("Summer Outfit", response.get(0).getName());
     }
 
     @Test
@@ -172,7 +181,7 @@ class OutfitServiceImplTest {
 
         // Verify
         assertNotNull(response);
-        assertEquals("Test Outfit", response.getName());
+        assertEquals("Summer Outfit", response.getName());
     }
 
     @Test

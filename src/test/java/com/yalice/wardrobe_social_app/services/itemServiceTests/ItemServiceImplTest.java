@@ -4,6 +4,7 @@ import com.yalice.wardrobe_social_app.dtos.item.ItemDto;
 import com.yalice.wardrobe_social_app.dtos.item.ItemResponseDto;
 import com.yalice.wardrobe_social_app.entities.Item;
 import com.yalice.wardrobe_social_app.entities.Profile;
+import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.entities.Wardrobe;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.repositories.ItemRepository;
@@ -38,6 +39,7 @@ class ItemServiceImplTest {
     private ItemServiceImpl itemService;
 
     private Profile profile;
+    private User user;
     private Wardrobe wardrobe;
     private ItemDto itemDto;
     private Item item;
@@ -47,9 +49,16 @@ class ItemServiceImplTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
+        user = User.builder()
+                .username("testusername")
+                .build();
+
+        user.setId(1L);
+
         // Create mock entities
         profile = new Profile();
         profile.setId(1L);
+        profile.setUser(user);
         wardrobe = new Wardrobe();
         wardrobe.setId(1L);
 

@@ -2,22 +2,21 @@ package com.yalice.wardrobe_social_app.services.postServiceTests;
 
 import com.yalice.wardrobe_social_app.dtos.post.PostDto;
 import com.yalice.wardrobe_social_app.dtos.post.PostResponseDto;
-import com.yalice.wardrobe_social_app.entities.Like;
-import com.yalice.wardrobe_social_app.entities.Outfit;
-import com.yalice.wardrobe_social_app.entities.Post;
-import com.yalice.wardrobe_social_app.entities.Profile;
+import com.yalice.wardrobe_social_app.entities.*;
 import com.yalice.wardrobe_social_app.exceptions.PostAccessException;
 import com.yalice.wardrobe_social_app.exceptions.PostNotFoundException;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
-import com.yalice.wardrobe_social_app.interfaces.ProfileService;
 import com.yalice.wardrobe_social_app.interfaces.OutfitService;
+import com.yalice.wardrobe_social_app.interfaces.ProfileService;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.PostServiceImpl;
 import com.yalice.wardrobe_social_app.services.helpers.PostServiceHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.util.Optional;
 
@@ -48,6 +47,9 @@ class PostServiceImplTest {
     private Profile profile;
 
     @Mock
+    private User user;
+
+    @Mock
     private Post post;
 
     @Mock
@@ -62,21 +64,31 @@ class PostServiceImplTest {
     private Long postId = 1L;
     private Long profileId = 1L;
     private Long outfitId = 1L;
+    private Long userId = 1L;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
+        user = new User();
+        user.setId(userId);
+
         // Mock common objects
         profile = new Profile();
         profile.setId(profileId);
-
-        post = new Post();
-        post.setId(postId);
-        post.setProfile(profile);
+        profile.setUser(user);
 
         outfit = new Outfit();
         outfit.setId(outfitId);
+
+        post = new Post();
+        post.setId(postId);
+        post.setTitle("Test Title");
+        post.setContent("Test Content");
+        post.setProfile(profile);
+        post.setVisibility(Post.PostVisibility.PUBLIC);
+        post.setOutfit(outfit);
+
 
         postDto = new PostDto();
         postDto.setTitle("Test Title");

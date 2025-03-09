@@ -1,10 +1,10 @@
 package com.yalice.wardrobe_social_app.services.helpers;
 
 import com.yalice.wardrobe_social_app.dtos.feed.FeedItemResponseDto;
-import com.yalice.wardrobe_social_app.dtos.post.PostResponseDto;
-import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.dtos.item.ItemResponseDto;
 import com.yalice.wardrobe_social_app.dtos.outfit.OutfitResponseDto;
+import com.yalice.wardrobe_social_app.dtos.post.PostResponseDto;
+import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.dtos.wardrobe.WardrobeResponseDto;
 import com.yalice.wardrobe_social_app.entities.*;
 import org.slf4j.Logger;
@@ -56,10 +56,7 @@ public abstract class BaseService {
      */
     protected OutfitResponseDto convertToOutfitResponseDto(Outfit outfit) {
         Set<ItemResponseDto> itemResponseDtos = outfit.getItems().stream()
-                .map(item -> new ItemResponseDto(item.getId(), item.getName(), item.getBrand(),
-                        item.getCategory(), item.getSize(),
-                        item.getColor(), item.getImageUrl(),
-                        outfit.getProfile().getId(), item.getWardrobe().getId()))
+                .map(ItemResponseDto::new)
                 .collect(Collectors.toSet());
 
         return new OutfitResponseDto(

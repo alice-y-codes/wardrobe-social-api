@@ -10,12 +10,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Base controller class that provides common functionality for all API controllers.
  */
-@RequestMapping("/api")
+@RestController
 public abstract class ApiBaseController {
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
     protected final AuthUtils authUtils;

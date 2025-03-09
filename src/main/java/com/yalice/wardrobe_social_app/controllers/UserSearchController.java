@@ -1,9 +1,9 @@
 package com.yalice.wardrobe_social_app.controllers;
 
-import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
-import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
 import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +14,7 @@ import java.util.List;
  * Controller responsible for handling user search operations.
  */
 @RestController
-@RequestMapping("/users/search")
+@RequestMapping("/api/users/search")
 public class UserSearchController extends ApiBaseController {
 
     private final UserSearchService userSearchService;

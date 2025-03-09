@@ -15,5 +15,5 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByUsername(String username);
-    List<User> findByUsernameContainingIgnoreCase(String partialUsername); // Enables partial search
+    List<User> findByUsernameContainingIgnoreCase(String partialUsername);
 }

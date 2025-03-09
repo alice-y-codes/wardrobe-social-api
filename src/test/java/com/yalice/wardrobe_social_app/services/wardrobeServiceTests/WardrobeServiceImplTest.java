@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +22,6 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
 public class WardrobeServiceImplTest {
 
     @Mock
@@ -65,8 +63,8 @@ public class WardrobeServiceImplTest {
         wardrobeDto.setName("Casual Wardrobe");
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(profileRepository.findByUserId(1L)).thenReturn(Optional.of(profile));
-        when(wardrobeRepository.existsByUserIdAndName(1L, "Casual Wardrobe")).thenReturn(false);
+        when(profileRepository.findById(1L)).thenReturn(Optional.of(profile));
+        when(wardrobeRepository.existsByProfileIdAndName(1L, "Casual Wardrobe")).thenReturn(false);
         when(wardrobeRepository.save(any(Wardrobe.class))).thenReturn(wardrobe);
 
         WardrobeResponseDto responseDto = wardrobeService.createWardrobe(1L, wardrobeDto);
@@ -83,11 +81,9 @@ public class WardrobeServiceImplTest {
 
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
-            wardrobeService.createWardrobe(1L, wardrobeDto);
-        });
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> wardrobeService.createWardrobe(1L, wardrobeDto));
 
-        assertEquals("User not found with ID: 1", exception.getMessage());
+        assertEquals("Profile not found with ID: 1", exception.getMessage());
     }
 
     @Test
@@ -96,13 +92,11 @@ public class WardrobeServiceImplTest {
         wardrobeDto.setName("Casual Wardrobe");
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(profileRepository.findByUserId(1L)).thenReturn(Optional.empty());
+        when(profileRepository.findById(1L)).thenReturn(Optional.empty());
 
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
-            wardrobeService.createWardrobe(1L, wardrobeDto);
-        });
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> wardrobeService.createWardrobe(1L, wardrobeDto));
 
-        assertEquals("Profile not found for user ID: 1", exception.getMessage());
+        assertEquals("Profile not found with ID: 1", exception.getMessage());
     }
 
     @Test
@@ -119,34 +113,30 @@ public class WardrobeServiceImplTest {
     public void getWardrobeById_ThrowsException_WhenWardrobeNotFound() {
         when(wardrobeRepository.findById(1L)).thenReturn(Optional.empty());
 
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
-            wardrobeService.getWardrobeById(1L);
-        });
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> wardrobeService.getWardrobeById(1L));
 
         assertEquals("Wardrobe not found with ID: 1", exception.getMessage());
     }
 
     @Test
-    public void getUserWardrobes_ShouldReturnWardrobes() {
-        when(userRepository.existsById(1L)).thenReturn(true);
-        when(wardrobeRepository.findAllByUserId(1L)).thenReturn(List.of(wardrobe));
+    public void getProfileWardrobes_ShouldReturnWardrobes() {
+        when(profileRepository.findById(1L)).thenReturn(Optional.of(profile));
+        when(wardrobeRepository.findAllByProfileId(1L)).thenReturn(List.of(wardrobe));
 
-        List<WardrobeResponseDto> responseDtos = wardrobeService.getUserWardrobes(1L);
+        List<WardrobeResponseDto> responseDtos = wardrobeService.getProfileWardrobes(1L);
 
         assertNotNull(responseDtos);
         assertEquals(1, responseDtos.size());
-        assertEquals("Casual Wardrobe", responseDtos.get(0).getName());
+        assertEquals("Casual Wardrobe", responseDtos.getFirst().getName());
     }
 
     @Test
     public void getUserWardrobes_ThrowsException_WhenUserNotFound() {
         when(userRepository.existsById(1L)).thenReturn(false);
 
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
-            wardrobeService.getUserWardrobes(1L);
-        });
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> wardrobeService.getProfileWardrobes(1L));
 
-        assertEquals("User not found with ID: 1", exception.getMessage());
+        assertEquals("Profile not found with ID: 1", exception.getMessage());
     }
 
     @Test
@@ -170,9 +160,7 @@ public class WardrobeServiceImplTest {
 
         when(wardrobeRepository.findById(1L)).thenReturn(Optional.empty());
 
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
-            wardrobeService.updateWardrobe(1L, wardrobeDto);
-        });
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> wardrobeService.updateWardrobe(1L, wardrobeDto));
 
         assertEquals("Wardrobe not found with ID: 1", exception.getMessage());
     }
@@ -191,9 +179,7 @@ public class WardrobeServiceImplTest {
     public void deleteWardrobe_ThrowsException_WhenWardrobeNotFound() {
         when(wardrobeRepository.existsById(1L)).thenReturn(false);
 
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
-            wardrobeService.deleteWardrobe(1L);
-        });
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> wardrobeService.deleteWardrobe(1L));
 
         assertEquals("Wardrobe not found with ID: 1", exception.getMessage());
     }

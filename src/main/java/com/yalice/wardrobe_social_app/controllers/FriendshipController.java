@@ -1,10 +1,10 @@
 package com.yalice.wardrobe_social_app.controllers;
 
+import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import com.yalice.wardrobe_social_app.dtos.friendship.FriendRequestDto;
 import com.yalice.wardrobe_social_app.dtos.friendship.FriendResponseDto;
 import com.yalice.wardrobe_social_app.interfaces.FriendService;
-import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
-import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +16,7 @@ import java.util.List;
  * Provides endpoints for managing friend requests and friendships.
  */
 @RestController
-@RequestMapping("/friendships")
+@RequestMapping("/api/friendships")
 public class FriendshipController extends ApiBaseController {
 
     private final FriendService friendService;

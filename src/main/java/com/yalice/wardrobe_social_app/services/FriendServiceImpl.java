@@ -119,8 +119,7 @@ public class FriendServiceImpl extends BaseService implements FriendService {
     public List<FriendResponseDto> getFriends(Long userId) {
         logger.info("Retrieving friends for user ID: {}", userId);
 
-        List<Friendship> friendships = friendRepository.findBySenderIdOrRecipientIdAndStatus(userId,
-                FriendshipStatus.ACCEPTED);
+        List<Friendship> friendships = friendRepository.findAllByUserIdAndStatus(userId, FriendshipStatus.ACCEPTED);
         logger.info("Found {} friends for user ID: {}", friendships.size(), userId);
 
         return friendships.stream()

@@ -11,6 +11,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.util.Arrays;
@@ -147,17 +148,19 @@ class UserSearchServiceImplTest {
         user2.setUsername("testuser2");
         user2.setEmail("test2@example.com");
 
-        Page<User> userPage = mock(Page.class);
+        List<User> userList = Arrays.asList(user, user2);
+        Page<User> userPage = new PageImpl<>(userList); // Use PageImpl instead of mocking
+
         when(userRepository.findAll(PageRequest.of(0, 10))).thenReturn(userPage);
-        when(userPage.getContent()).thenReturn(Arrays.asList(user, user2));
 
         List<UserResponseDto> users = userSearchService.getAllUsers(0, 10);
 
         assertNotNull(users);
         assertEquals(2, users.size());
-        assertEquals("testuser", users.get(0).getUsername());
+        assertEquals("testuser", users.get(0).getUsername()); // Use get(0) instead of getFirst()
         verify(userRepository, times(1)).findAll(PageRequest.of(0, 10));
     }
+
 
     @Test
     void testGetAllUsers_NoUsers() {

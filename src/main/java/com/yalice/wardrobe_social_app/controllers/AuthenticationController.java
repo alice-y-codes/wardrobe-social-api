@@ -1,11 +1,11 @@
 package com.yalice.wardrobe_social_app.controllers;
 
-import com.yalice.wardrobe_social_app.dtos.authentication.AuthenticationRequest;
-import com.yalice.wardrobe_social_app.dtos.authentication.AuthenticationResponse;
-import com.yalice.wardrobe_social_app.services.UserDetailsServiceImpl;
 import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
 import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.dtos.authentication.AuthenticationRequest;
+import com.yalice.wardrobe_social_app.dtos.authentication.AuthenticationResponse;
 import com.yalice.wardrobe_social_app.security.JwtService;
+import com.yalice.wardrobe_social_app.services.UserDetailsServiceImpl;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Provides functionality for user login and logout operations.
  */
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 public class AuthenticationController extends ApiBaseController {
 
     private final AuthenticationManager authenticationManager;

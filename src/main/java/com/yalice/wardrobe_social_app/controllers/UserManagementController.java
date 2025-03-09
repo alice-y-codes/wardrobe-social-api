@@ -1,11 +1,11 @@
 package com.yalice.wardrobe_social_app.controllers;
 
 import com.yalice.wardrobe_social_app.controllers.helpers.UserDtoValidator;
+import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import com.yalice.wardrobe_social_app.dtos.user.UserDto;
 import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.interfaces.UserManagementService;
-import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
-import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
  * Controller responsible for handling user management operations.
  */
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 public class UserManagementController extends ApiBaseController {
 
     private final UserManagementService userManagementService;

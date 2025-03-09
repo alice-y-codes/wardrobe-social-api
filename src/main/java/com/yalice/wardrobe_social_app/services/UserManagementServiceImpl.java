@@ -69,11 +69,15 @@ public class UserManagementServiceImpl extends BaseService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
 
+        logger.info("Found User: ID={} Username={} Email={}", user.getId(), user.getUsername(), user.getEmail());
+
         user.setUsername(userDto.getUsername());
         user.setEmail(userDto.getEmail());
 
         User updatedUser = userRepository.save(user);
         logger.info("User '{}' updated successfully.", updatedUser.getUsername());
+        logger.info("User '{}' updated successfully.", updatedUser.getEmail());
+
 
         return convertToUserResponseDto(updatedUser);
     }
