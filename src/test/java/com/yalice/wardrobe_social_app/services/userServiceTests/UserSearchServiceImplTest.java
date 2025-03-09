@@ -5,6 +5,7 @@ import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.UserNotFoundException;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
 import com.yalice.wardrobe_social_app.services.UserSearchServiceImpl;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -26,11 +27,17 @@ class UserSearchServiceImplTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private DtoConversionService dtoConversionService;
+
     @InjectMocks
     private UserSearchServiceImpl userSearchService;
 
     private User user;
     private UserResponseDto userResponseDto;
+
+    @Mock
+    Page<User> userPage;
 
     @BeforeEach
     void setUp() {
@@ -46,12 +53,14 @@ class UserSearchServiceImplTest {
     @Test
     void testGetUserByUsername_Success() {
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(dtoConversionService.convertToUserResponseDto(user)).thenReturn(userResponseDto);
 
         UserResponseDto response = userSearchService.getUserByUsername("testuser");
 
         assertNotNull(response);
         assertEquals("testuser", response.getUsername());
         verify(userRepository, times(1)).findByUsername("testuser");
+        verify(dtoConversionService, times(1)).convertToUserResponseDto(user);
     }
 
     @Test
@@ -69,12 +78,14 @@ class UserSearchServiceImplTest {
     @Test
     void testGetUserById_Success() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(dtoConversionService.convertToUserResponseDto(user)).thenReturn(userResponseDto);
 
         UserResponseDto response = userSearchService.getUserById(1L);
 
         assertNotNull(response);
         assertEquals("testuser", response.getUsername());
         verify(userRepository, times(1)).findById(1L);
+        verify(dtoConversionService, times(1)).convertToUserResponseDto(user);
     }
 
     @Test
@@ -121,6 +132,12 @@ class UserSearchServiceImplTest {
 
         when(userRepository.findByUsernameContainingIgnoreCase("test")).thenReturn(Arrays.asList(user, user2));
 
+        UserResponseDto userResponseDto1 = new UserResponseDto(user.getId(), user.getUsername(), user.getEmail());
+        UserResponseDto userResponseDto2 = new UserResponseDto(user2.getId(), user2.getUsername(), user2.getEmail());
+
+        when(dtoConversionService.convertToUserResponseDto(user)).thenReturn(userResponseDto1);
+        when(dtoConversionService.convertToUserResponseDto(user2)).thenReturn(userResponseDto2);
+
         List<UserResponseDto> users = userSearchService.searchUsersByUsername("test");
 
         assertNotNull(users);
@@ -128,6 +145,7 @@ class UserSearchServiceImplTest {
         assertEquals("testuser", users.get(0).getUsername());
         assertEquals("testuser2", users.get(1).getUsername());
         verify(userRepository, times(1)).findByUsernameContainingIgnoreCase("test");
+        verify(dtoConversionService, times(2)).convertToUserResponseDto(any(User.class));
     }
 
     @Test
@@ -149,22 +167,27 @@ class UserSearchServiceImplTest {
         user2.setEmail("test2@example.com");
 
         List<User> userList = Arrays.asList(user, user2);
-        Page<User> userPage = new PageImpl<>(userList); // Use PageImpl instead of mocking
+        Page<User> userPage = new PageImpl<>(userList);
 
         when(userRepository.findAll(PageRequest.of(0, 10))).thenReturn(userPage);
+
+        UserResponseDto userResponseDto1 = new UserResponseDto(user.getId(), user.getUsername(), user.getEmail());
+        UserResponseDto userResponseDto2 = new UserResponseDto(user2.getId(), user2.getUsername(), user2.getEmail());
+
+        when(dtoConversionService.convertToUserResponseDto(user)).thenReturn(userResponseDto1);
+        when(dtoConversionService.convertToUserResponseDto(user2)).thenReturn(userResponseDto2);
 
         List<UserResponseDto> users = userSearchService.getAllUsers(0, 10);
 
         assertNotNull(users);
         assertEquals(2, users.size());
-        assertEquals("testuser", users.get(0).getUsername()); // Use get(0) instead of getFirst()
+        assertEquals("testuser", users.get(0).getUsername());
         verify(userRepository, times(1)).findAll(PageRequest.of(0, 10));
+        verify(dtoConversionService, times(2)).convertToUserResponseDto(any(User.class));
     }
-
 
     @Test
     void testGetAllUsers_NoUsers() {
-        Page<User> userPage = mock(Page.class);
         when(userRepository.findAll(PageRequest.of(0, 10))).thenReturn(userPage);
         when(userPage.getContent()).thenReturn(List.of());
 

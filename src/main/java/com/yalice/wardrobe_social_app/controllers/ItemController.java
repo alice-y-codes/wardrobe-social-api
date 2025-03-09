@@ -34,23 +34,29 @@ public class ItemController extends ApiBaseController {
     public ResponseEntity<ApiResponse<ItemResponseDto>> createItem(
             @PathVariable Long wardrobeId,
             @RequestPart("item") ItemDto itemDto,
-            @RequestPart(value = "image", required = false) MultipartFile image) {
+            @RequestPart(value = "image") MultipartFile image) {
 
-        return handleEntityAction(() -> itemService.createItem(getLoggedInUser().getId(), wardrobeId, itemDto, image),
-                "Item created successfully", "Item");
+        if (image == null || image.isEmpty()) {
+            logger.warn("Attempted to create an item without an image for wardrobe ID: {}", wardrobeId);
+            return createBadRequestResponse("Image is required to create an item.");
+        }
+
+        return handleEntityAction(
+                () -> itemService.createItem(getLoggedInUser().getId(), wardrobeId, itemDto, image),
+                "create", "Item", "created");
     }
 
     /**
      * Updates an existing wardrobe item.
      */
-    @PutMapping("/{itemId}")
+    @PatchMapping("/{itemId}")
     public ResponseEntity<ApiResponse<ItemResponseDto>> updateItem(
             @PathVariable Long itemId,
             @RequestPart("item") ItemDto itemDto,
             @RequestPart(value = "image", required = false) MultipartFile image) {
-
-        return handleEntityAction(() -> itemService.updateItem(getLoggedInUser().getId(), itemId, itemDto, image),
-                "Item updated successfully", "Item");
+        return handleEntityAction(
+                () -> itemService.updateItem(getLoggedInUser().getId(), itemId, itemDto, image),
+                "update", "Item", "updated");
     }
 
     /**
@@ -58,8 +64,9 @@ public class ItemController extends ApiBaseController {
      */
     @DeleteMapping("/{itemId}")
     public ResponseEntity<ApiResponse<Void>> deleteItem(@PathVariable Long itemId) {
-        return handleVoidAction(() -> itemService.deleteItem(getLoggedInUser().getId(), itemId),
-                "Item deleted successfully", "Item");
+        return handleVoidAction(
+                () -> itemService.deleteItem(getLoggedInUser().getId(), itemId),
+                "delete", "Item", "deleted");
     }
 
     /**
@@ -67,8 +74,9 @@ public class ItemController extends ApiBaseController {
      */
     @GetMapping("/my-items")
     public ResponseEntity<ApiResponse<List<ItemResponseDto>>> getMyItems() {
-        return handleEntityAction(() -> itemService.getUserItems(getLoggedInUser().getId()),
-                "User items retrieved successfully", "Item");
+        return handleEntityAction(
+                () -> itemService.getUserItems(getLoggedInUser().getId()),
+                "retrieve", "Item", "retrieved");
     }
 
     /**
@@ -76,7 +84,8 @@ public class ItemController extends ApiBaseController {
      */
     @GetMapping("/{itemId}")
     public ResponseEntity<ApiResponse<ItemResponseDto>> getItem(@PathVariable Long itemId) {
-        return handleEntityAction(() -> itemService.getItem(itemId),
-                "Item retrieved successfully", "Item");
+        return handleEntityAction(
+                () -> itemService.getItem(itemId),
+                "retrieve", "Item", "retrieved");
     }
 }

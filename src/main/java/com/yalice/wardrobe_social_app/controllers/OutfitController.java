@@ -36,7 +36,7 @@ public class OutfitController extends ApiBaseController {
             @RequestPart(value = "image", required = false) MultipartFile image) {
 
         return handleEntityAction(() -> outfitService.createOutfit(getLoggedInUser().getId(), outfitDto, image),
-                "Outfit created successfully", "Outfit");
+                "create", "Outfit", "created");
     }
 
     /**
@@ -49,7 +49,7 @@ public class OutfitController extends ApiBaseController {
             @RequestPart(value = "image", required = false) MultipartFile image) {
 
         return handleEntityAction(() -> outfitService.updateOutfit(getLoggedInUser().getId(), outfitId, outfitDto, image),
-                "Outfit updated successfully", "Outfit");
+                "update", "Outfit", "updated");
     }
 
     /**
@@ -58,7 +58,7 @@ public class OutfitController extends ApiBaseController {
     @DeleteMapping("/{outfitId}")
     public ResponseEntity<ApiResponse<Void>> deleteOutfit(@PathVariable Long outfitId) {
         return handleVoidAction(() -> outfitService.deleteOutfit(getLoggedInUser().getId(), outfitId),
-                "Outfit deleted successfully", "Outfit");
+                "delete", "Outfit", "deleted");
     }
 
     /**
@@ -67,7 +67,7 @@ public class OutfitController extends ApiBaseController {
     @GetMapping("/my-outfits")
     public ResponseEntity<ApiResponse<List<OutfitResponseDto>>> getMyOutfits() {
         return handleEntityAction(() -> outfitService.getUserOutfits(getLoggedInUser().getId()),
-                "User outfits retrieved successfully", "Outfit");
+                "retrieve", "Outfit", "retrieved");
     }
 
     /**
@@ -76,7 +76,7 @@ public class OutfitController extends ApiBaseController {
     @GetMapping("/{outfitId}")
     public ResponseEntity<ApiResponse<OutfitResponseDto>> getOutfit(@PathVariable Long outfitId) {
         return handleEntityAction(() -> outfitService.getOutfit(outfitId),
-                "Outfit retrieved successfully", "Outfit");
+                "retrieve", "Outfit", "retrieved");
     }
 
     /**
@@ -85,7 +85,7 @@ public class OutfitController extends ApiBaseController {
     @GetMapping("/users/{userId}")
     public ResponseEntity<ApiResponse<List<OutfitResponseDto>>> getUserOutfits(@PathVariable Long userId) {
         return handleEntityAction(() -> outfitService.getUserOutfits(userId),
-                "User outfits retrieved successfully", "Outfit");
+                "retrieve", "Outfit", "retrieved");
     }
 
     /**
@@ -96,7 +96,7 @@ public class OutfitController extends ApiBaseController {
             @PathVariable Long outfitId, @PathVariable Long itemId) {
 
         return handleEntityAction(() -> outfitService.addItemToOutfit(outfitId, itemId),
-                "Item added to outfit successfully", "Outfit");
+                "add item to", "Outfit", "added to outfit");
     }
 
     /**
@@ -107,15 +107,15 @@ public class OutfitController extends ApiBaseController {
             @PathVariable Long outfitId, @PathVariable Long itemId) {
 
         return handleEntityAction(() -> outfitService.removeItemFromOutfit(outfitId, itemId),
-                "Item removed from outfit successfully", "Outfit");
+                "remove item from", "Outfit", "removed from outfit");
     }
 
-//    /**
-//     * Retrieves outfits by season.
-//     */
-//    @GetMapping("/season/{season}")
-//    public ResponseEntity<ApiResponse<List<OutfitResponseDto>>> getOutfitsBySeason(@PathVariable String season) {
-//        return handleEntityAction(() -> outfitService.getOutfitsBySeason(getLoggedInUser().getId(), season),
-//                "Outfits filtered by season retrieved successfully");
-//    }
+    //    /**
+    //     * Retrieves outfits by season.
+    //     */
+    //     @GetMapping("/season/{season}")
+    //     public ResponseEntity<ApiResponse<List<OutfitResponseDto>>> getOutfitsBySeason(@PathVariable String season) {
+    //         return handleEntityAction(() -> outfitService.getOutfitsBySeason(getLoggedInUser().getId(), season),
+    //                 "Outfits filtered by season retrieved successfully");
+    //     }
 }

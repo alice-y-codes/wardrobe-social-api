@@ -36,7 +36,7 @@ public class FriendshipController extends ApiBaseController {
     @PostMapping("/requests")
     public ResponseEntity<ApiResponse<FriendRequestDto>> sendFriendRequest(@RequestParam Long recipientId) {
         return handleEntityAction(() -> friendService.sendFriendRequest(getLoggedInUser().getId(), recipientId),
-                "send", "friend request");
+                "send", "friend request", "sent");
     }
 
     /**
@@ -48,7 +48,7 @@ public class FriendshipController extends ApiBaseController {
     @PostMapping("/requests/{requestId}/accept")
     public ResponseEntity<ApiResponse<FriendResponseDto>> acceptFriendRequest(@PathVariable Long requestId) {
         return handleEntityAction(() -> friendService.acceptFriendRequest(getLoggedInUser().getId(), requestId),
-                "accept", "friend request");
+                "accept", "friend request", "accepted");
     }
 
     /**
@@ -62,7 +62,7 @@ public class FriendshipController extends ApiBaseController {
         return handleEntityAction(() -> {
             friendService.rejectFriendRequest(getLoggedInUser().getId(), requestId);
             return null; // No result needed for rejection
-        }, "reject", "friend request");
+        }, "reject", "friend request", "rejected");
     }
 
     /**
@@ -73,7 +73,7 @@ public class FriendshipController extends ApiBaseController {
     @GetMapping("/requests/pending")
     public ResponseEntity<ApiResponse<List<FriendRequestDto>>> getPendingFriendRequests() {
         return handleEntityAction(() -> friendService.getPendingFriendRequests(getLoggedInUser().getId()),
-                "retrieve", "pending friend requests");
+                "retrieve", "pending friend requests", "retrieved");
     }
 
     /**
@@ -84,6 +84,6 @@ public class FriendshipController extends ApiBaseController {
     @GetMapping("/friends")
     public ResponseEntity<ApiResponse<List<FriendResponseDto>>> getFriends() {
         return handleEntityAction(() -> friendService.getFriends(getLoggedInUser().getId()),
-                "retrieve", "friends");
+                "retrieve", "friends", "retrieved");
     }
 }

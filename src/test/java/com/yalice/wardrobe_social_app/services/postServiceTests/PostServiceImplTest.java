@@ -11,6 +11,7 @@ import com.yalice.wardrobe_social_app.interfaces.ProfileService;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.PostServiceImpl;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import com.yalice.wardrobe_social_app.services.helpers.PostServiceHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,9 @@ class PostServiceImplTest {
 
     @Mock
     private OutfitService outfitService;
+
+    @Mock
+    private DtoConversionService dtoConversionService;
 
     @Mock
     private PostServiceHelper postServiceHelper;
@@ -104,6 +108,14 @@ class PostServiceImplTest {
         when(outfitService.getOutfitEntityById(outfitId)).thenReturn(outfit);
         when(postRepository.save(any(Post.class))).thenReturn(post);
 
+        PostResponseDto mockPostResponseDto = new PostResponseDto();
+        mockPostResponseDto.setId(postId);
+        mockPostResponseDto.setContent("Test Content");
+        mockPostResponseDto.setTitle("Test Title");
+        mockPostResponseDto.setVisibility("PUBLIC");
+
+        when(dtoConversionService.convertToPostResponseDto(any(Post.class))).thenReturn(mockPostResponseDto);
+
         PostResponseDto postResponseDto = postService.createPost(profileId, postDto);
 
         assertNotNull(postResponseDto);
@@ -136,16 +148,38 @@ class PostServiceImplTest {
 
     @Test
     void testGetPost_Success() {
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-        when(postServiceHelper.isPostAccessibleToUser(post, profileId)).thenReturn(true);
+        // Setup mock Post entity
+        Post mockPost = new Post();
+        mockPost.setId(postId);
+        mockPost.setContent("This is a post content");
+        mockPost.setTitle("Post Title");
+
+        // Create the expected PostResponseDto
+        PostResponseDto mockPostResponseDto = new PostResponseDto();
+        mockPostResponseDto.setId(postId);
+        mockPostResponseDto.setContent("This is a post content");
+        mockPostResponseDto.setTitle("Post Title");
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(mockPost));
+
+
+        when(postServiceHelper.isPostAccessibleToUser(mockPost, profileId)).thenReturn(true);
+
+
+        when(dtoConversionService.convertToPostResponseDto(mockPost)).thenReturn(mockPostResponseDto);
 
         PostResponseDto postResponseDto = postService.getPost(postId, profileId);
 
+        // Verify the result
         assertNotNull(postResponseDto);
         assertEquals(postId, postResponseDto.getId());
+        assertEquals("This is a post content", postResponseDto.getContent());
+        assertEquals("Post Title", postResponseDto.getTitle());
 
         verify(postRepository, times(1)).findById(postId);
+        verify(postServiceHelper, times(1)).isPostAccessibleToUser(mockPost, profileId);
     }
+
 
     @Test
     void testGetPost_PostNotFound() {
@@ -168,15 +202,29 @@ class PostServiceImplTest {
 
     @Test
     void testUpdatePost_Success() {
+        // Setup: Create mock DTO and entities
         PostDto updateDto = new PostDto();
         updateDto.setContent("Updated Content");
         updateDto.setVisibility("PRIVATE");
         updateDto.setOutfitId(outfitId);
 
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        Post mockPost = new Post();
+        mockPost.setId(postId);
+        mockPost.setProfile(profile);
+        mockPost.setContent("Original Content");
+        mockPost.setVisibility(Post.PostVisibility.PUBLIC);
+        mockPost.setOutfit(outfit);
+
+        PostResponseDto mockPostResponseDto = new PostResponseDto();
+        mockPostResponseDto.setContent("Updated Content");
+        mockPostResponseDto.setVisibility("PRIVATE");
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(mockPost));
         when(profileService.getProfileEntityById(profileId)).thenReturn(profile);
         when(outfitService.getOutfitEntityById(outfitId)).thenReturn(outfit);
-        when(postRepository.saveAndFlush(any(Post.class))).thenReturn(post);
+        when(postRepository.saveAndFlush(any(Post.class))).thenReturn(mockPost);
+        when(dtoConversionService.convertToPostResponseDto(any(Post.class))).thenReturn(mockPostResponseDto);
+
 
         PostResponseDto updatedPost = postService.updatePost(postId, profileId, updateDto);
 
@@ -186,6 +234,7 @@ class PostServiceImplTest {
 
         verify(postRepository, times(1)).saveAndFlush(any(Post.class));
     }
+
 
     @Test
     void testUpdatePost_NotAuthorized() {

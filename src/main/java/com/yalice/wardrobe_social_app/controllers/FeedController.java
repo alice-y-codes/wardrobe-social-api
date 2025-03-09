@@ -42,9 +42,9 @@ public class FeedController extends ApiBaseController {
     public ResponseEntity<ApiResponse<List<FeedItemResponseDto>>> getFeed(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return handleEntityAction(
+        return handleEntityRetrieval(
                 () -> feedService.getFeed(getLoggedInUser().getId(), page, size),
-                "retrieve feed", "Feed"
+                "Feed"
         );
     }
 
@@ -61,9 +61,9 @@ public class FeedController extends ApiBaseController {
             @PathVariable String season,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return handleEntityAction(
+        return handleEntityRetrieval(
                 () -> feedService.getFeedBySeason(getLoggedInUser().getId(), season, page, size),
-                "retrieve seasonal feed", "Feed By Season"
+                "Feed By Season"
         );
     }
 
@@ -80,9 +80,9 @@ public class FeedController extends ApiBaseController {
             @PathVariable String category,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return handleEntityAction(
+        return handleEntityRetrieval(
                 () -> feedService.getFeedByCategory(getLoggedInUser().getId(), category, page, size),
-                "retrieve category feed", "Feed By Category"
+                 "Feed By Category"
         );
     }
 
@@ -96,8 +96,12 @@ public class FeedController extends ApiBaseController {
     @GetMapping("/users/{userId}/posts")
     public ResponseEntity<ApiResponse<Page<Post>>> getUserPosts(@PathVariable Long userId,
                                                                 @PageableDefault(size = 20) Pageable pageable) {
-        User currentUser = getLoggedInUser();
-        Page<Post> posts = feedService.getUserPosts(userId, currentUser.getId(), pageable);
-        return ResponseEntity.ok(new ApiResponse<>(true, "User posts retrieved successfully", posts));
+
+        return handleEntityRetrieval(
+                () -> {
+                    User currentUser = getLoggedInUser();
+                    return feedService.getUserPosts(userId, currentUser.getId(), pageable);}, "User posts"
+        );
+
     }
 }

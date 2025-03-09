@@ -1,6 +1,5 @@
 package com.yalice.wardrobe_social_app.services.helpers;
 
-import com.yalice.wardrobe_social_app.dtos.profile.ProfileResponseDto;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.Profile;
 import com.yalice.wardrobe_social_app.interfaces.FriendService;

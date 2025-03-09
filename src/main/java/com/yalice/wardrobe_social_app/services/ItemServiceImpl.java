@@ -11,6 +11,7 @@ import com.yalice.wardrobe_social_app.repositories.ItemRepository;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import com.yalice.wardrobe_social_app.repositories.WardrobeRepository;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,12 +25,15 @@ public class ItemServiceImpl extends BaseService implements ItemService {
     private final ItemRepository itemRepository;
     private final ProfileRepository profileRepository;
     private final WardrobeRepository wardrobeRepository;
+    private final DtoConversionService dtoConversionService;
 
-    public ItemServiceImpl(ItemRepository itemRepository, ProfileRepository profileRepository,
-                           WardrobeRepository wardrobeRepository) {
+    public ItemServiceImpl(ItemRepository itemRepository,
+                           ProfileRepository profileRepository,
+                           WardrobeRepository wardrobeRepository, DtoConversionService dtoConversionService) {
         this.itemRepository = itemRepository;
         this.profileRepository = profileRepository;
         this.wardrobeRepository = wardrobeRepository;
+        this.dtoConversionService = dtoConversionService;
     }
 
     @Override
@@ -71,7 +75,7 @@ public class ItemServiceImpl extends BaseService implements ItemService {
 
         // Save the item and return response DTO
         item = itemRepository.save(item);
-        return convertToItemResponseDto(item);
+        return dtoConversionService.convertToItemResponseDto(item);
     }
 
     @Override
@@ -107,7 +111,7 @@ public class ItemServiceImpl extends BaseService implements ItemService {
 
         // Save the updated item and return response DTO
         itemRepository.saveAndFlush(existingItem);
-        return convertToItemResponseDto(existingItem);
+        return dtoConversionService.convertToItemResponseDto(existingItem);
     }
 
     @Override
@@ -138,7 +142,7 @@ public class ItemServiceImpl extends BaseService implements ItemService {
 
         List<Item> items = itemRepository.findAllByWardrobeId(wardrobe.getId());
         return items.stream()
-                .map(this::convertToItemResponseDto)
+                .map(dtoConversionService::convertToItemResponseDto)
                 .collect(Collectors.toList());
     }
 
@@ -149,7 +153,7 @@ public class ItemServiceImpl extends BaseService implements ItemService {
         Item item = itemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found with ID " + id));
 
-        return convertToItemResponseDto(item);
+        return dtoConversionService.convertToItemResponseDto(item);
     }
 
     @Override
@@ -159,7 +163,7 @@ public class ItemServiceImpl extends BaseService implements ItemService {
         Item item = itemRepository.findByName(itemName)
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found with name " + itemName));
 
-        return convertToItemResponseDto(item);
+        return dtoConversionService.convertToItemResponseDto(item);
     }
 
     @Override

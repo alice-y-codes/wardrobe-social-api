@@ -13,7 +13,8 @@ import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Base controller class that provides common functionality for all API controllers.
+ * Base controller class that provides common functionality for all API
+ * controllers.
  */
 @RestController
 public abstract class ApiBaseController {
@@ -28,45 +29,45 @@ public abstract class ApiBaseController {
         return authUtils.getCurrentUserOrElseThrow();
     }
 
-    // ========== CREATE ==========
-    protected <T> ResponseEntity<ApiResponse<T>> handleEntityCreation(EntitySupplier<T> supplier, String entityName) {
-        return handleEntityAction(supplier, "create", entityName);
-    }
-
-    // ========== READ ==========
-    protected <T> ResponseEntity<ApiResponse<T>> handleEntityRetrieval(EntitySupplier<T> supplier, String entityName) {
-        return handleEntityAction(supplier, "retrieve", entityName);
-    }
-
-    // ========== UPDATE ==========
-    protected <T> ResponseEntity<ApiResponse<T>> handleEntityUpdate(EntitySupplier<T> supplier, String entityName) {
-        return handleEntityAction(supplier, "update", entityName);
-    }
-
-    // ========== DELETE ==========
-    protected ResponseEntity<ApiResponse<Void>> handleEntityDeletion(VoidSupplier supplier, String entityName) {
-        return handleVoidAction(supplier, "delete", entityName);
-    }
-
     // ========== GENERIC HANDLERS ==========
-    protected ResponseEntity<ApiResponse<Void>> handleVoidAction(VoidSupplier supplier, String action, String entityName) {
+    protected ResponseEntity<ApiResponse<Void>> handleVoidAction(VoidSupplier supplier, String action,
+            String entityName, String pastAction) {
         try {
             supplier.execute();
-            logger.info("Successfully {}d {}", action, entityName);
-            return createSuccessResponse(entityName + " " + action + "d successfully", null);
+            logger.info("Successfully {} {}", action, entityName);
+            return createSuccessResponse(entityName + " " + pastAction + " successfully", null);
+        } catch (ResourceNotFoundException e) {
+            logger.error("Resource not found while trying to {} {}: {}", action, entityName, e.getMessage());
+            return createNotFoundResponse(e.getMessage());
+        } catch (SecurityException e) {
+            logger.error("Security exception while trying to {} {}: {}", action, entityName, e.getMessage());
+            return createUnauthorizedResponse(e.getMessage());
         } catch (Exception e) {
-            return handleServiceError(e, action + " " + entityName);
+            logger.error("Failed to {} {}: {}", action, entityName, e.getMessage(), e);
+            return createInternalServerErrorResponse("Failed to " + action + " " + entityName);
         }
     }
 
-    protected <T> ResponseEntity<ApiResponse<T>> handleEntityAction(EntitySupplier<T> supplier, String action, String entityName) {
+    protected <T> ResponseEntity<ApiResponse<T>> handleEntityAction(EntitySupplier<T> supplier, String action,
+            String entityName, String pastAction) {
         try {
             T result = supplier.get();
             logger.info("Successfully {}d {}: {}", action, entityName, result);
-            return createSuccessResponse(entityName + " " + action + "d successfully", result);
+            return createSuccessResponse(entityName + " " + pastAction + " successfully", result);
+        } catch (ResourceNotFoundException e) {
+            logger.error("Resource not found while trying to {} {}: {}", action, entityName, e.getMessage());
+            return createNotFoundResponse(e.getMessage());
+        } catch (SecurityException e) {
+            logger.error("Security exception while trying to {} {}: {}", action, entityName, e.getMessage());
+            return createUnauthorizedResponse(e.getMessage());
         } catch (Exception e) {
-            return handleServiceError(e, action + " " + entityName);
+            logger.error("Failed to {} {}: {}", action, entityName, e.getMessage(), e);
+            return createInternalServerErrorResponse("Failed to " + action + " " + entityName);
         }
+    }
+
+    protected <T> ResponseEntity<ApiResponse<T>> handleEntityRetrieval(EntitySupplier<T> supplier, String entityName) {
+        return handleEntityAction(supplier, "retrieve", entityName, "retrieved");
     }
 
     // ========== RESPONSE HELPERS ==========
@@ -95,10 +96,10 @@ public abstract class ApiBaseController {
     protected <T> ResponseEntity<ApiResponse<T>> createInternalServerErrorResponse(String message) {
         return createErrorResponse(message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
     protected <T> ResponseEntity<ApiResponse<T>> createUnauthorizedResponse(String message) {
         return createErrorResponse(message, HttpStatus.UNAUTHORIZED);
     }
-
 
     // ========== ERROR HANDLING ==========
     protected <T> ResponseEntity<ApiResponse<T>> handleValidationErrors(BindingResult result) {
@@ -106,7 +107,6 @@ public abstract class ApiBaseController {
         for (ObjectError error : result.getAllErrors()) {
             errorMessage.append(error.getDefaultMessage()).append("; ");
         }
-
         logger.warn("Validation failed: {}", errorMessage);
         return createBadRequestResponse(errorMessage.toString());
     }
@@ -116,8 +116,11 @@ public abstract class ApiBaseController {
         return createNotFoundResponse("Resource not found: " + e.getMessage());
     }
 
-    protected <T> ResponseEntity<ApiResponse<T>> handleServiceError(Exception e, String action) {
-        logger.error("Failed to {}: {}", action, e.getMessage(), e); // ERROR log for unexpected failures
+    protected <T> ResponseEntity<ApiResponse<T>> handleServiceError(Exception e, String action) throws Exception {
+        logger.error("Failed to {}: {}", action, e.getMessage(), e);
+        if (e instanceof ResourceNotFoundException || e instanceof SecurityException) {
+            throw e;
+        }
         return createInternalServerErrorResponse("Failed to " + action);
     }
 
@@ -128,8 +131,10 @@ public abstract class ApiBaseController {
     }
 
     protected <T> ResponseEntity<ApiResponse<T>> handleUnauthorizedAccess(Long userId, String action) {
-        logger.warn("Unauthorized attempt to {}. Current user ID: {}, Target user ID: {}", action, getLoggedInUser().getId(), userId);
-        return createForbiddenResponse("You can only " + action + " your own account");
+        logger.warn("Unauthorized attempt to {}. Current user ID: {}, Target user ID: {}", action,
+                getLoggedInUser().getId(), userId);
+        return createForbiddenResponse("You do not have permission to " + action + " this resource.");
+
     }
 
     // ========== FUNCTIONAL INTERFACES ==========

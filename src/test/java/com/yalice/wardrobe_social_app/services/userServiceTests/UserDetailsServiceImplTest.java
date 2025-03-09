@@ -3,6 +3,7 @@ package com.yalice.wardrobe_social_app.services.userServiceTests;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
 import com.yalice.wardrobe_social_app.services.UserDetailsServiceImpl;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -18,6 +19,9 @@ class UserDetailsServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private DtoConversionService dtoConversionService;
 
     @InjectMocks
     private UserDetailsServiceImpl userDetailsService;

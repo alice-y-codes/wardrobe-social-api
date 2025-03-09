@@ -13,10 +13,16 @@ import com.yalice.wardrobe_social_app.repositories.ItemRepository;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import com.yalice.wardrobe_social_app.repositories.WardrobeRepository;
 import com.yalice.wardrobe_social_app.services.ProfileServiceImpl;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -37,6 +43,9 @@ class ProfileServiceImplTest {
 
     @Mock
     private FriendService friendService;
+
+    @Mock
+    private DtoConversionService dtoConversionService;
 
     @InjectMocks
     private ProfileServiceImpl profileService;
@@ -67,10 +76,18 @@ class ProfileServiceImplTest {
 
         when(profileRepository.findByUserId(userId)).thenReturn(java.util.Optional.of(profile));
 
+        ProfileResponseDto profileResponseDto = new ProfileResponseDto();
+        profileResponseDto.setId(profileId);
+        profileResponseDto.setUserId(userId);
+        profileResponseDto.setBio("New Bio");
+        profileResponseDto.setLocation("New Location");
+        when(dtoConversionService.convertToProfileResponseDto(profile)).thenReturn(profileResponseDto);
+
         ProfileResponseDto profileResponse = profileService.getProfile(userId);
 
         assertNotNull(profileResponse);
         assertEquals(userId, profileResponse.getUserId());
+        verify(dtoConversionService, times(1)).convertToProfileResponseDto(profile);
     }
 
     @Test
@@ -83,6 +100,7 @@ class ProfileServiceImplTest {
         assertEquals("Profile not found with userId: " + userId, exception.getMessage());
     }
 
+
     @Test
     void testUpdateProfile() {
         // Mock existing profile
@@ -92,14 +110,47 @@ class ProfileServiceImplTest {
         profile.getUser().setId(userId);
         profile.setBio("Old Bio");
 
-        when(profileRepository.findByUserId(userId)).thenReturn(java.util.Optional.of(profile));
-        when(profileRepository.save(any(Profile.class))).thenReturn(profile);
+        // Mock the profileRepository to return the existing profile
+        when(profileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
 
+        // Create a ProfileDto with the new bio (data from the user request)
+        ProfileDto profileDto = new ProfileDto();
+        profileDto.setBio("New Bio");
+
+        // Mock Image as MultipartFile (empty byte array in this case)
+        MockMultipartFile image = new MockMultipartFile("image", "profile.jpg", "image/jpeg", new byte[]{});
+
+        // Mock the saveAndFlush to simulate saving the updated profile
+        // Ensure bio is updated in the mocked profile
+        profile.setBio("New Bio");
+        when(profileRepository.saveAndFlush(any(Profile.class))).thenReturn(profile);
+
+        // Create a mock ProfileResponseDto with the updated bio
+        ProfileResponseDto profileResponseDto = new ProfileResponseDto();
+        profileResponseDto.setId(profileId);
+        profileResponseDto.setUserId(userId);
+        profileResponseDto.setBio("New Bio");
+
+        // Mock dtoConversionService to return the mock ProfileResponseDto
+        when(dtoConversionService.convertToProfileResponseDto(any(Profile.class))).thenReturn(profileResponseDto);
+
+        // Call the method under test
         ProfileResponseDto updatedProfile = profileService.updateProfile(userId, profileDto, image);
 
-        assertNotNull(updatedProfile);
-        assertEquals("New Bio", updatedProfile.getBio());
+        // Debugging output to check the result
+        System.out.println("Updated Profile: " + updatedProfile);  // Debug print to check the returned value
+
+        // Assert the result is not null and matches the expected updated bio
+        assertNotNull(updatedProfile, "Updated profile should not be null");
+        assertEquals("New Bio", updatedProfile.getBio(), "Bio should be updated to 'New Bio'");
+
+        // Verify that saveAndFlush was called once to save the updated profile
+        verify(profileRepository, times(1)).saveAndFlush(any(Profile.class));
+
+        // Verify that dtoConversionService was called to convert the profile to ProfileResponseDto
+        verify(dtoConversionService, times(1)).convertToProfileResponseDto(any(Profile.class));
     }
+
 
     @Test
     void testUpdateProfileNotFound() {
@@ -121,13 +172,26 @@ class ProfileServiceImplTest {
         profile.setVisibility(Profile.ProfileVisibility.PRIVATE);
 
         when(profileRepository.findByUserId(userId)).thenReturn(java.util.Optional.of(profile));
-        when(profileRepository.save(any(Profile.class))).thenReturn(profile);
+        when(profileRepository.saveAndFlush(any(Profile.class))).thenReturn(profile);
 
+        ProfileResponseDto profileResponseDto = new ProfileResponseDto();
+        profileResponseDto.setId(profileId);
+        profileResponseDto.setUserId(userId);
+        profileResponseDto.setBio("New Bio");
+        profileResponseDto.setLocation("New Location");
+        profileResponseDto.setPublic(true);
+
+
+        when(dtoConversionService.convertToProfileResponseDto(profile)).thenReturn(profileResponseDto);
+
+        // Perform the test
         ProfileResponseDto updatedProfile = profileService.updateProfileVisibility(userId, true);
 
         assertNotNull(updatedProfile);
         assertTrue(updatedProfile.isPublic());
+        verify(dtoConversionService, times(1)).convertToProfileResponseDto(profile);
     }
+
 
     @Test
     void testIsProfileAccessibleToUser() {
@@ -154,11 +218,14 @@ class ProfileServiceImplTest {
         profile.getUser().setId(userId);
         profile.setVisibility(Profile.ProfileVisibility.PRIVATE);
 
-        when(profileRepository.findByUserId(userId)).thenReturn(java.util.Optional.of(profile));
-        when(friendService.areFriends(anyLong(), anyLong())).thenReturn(false);
+        Long viewerId = 2L;  // Mock viewer ID that is different from the profile's user
+
+        when(profileRepository.findByUserId(profileId)).thenReturn(Optional.of(profile));
+        when(friendService.areFriends(profileId, viewerId)).thenReturn(false);
 
         boolean isAccessible = profileService.isProfileAccessibleToUser(profileId, viewerId);
-        assertFalse(isAccessible);
+
+        assertFalse(isAccessible, "Profile should not be accessible when private and not friends.");
     }
 
     @Test

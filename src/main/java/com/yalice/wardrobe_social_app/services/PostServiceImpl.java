@@ -15,6 +15,7 @@ import com.yalice.wardrobe_social_app.interfaces.ProfileService;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import com.yalice.wardrobe_social_app.services.helpers.PostServiceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,18 +33,20 @@ public class PostServiceImpl extends BaseService implements PostService {
     private final ProfileService profileService;
     private final OutfitService outfitService;
     private final PostServiceHelper postServiceHelper;
+    private final DtoConversionService dtoConversionService;
 
     @Autowired
     public PostServiceImpl(PostRepository postRepository,
                            LikeRepository likeRepository,
                            ProfileService profileService,
                            OutfitService outfitService,
-                           PostServiceHelper postServiceHelper) {
+                           PostServiceHelper postServiceHelper, DtoConversionService dtoConversionService) {
         this.postRepository = postRepository;
         this.likeRepository = likeRepository;
         this.profileService = profileService;
         this.outfitService = outfitService;
         this.postServiceHelper = postServiceHelper;
+        this.dtoConversionService = dtoConversionService;
     }
 
     @Override
@@ -74,7 +77,7 @@ public class PostServiceImpl extends BaseService implements PostService {
         post = postRepository.save(post);
         logger.info("Post created successfully with ID: {}", post.getId());
 
-        return convertToPostResponseDto(post);
+        return dtoConversionService.convertToPostResponseDto(post);
     }
 
     @Override
@@ -92,7 +95,7 @@ public class PostServiceImpl extends BaseService implements PostService {
             throw new PostAccessException("Post is not accessible to the viewer");
         }
 
-        return convertToPostResponseDto(post);
+        return dtoConversionService.convertToPostResponseDto(post);
     }
 
     @Override
@@ -125,7 +128,7 @@ public class PostServiceImpl extends BaseService implements PostService {
         Post updatedPost = postRepository.saveAndFlush(existingPost);
         logger.info("Post updated successfully with ID: {}", updatedPost.getId());
 
-        return convertToPostResponseDto(updatedPost);
+        return dtoConversionService.convertToPostResponseDto(updatedPost);
     }
 
     @Override

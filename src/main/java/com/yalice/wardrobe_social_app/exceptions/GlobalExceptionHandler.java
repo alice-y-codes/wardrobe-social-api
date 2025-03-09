@@ -11,6 +11,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +23,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UserRegistrationException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleUserRegistrationException(
             final UserRegistrationException e) {
-        HttpStatus status = "Username already taken".equals(e.getMessage()) ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST;
+        HttpStatus status = "Username already taken".equals(e.getMessage()) ? HttpStatus.CONFLICT
+                : HttpStatus.BAD_REQUEST;
         Map<String, String> errorResponse = Map.of("message", e.getMessage());
         ApiResponse<Map<String, String>> apiResponse = new ApiResponse<>(false, e.getMessage(), errorResponse);
         return ResponseEntity.status(status).body(apiResponse);
@@ -70,7 +72,8 @@ public class GlobalExceptionHandler {
             final MethodArgumentTypeMismatchException ex) {
         Map<String, String> errorResponse = Map.of(
                 "message", "Invalid parameter type",
-                "details", "Parameter '" + ex.getName() + "' should be of type " + ex.getRequiredType().getSimpleName());
+                "details",
+                "Parameter '" + ex.getName() + "' should be of type " + ex.getRequiredType().getSimpleName());
         ApiResponse<Map<String, String>> apiResponse = new ApiResponse<>(false, "Bad request", errorResponse);
         return ResponseEntity.badRequest().body(apiResponse);
     }
@@ -80,7 +83,8 @@ public class GlobalExceptionHandler {
             final MissingServletRequestParameterException ex) {
         Map<String, String> errorResponse = Map.of(
                 "message", "Missing required parameter",
-                "details", "Parameter '" + ex.getParameterName() + "' of type " + ex.getParameterType() + " is required");
+                "details",
+                "Parameter '" + ex.getParameterName() + "' of type " + ex.getParameterType() + " is required");
         ApiResponse<Map<String, String>> apiResponse = new ApiResponse<>(false, "Bad request", errorResponse);
         return ResponseEntity.badRequest().body(apiResponse);
     }
@@ -94,7 +98,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+    public ResponseEntity<ApiResponse<Map<String, String>>> handleResourceNotFoundException(
+            ResourceNotFoundException ex) {
         Map<String, String> errorResponse = Map.of("message", "Resource not found", "details", ex.getMessage());
         ApiResponse<Map<String, String>> apiResponse = new ApiResponse<>(false, "Not Found", errorResponse);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(apiResponse);
@@ -104,6 +109,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<String>> handleUnauthorizedAccess(UnauthorizedAccessException ex) {
         ApiResponse<String> apiResponse = new ApiResponse<>(false, ex.getMessage(), ex.getMessage());
         return new ResponseEntity<>(apiResponse, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<ApiResponse<String>> handleSecurityException(SecurityException ex) {
+        ApiResponse<String> apiResponse = new ApiResponse<>(false, ex.getMessage(), ex.getMessage());
+        return new ResponseEntity<>(apiResponse, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<String> handleMissingPartException(MissingServletRequestPartException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing required file: " + ex.getRequestPartName());
     }
 
     @ExceptionHandler(Exception.class)

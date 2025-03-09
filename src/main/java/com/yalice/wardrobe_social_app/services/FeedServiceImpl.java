@@ -10,6 +10,7 @@ import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,13 +25,19 @@ public class FeedServiceImpl extends BaseService implements FeedService {
         private final PostRepository postRepository;
         private final FriendService friendService;
         private final UserSearchService userSearchService;
+        private final DtoConversionService dtoConversionService;
 
         @Autowired
-        public FeedServiceImpl(PostRepository postRepository, FriendService friendService,
-                               UserSearchService userSearchService) {
+        public FeedServiceImpl(
+                PostRepository postRepository,
+                FriendService friendService,
+                UserSearchService userSearchService,
+                DtoConversionService dtoConversionService)
+        {
                 this.postRepository = postRepository;
                 this.friendService = friendService;
                 this.userSearchService = userSearchService;
+                this.dtoConversionService = dtoConversionService;
         }
 
         // Helper method to get friendIds for a user
@@ -93,10 +100,9 @@ public class FeedServiceImpl extends BaseService implements FeedService {
                 }
         }
 
-        // Helper method to convert posts to FeedItemResponseDto
         private List<FeedItemResponseDto> convertPostsToFeedItems(Page<Post> posts) {
                 return posts.getContent().stream()
-                        .map(this::convertToFeedItemDto)
+                        .map(dtoConversionService::convertToFeedItemResponseDto)
                         .collect(Collectors.toList());
         }
 }

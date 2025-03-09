@@ -7,6 +7,7 @@ import com.yalice.wardrobe_social_app.exceptions.UserNotFoundException;
 import com.yalice.wardrobe_social_app.exceptions.UsernameAlreadyExistsException;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
 import com.yalice.wardrobe_social_app.services.UserManagementServiceImpl;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -28,6 +29,9 @@ class UserManagementServiceImplTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private DtoConversionService dtoConversionService;
+
     @InjectMocks
     private UserManagementServiceImpl userManagementService;
 
@@ -47,16 +51,32 @@ class UserManagementServiceImplTest {
 
     @Test
     void testRegisterUser_Success() {
+        // Stub the user repository to return an empty Optional when checking if the username exists
+        UserResponseDto mockUserResponseDto = new UserResponseDto(user.getId(), user.getUsername(), user.getEmail());
+
         when(userRepository.findByUsername(userDto.getUsername())).thenReturn(Optional.empty());
+
+        // Stub the password encoder to return the encoded password
         when(passwordEncoder.encode(userDto.getPassword())).thenReturn("encodedpassword");
+
+        // Stub the user repository to save the user and return the saved user object
         when(userRepository.save(any(User.class))).thenReturn(user);
 
+        // Stub the conversion service to return the userResponseDto when converting the user
+        when(dtoConversionService.convertToUserResponseDto(any(User.class))).thenReturn(mockUserResponseDto);
+
+        // Call the method to register the user
         UserResponseDto userResponseDto = userManagementService.registerUser(userDto);
 
+        // Assert that the result is not null and the expected username matches
         assertNotNull(userResponseDto);
         assertEquals("testuser", userResponseDto.getUsername());
+
+        // Verify that the user was saved and the conversion service was called
         verify(userRepository, times(1)).save(any(User.class));
+        verify(dtoConversionService, times(1)).convertToUserResponseDto(any(User.class));
     }
+
 
     @Test
     void testRegisterUser_UsernameAlreadyExists() {
@@ -78,8 +98,12 @@ class UserManagementServiceImplTest {
         existingUser.setUsername("oldusername");
         existingUser.setEmail("oldemail@example.com");
 
+        UserResponseDto mockUserResponseDto = new UserResponseDto(user.getId(), "newusername", "newemail@example.com");
+
         when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(dtoConversionService.convertToUserResponseDto(any(User.class))).thenReturn(mockUserResponseDto);
 
         UserDto updatedUserDto = new UserDto("newusername", "newpassword", "newemail@example.com");
 

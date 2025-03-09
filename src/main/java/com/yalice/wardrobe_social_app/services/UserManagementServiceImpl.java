@@ -7,6 +7,7 @@ import com.yalice.wardrobe_social_app.exceptions.UserNotFoundException;
 import com.yalice.wardrobe_social_app.exceptions.UsernameAlreadyExistsException;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ public class UserManagementServiceImpl extends BaseService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final DtoConversionService dtoConversionService;
 
     /**
      * Constructor to inject the UserRepository and PasswordEncoder dependencies.
@@ -27,9 +29,10 @@ public class UserManagementServiceImpl extends BaseService {
      * @param userRepository The repository for interacting with user data.
      * @param passwordEncoder The encoder used for hashing passwords.
      */
-    public UserManagementServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserManagementServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, DtoConversionService dtoConversionService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.dtoConversionService = dtoConversionService;
     }
 
     /**
@@ -53,7 +56,7 @@ public class UserManagementServiceImpl extends BaseService {
         User savedUser = userRepository.save(user);
         logger.info("User '{}' registered successfully.", savedUser.getUsername());
 
-        return convertToUserResponseDto(savedUser);
+        return dtoConversionService.convertToUserResponseDto(savedUser);
     }
 
     /**
@@ -79,7 +82,7 @@ public class UserManagementServiceImpl extends BaseService {
         logger.info("User '{}' updated successfully.", updatedUser.getEmail());
 
 
-        return convertToUserResponseDto(updatedUser);
+        return dtoConversionService.convertToUserResponseDto(updatedUser);
     }
 
     /**

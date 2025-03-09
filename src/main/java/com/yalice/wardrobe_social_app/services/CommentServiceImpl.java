@@ -11,6 +11,7 @@ import com.yalice.wardrobe_social_app.interfaces.ProfileService;
 import com.yalice.wardrobe_social_app.repositories.CommentRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,13 +25,18 @@ public class CommentServiceImpl extends BaseService implements CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final ProfileService profileService;
+    private final DtoConversionService dtoConversionService;
 
     @Autowired
-    public CommentServiceImpl(CommentRepository commentRepository, PostRepository postRepository,
-            ProfileService profileService) {
+    public CommentServiceImpl(
+            CommentRepository commentRepository,
+            PostRepository postRepository,
+            ProfileService profileService,
+            DtoConversionService dtoConversionService) {
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
         this.profileService = profileService;
+        this.dtoConversionService = dtoConversionService;
     }
 
     @Override
@@ -54,7 +60,7 @@ public class CommentServiceImpl extends BaseService implements CommentService {
         Comment savedComment = commentRepository.save(comment);
         logger.info("Comment created successfully with ID: {} on post ID: {}", savedComment.getId(), postId);
 
-        return convertToCommentResponseDto(savedComment);
+        return dtoConversionService.convertToCommentResponseDto(savedComment);
     }
 
     @Override
@@ -70,10 +76,10 @@ public class CommentServiceImpl extends BaseService implements CommentService {
         }
 
         comment.setContent(commentDto.getContent());
-        Comment updatedComment = commentRepository.save(comment);
+        Comment updatedComment = commentRepository.saveAndFlush(comment);
         logger.info("Comment updated successfully with ID: {}", commentId);
 
-        return convertToCommentResponseDto(updatedComment);
+        return dtoConversionService.convertToCommentResponseDto(updatedComment);
     }
 
     @Override
@@ -100,7 +106,7 @@ public class CommentServiceImpl extends BaseService implements CommentService {
         logger.info("Found {} comments for post ID: {}", comments.size(), postId);
 
         return comments.stream()
-                .map(this::convertToCommentResponseDto)
+                .map(dtoConversionService::convertToCommentResponseDto)
                 .collect(Collectors.toList());
     }
 
@@ -111,18 +117,6 @@ public class CommentServiceImpl extends BaseService implements CommentService {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment not found with ID: " + commentId));
 
-        return convertToCommentResponseDto(comment);
-    }
-
-    private CommentResponseDto convertToCommentResponseDto(Comment comment) {
-        return CommentResponseDto.builder()
-                .id(comment.getId())
-                .content(comment.getContent())
-                .createdAt(comment.getCreatedAt())
-                .updatedAt(comment.getUpdatedAt())
-                .userId(comment.getProfile().getUser().getId())
-                .username(comment.getProfile().getUser().getUsername())
-                .postId(comment.getPost().getId())
-                .build();
+        return dtoConversionService.convertToCommentResponseDto(comment);
     }
 }

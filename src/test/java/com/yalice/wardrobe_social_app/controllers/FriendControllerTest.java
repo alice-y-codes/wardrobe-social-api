@@ -1,12 +1,12 @@
 //package com.yalice.wardrobe_social_app.controllers;
 //
 //import com.fasterxml.jackson.databind.ObjectMapper;
+//import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 //import com.yalice.wardrobe_social_app.dtos.friendship.FriendRequestDto;
 //import com.yalice.wardrobe_social_app.dtos.friendship.FriendResponseDto;
 //import com.yalice.wardrobe_social_app.entities.User;
 //import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
 //import com.yalice.wardrobe_social_app.interfaces.FriendService;
-//import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 //import org.junit.jupiter.api.BeforeEach;
 //import org.junit.jupiter.api.Test;
 //import org.mockito.InjectMocks;
@@ -20,11 +20,12 @@
 //import java.util.List;
 //
 //import static org.hamcrest.Matchers.*;
-//import static org.mockito.ArgumentMatchers.any;
 //import static org.mockito.ArgumentMatchers.anyLong;
 //import static org.mockito.Mockito.*;
-//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-//import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+//import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+//import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 //
 //class FriendControllerTest {
 //

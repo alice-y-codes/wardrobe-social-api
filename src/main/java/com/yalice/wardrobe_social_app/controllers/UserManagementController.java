@@ -40,7 +40,7 @@ public class UserManagementController extends ApiBaseController {
             return handleValidationErrors(result);
         }
 
-        return handleEntityCreation(() -> userManagementService.registerUser(userDto), "User Registration");
+        return handleEntityAction(() -> userManagementService.registerUser(userDto), "register", "User", "registered");
     }
 
     /**
@@ -51,7 +51,7 @@ public class UserManagementController extends ApiBaseController {
         if (isUnauthorized(userId)) {
             return handleUnauthorizedAccess(userId, "update profile");
         }
-        return handleEntityUpdate(() -> userManagementService.updateUserProfile(userId, userDto), "User Profile");
+        return handleEntityAction(() -> userManagementService.updateUserProfile(userId, userDto), "update", "User Profile", "updated");
     }
 
     /**
@@ -64,7 +64,7 @@ public class UserManagementController extends ApiBaseController {
         if (isUnauthorized(userId)) {
             return handleUnauthorizedAccess(userId, "change password");
         }
-        return handleVoidAction(() -> userManagementService.changePassword(userId, oldPassword, newPassword), "Password Change", "User Password");
+        return handleVoidAction(() -> userManagementService.changePassword(userId, oldPassword, newPassword), "update", "User Password", "updated");
     }
 
     /**
@@ -75,6 +75,6 @@ public class UserManagementController extends ApiBaseController {
         if (isUnauthorized(userId)) {
             return handleUnauthorizedAccess(userId, "delete account");
         }
-        return handleEntityDeletion(() -> userManagementService.deleteUser(userId), "User Account");
+        return handleVoidAction(() -> userManagementService.deleteUser(userId), "delete","User Account", "deleted");
     }
 }

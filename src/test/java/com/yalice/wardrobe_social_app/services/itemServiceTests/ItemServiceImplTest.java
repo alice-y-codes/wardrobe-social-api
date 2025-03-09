@@ -11,6 +11,7 @@ import com.yalice.wardrobe_social_app.repositories.ItemRepository;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import com.yalice.wardrobe_social_app.repositories.WardrobeRepository;
 import com.yalice.wardrobe_social_app.services.ItemServiceImpl;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -33,6 +34,9 @@ class ItemServiceImplTest {
     private ProfileRepository profileRepository;
 
     @Mock
+    private DtoConversionService dtoConversionService;
+
+    @Mock
     private WardrobeRepository wardrobeRepository;
 
     @InjectMocks
@@ -43,6 +47,8 @@ class ItemServiceImplTest {
     private Wardrobe wardrobe;
     private ItemDto itemDto;
     private Item item;
+
+    @Mock
     private MultipartFile image;
 
     @BeforeEach
@@ -83,12 +89,24 @@ class ItemServiceImplTest {
     }
 
     @Test
+    void testMocksInjection() {
+        assertNotNull(itemRepository);
+        assertNotNull(profileRepository);
+        assertNotNull(dtoConversionService);
+    }
+
+    @Test
     void createItem_ShouldCreateItemSuccessfully() {
         // Given
         when(profileRepository.findByUserId(1L)).thenReturn(Optional.of(profile));
         when(wardrobeRepository.findById(1L)).thenReturn(Optional.of(wardrobe));
         when(itemRepository.findByNameAndWardrobeId("T-shirt", 1L)).thenReturn(Optional.empty());
         when(itemRepository.save(any(Item.class))).thenReturn(item);
+
+        ItemResponseDto mockResponseDto = new ItemResponseDto();
+        mockResponseDto.setName("T-shirt");  // Set the correct name or other fields here
+        when(dtoConversionService.convertToItemResponseDto(any(Item.class)))
+                .thenReturn(mockResponseDto);
 
         // When
         ItemResponseDto response = itemService.createItem(1L, 1L, itemDto, image);
@@ -118,6 +136,10 @@ class ItemServiceImplTest {
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
         when(profileRepository.findByUserId(1L)).thenReturn(Optional.of(profile));
         when(itemRepository.saveAndFlush(any(Item.class))).thenReturn(item);
+        ItemResponseDto mockResponseDto = new ItemResponseDto();
+        mockResponseDto.setName("T-shirt");  // Set the correct name or other fields here
+        when(dtoConversionService.convertToItemResponseDto(any(Item.class)))
+                .thenReturn(mockResponseDto);
 
         // When
         ItemResponseDto response = itemService.updateItem(1L, 1L, itemDto, image);
@@ -168,6 +190,10 @@ class ItemServiceImplTest {
         when(profileRepository.findByUserId(1L)).thenReturn(Optional.of(profile));
         when(wardrobeRepository.findByProfileId(1L)).thenReturn(Optional.of(wardrobe));
         when(itemRepository.findAllByWardrobeId(1L)).thenReturn(List.of(item));
+        ItemResponseDto mockResponseDto = new ItemResponseDto();
+        mockResponseDto.setName("T-shirt");  // Set the correct name or other fields here
+        when(dtoConversionService.convertToItemResponseDto(any(Item.class)))
+                .thenReturn(mockResponseDto);
 
         // When
         List<ItemResponseDto> items = itemService.getUserItems(1L);
@@ -182,6 +208,10 @@ class ItemServiceImplTest {
     void getItem_ShouldReturnItemSuccessfully() {
         // Given
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+        ItemResponseDto mockResponseDto = new ItemResponseDto();
+        mockResponseDto.setName("T-shirt");  // Set the correct name or other fields here
+        when(dtoConversionService.convertToItemResponseDto(any(Item.class)))
+                .thenReturn(mockResponseDto);
 
         // When
         ItemResponseDto response = itemService.getItem(1L);
