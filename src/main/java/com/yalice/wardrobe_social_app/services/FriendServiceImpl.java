@@ -10,6 +10,7 @@ import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.repositories.FriendRepository;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,11 +24,13 @@ public class FriendServiceImpl extends BaseService implements FriendService {
 
     private final FriendRepository friendRepository;
     private final UserSearchService userSearchService;
+    private final DtoConversionService dtoConversionService;
 
     @Autowired
-    public FriendServiceImpl(FriendRepository friendRepository, UserSearchService userSearchService) {
+    public FriendServiceImpl(FriendRepository friendRepository, UserSearchService userSearchService, DtoConversionService dtoConversionService) {
         this.friendRepository = friendRepository;
         this.userSearchService = userSearchService;
+        this.dtoConversionService = dtoConversionService;
     }
 
     @Override
@@ -70,7 +73,7 @@ public class FriendServiceImpl extends BaseService implements FriendService {
             throw new ResourceNotFoundException("User is not the recipient of this friend request");
         }
 
-        if (friendship.getStatus() != FriendshipStatus.PENDING) {
+        if (friendship.getStatus()!=FriendshipStatus.PENDING) {
             throw new IllegalStateException("Friend request is not in PENDING status");
         }
 
@@ -78,7 +81,7 @@ public class FriendServiceImpl extends BaseService implements FriendService {
         Friendship updatedFriendship = friendRepository.save(friendship);
         logger.info("Friend request accepted successfully with ID: {}", requestId);
 
-        return convertToFriendshipResponseDto(updatedFriendship);
+        return dtoConversionService.convertToFriendshipResponseDto(updatedFriendship);
     }
 
     @Override
@@ -93,7 +96,7 @@ public class FriendServiceImpl extends BaseService implements FriendService {
             throw new ResourceNotFoundException("User is not the recipient of this friend request");
         }
 
-        if (friendship.getStatus() != FriendshipStatus.PENDING) {
+        if (friendship.getStatus()!=FriendshipStatus.PENDING) {
             throw new IllegalStateException("Friend request is not in PENDING status");
         }
 
@@ -123,7 +126,7 @@ public class FriendServiceImpl extends BaseService implements FriendService {
         logger.info("Found {} friends for user ID: {}", friendships.size(), userId);
 
         return friendships.stream()
-                .map(this::convertToFriendshipResponseDto)
+                .map(dtoConversionService::convertToFriendshipResponseDto)
                 .collect(Collectors.toList());
     }
 
@@ -132,9 +135,9 @@ public class FriendServiceImpl extends BaseService implements FriendService {
         logger.info("Checking if users {} and {} are friends", userId1, userId2);
 
         Optional<Friendship> friendship = friendRepository.findFriendshipBetweenUsers(userId1, userId2);
-        boolean areFriends = friendship.isPresent() && friendship.get().getStatus() == FriendshipStatus.ACCEPTED;
+        boolean areFriends = friendship.isPresent() && friendship.get().getStatus()==FriendshipStatus.ACCEPTED;
 
-        logger.info("Users {} and {} are{} friends", userId1, userId2, areFriends ? "" : " not");
+        logger.info("Users {} and {} are{} friends", userId1, userId2, areFriends ? "":" not");
         return areFriends;
     }
 
@@ -150,17 +153,5 @@ public class FriendServiceImpl extends BaseService implements FriendService {
                 .build();
     }
 
-    private FriendResponseDto convertToFriendshipResponseDto(Friendship friendship) {
-        return FriendResponseDto.builder()
-                .id(friendship.getId())
-                .userId(friendship.getSender().getId().equals(friendship.getRecipient().getId())
-                        ? friendship.getRecipient().getId()
-                        : friendship.getSender().getId())
-                .username(friendship.getSender().getId().equals(friendship.getRecipient().getId())
-                        ? friendship.getRecipient().getUsername()
-                        : friendship.getSender().getUsername())
-                .status(friendship.getStatus().name())
-                .createdAt(friendship.getCreatedAt())
-                .build();
-    }
+
 }

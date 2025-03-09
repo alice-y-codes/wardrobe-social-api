@@ -9,6 +9,7 @@ import com.yalice.wardrobe_social_app.interfaces.WardrobeService;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import com.yalice.wardrobe_social_app.repositories.WardrobeRepository;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,10 +20,13 @@ public class WardrobeServiceImpl extends BaseService implements WardrobeService 
 
     private final WardrobeRepository wardrobeRepository;
     private final ProfileRepository profileRepository;
+    private final DtoConversionService dtoConversionService;
 
-    public WardrobeServiceImpl(WardrobeRepository wardrobeRepository, ProfileRepository profileRepository) {
+    public WardrobeServiceImpl(WardrobeRepository wardrobeRepository, ProfileRepository profileRepository,
+            DtoConversionService dtoConversionService) {
         this.wardrobeRepository = wardrobeRepository;
         this.profileRepository = profileRepository;
+        this.dtoConversionService = dtoConversionService;
     }
 
     @Override
@@ -56,20 +60,20 @@ public class WardrobeServiceImpl extends BaseService implements WardrobeService 
         Wardrobe wardrobe = wardrobeRepository.findById(wardrobeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Wardrobe not found with ID: " + wardrobeId));
 
-        return convertToWardrobeResponseDto(wardrobe);
+        return dtoConversionService.convertToWardrobeResponseDto(wardrobe);
     }
 
     @Override
     public List<WardrobeResponseDto> getProfileWardrobes(Long profileId) {
         logger.info("Fetching wardrobes for profile ID: {}", profileId);
 
-        Profile profile = profileRepository.findById(profileId)
+        profileRepository.findById(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Profile not found with ID: " + profileId));
 
         List<Wardrobe> wardrobes = wardrobeRepository.findAllByProfileId(profileId);
 
         return wardrobes.stream()
-                .map(this::convertToWardrobeResponseDto).toList();
+                .map(dtoConversionService::convertToWardrobeResponseDto).toList();
     }
 
     @Override
@@ -84,7 +88,7 @@ public class WardrobeServiceImpl extends BaseService implements WardrobeService 
         wardrobe = wardrobeRepository.save(wardrobe);
 
         logger.info("Wardrobe '{}' updated successfully.", wardrobe.getName());
-        return convertToWardrobeResponseDto(wardrobe);
+        return dtoConversionService.convertToWardrobeResponseDto(wardrobe);
     }
 
     @Override

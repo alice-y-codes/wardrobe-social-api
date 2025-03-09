@@ -4,8 +4,10 @@ import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
 import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import com.yalice.wardrobe_social_app.dtos.friendship.FriendRequestDto;
 import com.yalice.wardrobe_social_app.dtos.friendship.FriendResponseDto;
+import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,7 +38,7 @@ public class FriendshipController extends ApiBaseController {
     @PostMapping("/requests")
     public ResponseEntity<ApiResponse<FriendRequestDto>> sendFriendRequest(@RequestParam Long recipientId) {
         return handleEntityAction(() -> friendService.sendFriendRequest(getLoggedInUser().getId(), recipientId),
-                "send", "friend request");
+                "send", "friend request", "sent");
     }
 
     /**
@@ -47,8 +49,13 @@ public class FriendshipController extends ApiBaseController {
      */
     @PostMapping("/requests/{requestId}/accept")
     public ResponseEntity<ApiResponse<FriendResponseDto>> acceptFriendRequest(@PathVariable Long requestId) {
-        return handleEntityAction(() -> friendService.acceptFriendRequest(getLoggedInUser().getId(), requestId),
-                "accept", "friend request");
+        try {
+            return handleEntityAction(() -> friendService.acceptFriendRequest(getLoggedInUser().getId(), requestId),
+                    "accept", "Friend request", "accepted");
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse<>(false, "Friend request not found", null));
+        }
     }
 
     /**
@@ -59,10 +66,15 @@ public class FriendshipController extends ApiBaseController {
      */
     @PostMapping("/requests/{requestId}/reject")
     public ResponseEntity<ApiResponse<Void>> rejectFriendRequest(@PathVariable Long requestId) {
-        return handleEntityAction(() -> {
-            friendService.rejectFriendRequest(getLoggedInUser().getId(), requestId);
-            return null; // No result needed for rejection
-        }, "reject", "friend request");
+        try {
+            return handleEntityAction(() -> {
+                friendService.rejectFriendRequest(getLoggedInUser().getId(), requestId);
+                return null;
+            }, "reject", "Friend request", "rejected");
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse<>(false, "Friend request not found", null));
+        }
     }
 
     /**
@@ -73,7 +85,7 @@ public class FriendshipController extends ApiBaseController {
     @GetMapping("/requests/pending")
     public ResponseEntity<ApiResponse<List<FriendRequestDto>>> getPendingFriendRequests() {
         return handleEntityAction(() -> friendService.getPendingFriendRequests(getLoggedInUser().getId()),
-                "retrieve", "pending friend requests");
+                "retrieve", "pending friend requests", "retrieved");
     }
 
     /**
@@ -84,6 +96,6 @@ public class FriendshipController extends ApiBaseController {
     @GetMapping("/friends")
     public ResponseEntity<ApiResponse<List<FriendResponseDto>>> getFriends() {
         return handleEntityAction(() -> friendService.getFriends(getLoggedInUser().getId()),
-                "retrieve", "friends");
+                "retrieve", "friends", "retrieved");
     }
 }

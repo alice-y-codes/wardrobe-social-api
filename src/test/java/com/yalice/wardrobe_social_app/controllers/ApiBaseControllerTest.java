@@ -16,6 +16,7 @@
 //
 //public class ApiBaseControllerTest {
 //
+//
 //    // Mock dependencies
 //    @Mock
 //    private AuthUtils authUtils;
@@ -49,7 +50,7 @@
 //        ApiBaseController.EntitySupplier<String> supplier = () -> "Created Entity";
 //
 //        // Call the method from the subclass
-//        ResponseEntity<ApiResponse<String>> response = apiBaseControllerTestImpl.handleEntityCreation(supplier, "Entity");
+//        ResponseEntity<ApiResponse<String>> response = apiBaseControllerTestImpl.handleEntityAction(supplier, "create", "Entity", "created");
 //
 //        // Assert the success response
 //        assertTrue(Objects.requireNonNull(response.getBody()).isSuccess());
@@ -65,7 +66,7 @@
 //        };
 //
 //        // Call the method from the subclass
-//        ResponseEntity<ApiResponse<String>> response = apiBaseControllerTestImpl.handleEntityCreation(supplier, "Entity");
+//        ResponseEntity<ApiResponse<String>> response = apiBaseControllerTestImpl.handleEntityAction(supplier, "create", "Entity", "created");
 //
 //        // Assert the error response
 //        assertFalse(Objects.requireNonNull(response.getBody()).isSuccess());
@@ -89,26 +90,15 @@
 //    // A concrete subclass to access protected methods for testing
 //    private static class ApiBaseControllerTestImpl extends ApiBaseController {
 //
+//
 //        public ApiBaseControllerTestImpl(AuthUtils authUtils) {
 //            super(authUtils);
-//        }
-//
-//        // Expose the protected methods for testing
-//        public <T> ResponseEntity<ApiResponse<T>> handleEntityCreation(ApiBaseController.EntitySupplier<T> supplier, String entityName) {
-//            return super.handleEntityCreation(supplier, entityName);
 //        }
 //
 //        public <T> ResponseEntity<ApiResponse<T>> handleEntityRetrieval(ApiBaseController.EntitySupplier<T> supplier, String entityName) {
 //            return super.handleEntityRetrieval(supplier, entityName);
 //        }
 //
-//        public <T> ResponseEntity<ApiResponse<T>> handleEntityUpdate(ApiBaseController.EntitySupplier<T> supplier, String entityName) {
-//            return super.handleEntityUpdate(supplier, entityName);
-//        }
-//
-//        public ResponseEntity<ApiResponse<Void>> handleEntityDeletion(ApiBaseController.VoidSupplier supplier, String entityName) {
-//            return super.handleEntityDeletion(supplier, entityName);
-//        }
 //
 //        public ResponseEntity<ApiResponse<Void>> handleResourceNotFound(ResourceNotFoundException e) {
 //            return super.handleResourceNotFound(e);

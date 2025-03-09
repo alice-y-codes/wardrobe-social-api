@@ -28,6 +28,8 @@ public class Profile extends BaseEntity {
      */
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private User user;
 
     /**

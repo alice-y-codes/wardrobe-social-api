@@ -7,6 +7,7 @@ import com.yalice.wardrobe_social_app.interfaces.ItemService;
 import com.yalice.wardrobe_social_app.repositories.OutfitRepository;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import com.yalice.wardrobe_social_app.services.OutfitServiceImpl;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,9 @@ class OutfitServiceImplTest {
 
     @Mock
     private ItemService itemService;
+
+    @Mock
+    private DtoConversionService dtoConversionService;
 
     @InjectMocks
     private OutfitServiceImpl outfitService;
@@ -83,12 +87,25 @@ class OutfitServiceImplTest {
 
         when(outfitRepository.save(any(Outfit.class))).thenReturn(outfit);
 
+        OutfitResponseDto mockResponseDto = new OutfitResponseDto();
+        mockResponseDto.setName("Summer Outfit");
+        mockResponseDto.setDescription("A cool summer outfit");
+        mockResponseDto.setSeason("Summer");
+        mockResponseDto.setFavorite(false);
+        mockResponseDto.setPublic(true);
+
+        when(dtoConversionService.convertToOutfitResponseDto(any(Outfit.class))).thenReturn(mockResponseDto);
+
         // Call the method
         OutfitResponseDto response = outfitService.createOutfit(1L, outfitDto, image);
 
         // Verify
         assertNotNull(response);
         assertEquals("Summer Outfit", response.getName());
+        assertEquals("A cool summer outfit", response.getDescription());
+        assertEquals("Summer", response.getSeason());
+        assertFalse(response.isFavorite());
+        assertTrue(response.isPublic());
         verify(outfitRepository, times(1)).save(any(Outfit.class));
     }
 
@@ -119,12 +136,25 @@ class OutfitServiceImplTest {
 
         when(outfitRepository.save(any(Outfit.class))).thenReturn(outfit);
 
+        OutfitResponseDto mockResponseDto = new OutfitResponseDto();
+        mockResponseDto.setName("Updated Outfit");
+        mockResponseDto.setDescription("Updated description");
+        mockResponseDto.setSeason("Winter");
+        mockResponseDto.setFavorite(true);
+        mockResponseDto.setPublic(false);
+
+        when(dtoConversionService.convertToOutfitResponseDto(any(Outfit.class))).thenReturn(mockResponseDto);
+
         // Call method
         OutfitResponseDto response = outfitService.updateOutfit(1L, 1L, outfitDto, image);
 
         // Verify
         assertNotNull(response);
         assertEquals("Updated Outfit", response.getName());
+        assertEquals("Updated description", response.getDescription());
+        assertEquals("Winter", response.getSeason());
+        assertTrue(response.isFavorite());
+        assertFalse(response.isPublic());
         verify(outfitRepository, times(1)).save(any(Outfit.class));
     }
 
@@ -162,26 +192,66 @@ class OutfitServiceImplTest {
 
     @Test
     void testGetUserOutfits() {
-        // Setup
-        when(outfitRepository.findByProfileId(1L)).thenReturn(List.of(outfit));
+        // Setup mock Outfit
+        Outfit mockOutfit = new Outfit();
+        mockOutfit.setName("Summer Outfit");
+        mockOutfit.setDescription("A cool summer outfit");
+        mockOutfit.setSeason("Summer");
+        mockOutfit.setFavorite(false);
+        mockOutfit.setPublic(true);
 
-        // Call method
+        // Create the expected OutfitResponseDto
+        OutfitResponseDto mockResponseDto = new OutfitResponseDto();
+        mockResponseDto.setName("Summer Outfit");
+        mockResponseDto.setDescription("A cool summer outfit");
+        mockResponseDto.setSeason("Summer");
+        mockResponseDto.setFavorite(false);
+        mockResponseDto.setPublic(true);
+
+        // Mock the repository to return a list containing the mock outfit
+        when(outfitRepository.findByProfileId(1L)).thenReturn(List.of(mockOutfit));
+
+        // Mock the conversion service to return the expected OutfitResponseDto
+        when(dtoConversionService.convertToOutfitResponseDto(any(Outfit.class))).thenReturn(mockResponseDto);
+
+        // Call the method
         List<OutfitResponseDto> response = outfitService.getUserOutfits(1L);
 
-        // Verify
+        // Verify the result
         assertNotNull(response);
         assertEquals(1, response.size());
         assertEquals("Summer Outfit", response.get(0).getName());
+        assertEquals("A cool summer outfit", response.get(0).getDescription());
+        assertEquals("Summer", response.get(0).getSeason());
+        assertFalse(response.get(0).isFavorite());
+        assertTrue(response.get(0).isPublic());
+
+        // Verify repository interaction
+        verify(outfitRepository, times(1)).findByProfileId(1L);
+        verify(dtoConversionService, times(1)).convertToOutfitResponseDto(any(Outfit.class));
     }
+
 
     @Test
     void testGetOutfit() {
-        // Call method
+        OutfitResponseDto mockResponseDto = new OutfitResponseDto();
+
+        mockResponseDto.setName("Summer Outfit");
+        mockResponseDto.setDescription("A cool summer outfit");
+        mockResponseDto.setSeason("Summer");
+        mockResponseDto.setFavorite(false);
+        mockResponseDto.setPublic(true);
+
+        when(outfitRepository.findById(1L)).thenReturn(Optional.of(outfit));
+        when(dtoConversionService.convertToOutfitResponseDto(any(Outfit.class))).thenReturn(mockResponseDto);
+
         OutfitResponseDto response = outfitService.getOutfit(1L);
 
         // Verify
         assertNotNull(response);
         assertEquals("Summer Outfit", response.getName());
+        verify(outfitRepository, times(1)).findById(1L);
+        verify(dtoConversionService, times(1)).convertToOutfitResponseDto(any(Outfit.class));
     }
 
     @Test
@@ -189,6 +259,15 @@ class OutfitServiceImplTest {
         // Setup
         when(itemService.getItemEntity(1L)).thenReturn(item);
         when(outfitRepository.save(outfit)).thenReturn(outfit);
+
+        OutfitResponseDto mockResponseDto = new OutfitResponseDto();
+        mockResponseDto.setName("Summer Outfit");
+        mockResponseDto.setDescription("A cool summer outfit");
+        mockResponseDto.setSeason("Summer");
+        mockResponseDto.setFavorite(false);
+        mockResponseDto.setPublic(true);
+
+        when(dtoConversionService.convertToOutfitResponseDto(any(Outfit.class))).thenReturn(mockResponseDto);
 
         // Call method
         OutfitResponseDto response = outfitService.addItemToOutfit(1L, 1L);
@@ -203,6 +282,15 @@ class OutfitServiceImplTest {
         // Setup
         when(itemService.getItemEntity(1L)).thenReturn(item);
         when(outfitRepository.save(outfit)).thenReturn(outfit);
+
+        OutfitResponseDto mockResponseDto = new OutfitResponseDto();
+        mockResponseDto.setName("Summer Outfit");
+        mockResponseDto.setDescription("A cool summer outfit");
+        mockResponseDto.setSeason("Summer");
+        mockResponseDto.setFavorite(false);
+        mockResponseDto.setPublic(true);
+
+        when(dtoConversionService.convertToOutfitResponseDto(any(Outfit.class))).thenReturn(mockResponseDto);
 
         // Call method
         OutfitResponseDto response = outfitService.removeItemFromOutfit(1L, 1L);

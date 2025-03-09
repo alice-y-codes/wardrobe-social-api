@@ -1,182 +1,170 @@
-//package com.yalice.wardrobe_social_app.controllers;
-//
-//import com.fasterxml.jackson.databind.ObjectMapper;
-//import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
-//import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
-//import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
-//import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.Test;
-//import org.mockito.InjectMocks;
-//import org.mockito.Mock;
-//import org.mockito.MockitoAnnotations;
-//import org.springframework.test.web.servlet.MockMvc;
-//import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-//
-//import java.util.List;
-//
-//import static org.hamcrest.Matchers.*;
-//import static org.mockito.Mockito.*;
-//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-//import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-//
-//class UserSearchControllerTest {
-//
-//    private static final String BASE_URL = "/api/users";
-//    private static final String USERNAME = "user1";
-//    private static final Long USER_ID = 1L;
-//    private static final String PARTIAL_USERNAME = "user";
-//    private static final int PAGE = 0;
-//    private static final int SIZE = 20;
-//
-//    private MockMvc mockMvc;
-//
-//    @Mock
-//    private UserSearchService userSearchService;
-//
-//    @Mock
-//    private AuthUtils authUtils;
-//
-//    @InjectMocks
-//    private UserSearchController userSearchController;
-//
-//    private UserResponseDto userResponseDto;
-//    private final ObjectMapper objectMapper = new ObjectMapper();
-//
-//    @BeforeEach
-//    void setUp() {
-//        MockitoAnnotations.openMocks(this);
-//        mockMvc = MockMvcBuilders.standaloneSetup(userSearchController)
-//                .setControllerAdvice(new GlobalExceptionHandler())
-//                .build();
-//
-//        userResponseDto = UserResponseDto.builder()
-//                .id(USER_ID)
-//                .username(USERNAME)
-//                .build();
-//    }
-//
-//    @Test
-//    void getUserByUsername_success() throws Exception {
-//        when(userSearchService.getUserByUsername(USERNAME)).thenReturn(userResponseDto);
-//
-//        mockMvc.perform(get(BASE_URL + "/username/{username}", USERNAME)
-//                        .contentType("application/json"))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.success", is(true)))
-//                .andExpect(jsonPath("$.message", is("User (username: user1)")))
-//                .andExpect(jsonPath("$.data.id", is(USER_ID.intValue())))
-//                .andExpect(jsonPath("$.data.username", is(USERNAME)));
-//
-//        verify(userSearchService).getUserByUsername(USERNAME);
-//    }
-//
-//    @Test
-//    void getUserByUsername_notFound() throws Exception {
-//        when(userSearchService.getUserByUsername(USERNAME)).thenReturn(null);
-//
-//        mockMvc.perform(get(BASE_URL + "/username/{username}", USERNAME)
-//                        .contentType("application/json"))
-//                .andExpect(status().isNotFound())
-//                .andExpect(jsonPath("$.success", is(false)))
-//                .andExpect(jsonPath("$.message", is("User (username: user1) not found")));
-//
-//        verify(userSearchService).getUserByUsername(USERNAME);
-//    }
-//
-//    @Test
-//    void getUserById_success() throws Exception {
-//        when(userSearchService.getUserById(USER_ID)).thenReturn(userResponseDto);
-//
-//        mockMvc.perform(get(BASE_URL + "/{userId}", USER_ID)
-//                        .contentType("application/json"))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.success", is(true)))
-//                .andExpect(jsonPath("$.message", is("User (ID: 1)")))
-//                .andExpect(jsonPath("$.data.id", is(USER_ID.intValue())))
-//                .andExpect(jsonPath("$.data.username", is(USERNAME)));
-//
-//        verify(userSearchService).getUserById(USER_ID);
-//    }
-//
-//    @Test
-//    void getUserById_notFound() throws Exception {
-//        when(userSearchService.getUserById(USER_ID)).thenReturn(null);
-//
-//        mockMvc.perform(get(BASE_URL + "/{userId}", USER_ID)
-//                        .contentType("application/json"))
-//                .andExpect(status().isNotFound())
-//                .andExpect(jsonPath("$.success", is(false)))
-//                .andExpect(jsonPath("$.message", is("User (ID: 1) not found")));
-//
-//        verify(userSearchService).getUserById(USER_ID);
-//    }
-//
-//    @Test
-//    void searchUsersByUsername_success() throws Exception {
-//        List<UserResponseDto> userList = List.of(userResponseDto);
-//        when(userSearchService.searchUsersByUsername(PARTIAL_USERNAME)).thenReturn(userList);
-//
-//        mockMvc.perform(get(BASE_URL + "/search")
-//                        .param("username", PARTIAL_USERNAME)
-//                        .contentType("application/json"))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.success", is(true)))
-//                .andExpect(jsonPath("$.message", is("Users matching partial username: user")))
-//                .andExpect(jsonPath("$.data[0].id", is(USER_ID.intValue())))
-//                .andExpect(jsonPath("$.data[0].username", is(USERNAME)));
-//
-//        verify(userSearchService).searchUsersByUsername(PARTIAL_USERNAME);
-//    }
-//
-//    @Test
-//    void searchUsersByUsername_emptyList() throws Exception {
-//        List<UserResponseDto> userList = List.of();
-//        when(userSearchService.searchUsersByUsername(PARTIAL_USERNAME)).thenReturn(userList);
-//
-//        mockMvc.perform(get(BASE_URL + "/search")
-//                        .param("username", PARTIAL_USERNAME)
-//                        .contentType("application/json"))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.success", is(true)))
-//                .andExpect(jsonPath("$.message", is("Users matching partial username: user")))
-//                .andExpect(jsonPath("$.data", hasSize(0)));
-//
-//        verify(userSearchService).searchUsersByUsername(PARTIAL_USERNAME);
-//    }
-//
-//    @Test
-//    void getAllUsers_success() throws Exception {
-//        List<UserResponseDto> userList = List.of(userResponseDto);
-//        when(userSearchService.getAllUsers(PAGE, SIZE)).thenReturn(userList);
-//
-//        mockMvc.perform(get(BASE_URL + "/all")
-//                        .param("page", String.valueOf(PAGE))
-//                        .param("size", String.valueOf(SIZE))
-//                        .contentType("application/json"))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.success", is(true)))
-//                .andExpect(jsonPath("$.message", is("All users (page: 0, size: 20)")))
-//                .andExpect(jsonPath("$.data[0].id", is(USER_ID.intValue())))
-//                .andExpect(jsonPath("$.data[0].username", is(USERNAME)));
-//
-//        verify(userSearchService).getAllUsers(PAGE, SIZE);
-//    }
-//
-//    @Test
-//    void getAllUsers_emptyList() throws Exception {
-//        List<UserResponseDto> userList = List.of();
-//        when(userSearchService.getAllUsers(PAGE, SIZE)).thenReturn(userList);
-//
-//        mockMvc.perform(get(BASE_URL + "/all")
-//                        .param("page", String.valueOf(PAGE))
-//                        .param("size", String.valueOf(SIZE))
-//                        .contentType("application/json"))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.success", is(true)))
-//                .andExpect(jsonPath("$.message", is("All users (page: 0, size: 20)")))
-//                .andExpect(jsonPath("$.data", hasSize(0)));
-//
-//        verify(userSearchService).getAllUsers(PAGE, SIZE);
-//    }
-//}
+package com.yalice.wardrobe_social_app.controllers;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
+import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
+import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.util.Collections;
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+class UserSearchControllerTest {
+
+    @Mock
+    private UserSearchService userSearchService;
+
+    @Mock
+    private AuthUtils authUtils;
+
+    private MockMvc mockMvc;
+    private ObjectMapper objectMapper;
+    private User testUser;
+
+    @InjectMocks
+    private UserSearchController userSearchController;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders
+                .standaloneSetup(userSearchController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+        objectMapper = new ObjectMapper();
+        testUser = User.builder().id(1L).build();
+    }
+
+    @Test
+    void getUserByUsername() throws Exception {
+        UserResponseDto responseDto = createTestUserResponse();
+        when(userSearchService.getUserByUsername(any())).thenReturn(responseDto);
+
+        mockMvc.perform(get("/api/users/search/username/testuser"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").exists())
+                .andExpect(jsonPath("$.data.id").exists());
+    }
+
+    @Test
+    void getUserByUsername_NotFound() throws Exception {
+        when(userSearchService.getUserByUsername(any()))
+                .thenThrow(new ResourceNotFoundException("User not found"));
+
+        mockMvc.perform(get("/api/users/search/username/nonexistent"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("User not found"))
+                .andExpect(jsonPath("$.data").doesNotExist());
+    }
+
+    @Test
+    void getUserById() throws Exception {
+        UserResponseDto responseDto = createTestUserResponse();
+        when(userSearchService.getUserById(any())).thenReturn(responseDto);
+
+        mockMvc.perform(get("/api/users/search/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").exists())
+                .andExpect(jsonPath("$.data.id").exists());
+    }
+
+    @Test
+    void getUserById_NotFound() throws Exception {
+        when(userSearchService.getUserById(any()))
+                .thenThrow(new ResourceNotFoundException("User not found"));
+
+        mockMvc.perform(get("/api/users/search/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("User not found"))
+                .andExpect(jsonPath("$.data").doesNotExist());
+    }
+
+    @Test
+    void searchUsers() throws Exception {
+        List<UserResponseDto> users = List.of(createTestUserResponse());
+        when(userSearchService.searchUsersByUsername(any())).thenReturn(users);
+
+        mockMvc.perform(get("/api/users/search/search")
+                .param("partialUsername", "test"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").exists())
+                .andExpect(jsonPath("$.data[0].id").exists());
+    }
+
+    @Test
+    void searchUsers_NoResults() throws Exception {
+        when(userSearchService.searchUsersByUsername(any())).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/users/search/search")
+                .param("partialUsername", "nonexistent"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    void getAllUsers() throws Exception {
+        List<UserResponseDto> users = List.of(createTestUserResponse());
+        when(userSearchService.getAllUsers(0, 20)).thenReturn(users);
+
+        mockMvc.perform(get("/api/users/search/all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").exists())
+                .andExpect(jsonPath("$.data[0].id").exists());
+    }
+
+    @Test
+    void getAllUsers_WithPagination() throws Exception {
+        List<UserResponseDto> users = List.of(createTestUserResponse());
+        when(userSearchService.getAllUsers(1, 10)).thenReturn(users);
+
+        mockMvc.perform(get("/api/users/search/all")
+                .param("page", "1")
+                .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").exists())
+                .andExpect(jsonPath("$.data[0].id").exists());
+    }
+
+    @Test
+    void getAllUsers_NoResults() throws Exception {
+        when(userSearchService.getAllUsers(0, 20)).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/users/search/all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    private UserResponseDto createTestUserResponse() {
+        return UserResponseDto.builder()
+                .id(1L)
+                .username("testuser")
+                .email("test@example.com")
+                .build();
+    }
+}

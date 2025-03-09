@@ -15,6 +15,7 @@ import com.yalice.wardrobe_social_app.repositories.ItemRepository;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import com.yalice.wardrobe_social_app.repositories.WardrobeRepository;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,16 +31,18 @@ public class ProfileServiceImpl extends BaseService implements ProfileService {
     private final ItemRepository itemRepository;
     private final UserSearchService userSearchService;
     private final FriendService friendService;
+    private final DtoConversionService dtoConversionService;
 
     @Autowired
     public ProfileServiceImpl(ProfileRepository profileRepository, WardrobeRepository wardrobeRepository,
-            ItemRepository itemRepository,
-            UserSearchService userSearchService, FriendService friendService) {
+                              ItemRepository itemRepository,
+                              UserSearchService userSearchService, FriendService friendService, DtoConversionService dtoConversionService) {
         this.profileRepository = profileRepository;
         this.wardrobeRepository = wardrobeRepository;
         this.itemRepository = itemRepository;
         this.userSearchService = userSearchService;
         this.friendService = friendService;
+        this.dtoConversionService = dtoConversionService;
     }
 
     @Override
@@ -49,7 +52,7 @@ public class ProfileServiceImpl extends BaseService implements ProfileService {
         Profile profile = profileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Profile not found with userId: " + userId));
 
-        return convertToProfileResponseDto(profile);
+        return dtoConversionService.convertToProfileResponseDto(profile);
     }
 
     @Override
@@ -71,10 +74,10 @@ public class ProfileServiceImpl extends BaseService implements ProfileService {
             profile.setProfileImageUrl("placeholder_url");
         }
 
-        Profile updatedProfile = profileRepository.save(profile);
+        Profile updatedProfile = profileRepository.saveAndFlush(profile);
         logger.info("Profile updated successfully for user ID: {}", userId);
 
-        return convertToProfileResponseDto(updatedProfile);
+        return dtoConversionService.convertToProfileResponseDto(updatedProfile);
     }
 
     @Override
@@ -86,10 +89,10 @@ public class ProfileServiceImpl extends BaseService implements ProfileService {
                 .orElseThrow(() -> new ResourceNotFoundException("Profile not found with userId: " + userId));
 
         profile.setVisibility(isPublic ? ProfileVisibility.PUBLIC : ProfileVisibility.PRIVATE);
-        Profile updatedProfile = profileRepository.save(profile);
+        Profile updatedProfile = profileRepository.saveAndFlush(profile);
         logger.info("Profile visibility updated successfully for user ID: {}", userId);
 
-        return convertToProfileResponseDto(updatedProfile);
+        return dtoConversionService.convertToProfileResponseDto(updatedProfile);
     }
 
     @Override
@@ -185,20 +188,5 @@ public class ProfileServiceImpl extends BaseService implements ProfileService {
 
         item.setWardrobe(newWardrobe);
         itemRepository.save(item);
-    }
-
-    private ProfileResponseDto convertToProfileResponseDto(Profile profile) {
-        return ProfileResponseDto.builder()
-                .id(profile.getId())
-                .userId(profile.getUser().getId())
-                .username(profile.getUser().getUsername())
-                .bio(profile.getBio())
-                .location(profile.getLocation())
-                .stylePreferences(profile.getStylePreferences())
-                .favoriteBrands(profile.getFavoriteBrands())
-                .fashionInspirations(profile.getFashionInspirations())
-                .profileImageUrl(profile.getProfileImageUrl())
-                .isPublic(profile.getVisibility() == ProfileVisibility.PUBLIC)
-                .build();
     }
 }

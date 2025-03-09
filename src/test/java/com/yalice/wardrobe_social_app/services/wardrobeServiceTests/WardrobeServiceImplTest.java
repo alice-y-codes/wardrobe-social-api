@@ -10,6 +10,7 @@ import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
 import com.yalice.wardrobe_social_app.repositories.WardrobeRepository;
 import com.yalice.wardrobe_social_app.services.WardrobeServiceImpl;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -32,6 +33,9 @@ public class WardrobeServiceImplTest {
 
     @Mock
     private ProfileRepository profileRepository;
+
+    @Mock
+    private DtoConversionService dtoConversionService;
 
     @InjectMocks
     private WardrobeServiceImpl wardrobeService;
@@ -103,6 +107,13 @@ public class WardrobeServiceImplTest {
     public void getWardrobeById_ShouldReturnWardrobe() {
         when(wardrobeRepository.findById(1L)).thenReturn(Optional.of(wardrobe));
 
+
+        WardrobeResponseDto mockResponseDto = new WardrobeResponseDto();
+        mockResponseDto.setName("Casual Wardrobe");
+        when(dtoConversionService.convertToWardrobeResponseDto(any(Wardrobe.class)))
+                .thenReturn(mockResponseDto);
+
+
         WardrobeResponseDto responseDto = wardrobeService.getWardrobeById(1L);
 
         assertNotNull(responseDto);
@@ -122,6 +133,11 @@ public class WardrobeServiceImplTest {
     public void getProfileWardrobes_ShouldReturnWardrobes() {
         when(profileRepository.findById(1L)).thenReturn(Optional.of(profile));
         when(wardrobeRepository.findAllByProfileId(1L)).thenReturn(List.of(wardrobe));
+
+        WardrobeResponseDto mockResponseDto = new WardrobeResponseDto();
+        mockResponseDto.setName("Casual Wardrobe");
+        when(dtoConversionService.convertToWardrobeResponseDto(any(Wardrobe.class)))
+                .thenReturn(mockResponseDto);
 
         List<WardrobeResponseDto> responseDtos = wardrobeService.getProfileWardrobes(1L);
 
@@ -144,8 +160,15 @@ public class WardrobeServiceImplTest {
         WardrobeDto wardrobeDto = new WardrobeDto();
         wardrobeDto.setName("Updated Wardrobe");
 
+
+
         when(wardrobeRepository.findById(1L)).thenReturn(Optional.of(wardrobe));
         when(wardrobeRepository.save(any(Wardrobe.class))).thenReturn(wardrobe);
+
+        WardrobeResponseDto mockResponseDto = new WardrobeResponseDto();
+        mockResponseDto.setName("Updated Wardrobe");
+        when(dtoConversionService.convertToWardrobeResponseDto(any(Wardrobe.class)))
+                .thenReturn(mockResponseDto);
 
         WardrobeResponseDto responseDto = wardrobeService.updateWardrobe(1L, wardrobeDto);
 

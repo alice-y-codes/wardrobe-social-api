@@ -33,7 +33,8 @@ public class UserSearchController extends ApiBaseController {
      */
     @GetMapping("/username/{username}")
     public ResponseEntity<ApiResponse<UserResponseDto>> getUserByUsername(@PathVariable String username) {
-        return handleEntityRetrieval(() -> userSearchService.getUserByUsername(username), "User (username: " + username + ")");
+        return handleEntityRetrieval(() -> userSearchService.getUserByUsername(username),
+                "User (username: " + username + ")");
     }
 
     /**
@@ -44,7 +45,8 @@ public class UserSearchController extends ApiBaseController {
      */
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<UserResponseDto>> getUserById(@PathVariable Long userId) {
-        return handleEntityRetrieval(() -> userSearchService.getUserById(userId), "User (ID: " + userId + ")");
+        return handleEntityRetrieval(() -> userSearchService.getUserById(userId),
+                "User (ID: " + userId + ")");
     }
 
     /**
@@ -54,7 +56,8 @@ public class UserSearchController extends ApiBaseController {
      * @return ResponseEntity containing the list of matching users
      */
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<UserResponseDto>>> searchUsersByUsername(@RequestParam String partialUsername) {
+    public ResponseEntity<ApiResponse<List<UserResponseDto>>> searchUsersByUsername(
+            @RequestParam String partialUsername) {
         return handleEntityRetrieval(() -> userSearchService.searchUsersByUsername(partialUsername),
                 "Users matching partial username: " + partialUsername);
     }

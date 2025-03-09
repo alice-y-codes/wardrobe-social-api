@@ -4,8 +4,10 @@ import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
 import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import com.yalice.wardrobe_social_app.dtos.outfit.OutfitDto;
 import com.yalice.wardrobe_social_app.dtos.outfit.OutfitResponseDto;
+import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.OutfitService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,20 +38,21 @@ public class OutfitController extends ApiBaseController {
             @RequestPart(value = "image", required = false) MultipartFile image) {
 
         return handleEntityAction(() -> outfitService.createOutfit(getLoggedInUser().getId(), outfitDto, image),
-                "Outfit created successfully", "Outfit");
+                "create", "Outfit", "created");
     }
 
     /**
      * Updates an existing outfit.
      */
-    @PutMapping("/{outfitId}")
+    @PatchMapping("/{outfitId}")
     public ResponseEntity<ApiResponse<OutfitResponseDto>> updateOutfit(
             @PathVariable Long outfitId,
             @RequestPart("outfit") OutfitDto outfitDto,
             @RequestPart(value = "image", required = false) MultipartFile image) {
 
-        return handleEntityAction(() -> outfitService.updateOutfit(getLoggedInUser().getId(), outfitId, outfitDto, image),
-                "Outfit updated successfully", "Outfit");
+        return handleEntityAction(
+                () -> outfitService.updateOutfit(getLoggedInUser().getId(), outfitId, outfitDto, image),
+                "update", "Outfit", "updated");
     }
 
     /**
@@ -58,7 +61,7 @@ public class OutfitController extends ApiBaseController {
     @DeleteMapping("/{outfitId}")
     public ResponseEntity<ApiResponse<Void>> deleteOutfit(@PathVariable Long outfitId) {
         return handleVoidAction(() -> outfitService.deleteOutfit(getLoggedInUser().getId(), outfitId),
-                "Outfit deleted successfully", "Outfit");
+                "delete", "Outfit", "deleted");
     }
 
     /**
@@ -67,7 +70,7 @@ public class OutfitController extends ApiBaseController {
     @GetMapping("/my-outfits")
     public ResponseEntity<ApiResponse<List<OutfitResponseDto>>> getMyOutfits() {
         return handleEntityAction(() -> outfitService.getUserOutfits(getLoggedInUser().getId()),
-                "User outfits retrieved successfully", "Outfit");
+                "retrieve", "Outfit", "retrieved");
     }
 
     /**
@@ -76,7 +79,7 @@ public class OutfitController extends ApiBaseController {
     @GetMapping("/{outfitId}")
     public ResponseEntity<ApiResponse<OutfitResponseDto>> getOutfit(@PathVariable Long outfitId) {
         return handleEntityAction(() -> outfitService.getOutfit(outfitId),
-                "Outfit retrieved successfully", "Outfit");
+                "retrieve", "Outfit", "retrieved");
     }
 
     /**
@@ -85,7 +88,7 @@ public class OutfitController extends ApiBaseController {
     @GetMapping("/users/{userId}")
     public ResponseEntity<ApiResponse<List<OutfitResponseDto>>> getUserOutfits(@PathVariable Long userId) {
         return handleEntityAction(() -> outfitService.getUserOutfits(userId),
-                "User outfits retrieved successfully", "Outfit");
+                "retrieve", "Outfit", "retrieved");
     }
 
     /**
@@ -94,9 +97,13 @@ public class OutfitController extends ApiBaseController {
     @PostMapping("/{outfitId}/items/{itemId}")
     public ResponseEntity<ApiResponse<OutfitResponseDto>> addItemToOutfit(
             @PathVariable Long outfitId, @PathVariable Long itemId) {
-
-        return handleEntityAction(() -> outfitService.addItemToOutfit(outfitId, itemId),
-                "Item added to outfit successfully", "Outfit");
+        try {
+            return handleEntityAction(() -> outfitService.addItemToOutfit(outfitId, itemId),
+                    "add item to", "Outfit", "added to outfit");
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse<>(false, "Outfit or item not found", null));
+        }
     }
 
     /**
@@ -105,17 +112,23 @@ public class OutfitController extends ApiBaseController {
     @DeleteMapping("/{outfitId}/items/{itemId}")
     public ResponseEntity<ApiResponse<OutfitResponseDto>> removeItemFromOutfit(
             @PathVariable Long outfitId, @PathVariable Long itemId) {
-
-        return handleEntityAction(() -> outfitService.removeItemFromOutfit(outfitId, itemId),
-                "Item removed from outfit successfully", "Outfit");
+        try {
+            return handleEntityAction(() -> outfitService.removeItemFromOutfit(outfitId, itemId),
+                    "remove item from", "Outfit", "removed from outfit");
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse<>(false, "Outfit or item not found", null));
+        }
     }
 
-//    /**
-//     * Retrieves outfits by season.
-//     */
-//    @GetMapping("/season/{season}")
-//    public ResponseEntity<ApiResponse<List<OutfitResponseDto>>> getOutfitsBySeason(@PathVariable String season) {
-//        return handleEntityAction(() -> outfitService.getOutfitsBySeason(getLoggedInUser().getId(), season),
-//                "Outfits filtered by season retrieved successfully");
-//    }
+    // /**
+    // * Retrieves outfits by season.
+    // */
+    // @GetMapping("/season/{season}")
+    // public ResponseEntity<ApiResponse<List<OutfitResponseDto>>>
+    // getOutfitsBySeason(@PathVariable String season) {
+    // return handleEntityAction(() ->
+    // outfitService.getOutfitsBySeason(getLoggedInUser().getId(), season),
+    // "Outfits filtered by season retrieved successfully");
+    // }
 }

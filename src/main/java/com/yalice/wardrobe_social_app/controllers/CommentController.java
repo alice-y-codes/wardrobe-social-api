@@ -13,7 +13,6 @@ import java.util.List;
 
 /**
  * Controller responsible for handling comment-related operations.
- * Provides endpoints for creating, updating, retrieving, and deleting comments.
  */
 @RestController
 @RequestMapping("/api/comments")
@@ -34,9 +33,9 @@ public class CommentController extends ApiBaseController {
     public ResponseEntity<ApiResponse<CommentResponseDto>> createComment(
             @PathVariable Long postId,
             @RequestBody CommentDto commentDto) {
-
-        return handleEntityAction(() -> commentService.createComment(getLoggedInUser().getId(), postId, commentDto),
-                "create", "comment");
+        return handleEntityAction(
+                () -> commentService.createComment(getLoggedInUser().getId(), postId, commentDto),
+                "create", "Comment", "created");
     }
 
     /**
@@ -46,9 +45,9 @@ public class CommentController extends ApiBaseController {
     public ResponseEntity<ApiResponse<CommentResponseDto>> updateComment(
             @PathVariable Long commentId,
             @RequestBody CommentDto commentDto) {
-
-        return handleEntityAction(() -> commentService.updateComment(getLoggedInUser().getId(), commentId, commentDto),
-                "update", "comment");
+        return handleEntityAction(
+                () -> commentService.updateComment(getLoggedInUser().getId(), commentId, commentDto),
+                "update", "Comment", "updated");
     }
 
     /**
@@ -56,18 +55,19 @@ public class CommentController extends ApiBaseController {
      */
     @DeleteMapping("/{commentId}")
     public ResponseEntity<ApiResponse<Void>> deleteComment(@PathVariable Long commentId) {
-        return handleEntityAction(() -> {
-            commentService.deleteComment(getLoggedInUser().getId(), commentId);
-            return null; // No result needed for deletion
-        }, "delete", "comment");
+        return handleVoidAction(
+                () -> commentService.deleteComment(getLoggedInUser().getId(), commentId),
+                "delete", "Comment", "deleted");
     }
 
     /**
      * Gets all comments for a specific post.
      */
-    @GetMapping("/posts/{postId}")
+    @GetMapping("/posts/{postId}/comments")
     public ResponseEntity<ApiResponse<List<CommentResponseDto>>> getPostComments(@PathVariable Long postId) {
-        return handleEntityAction(() -> commentService.getPostComments(postId), "retrieve", "comments for post");
+        return handleEntityRetrieval(
+                () -> commentService.getPostComments(postId),
+                "Comments for post");
     }
 
     /**
@@ -75,6 +75,8 @@ public class CommentController extends ApiBaseController {
      */
     @GetMapping("/{commentId}")
     public ResponseEntity<ApiResponse<CommentResponseDto>> getComment(@PathVariable Long commentId) {
-        return handleEntityAction(() -> commentService.getComment(commentId), "retrieve", "comment");
+        return handleEntityRetrieval(
+                () -> commentService.getComment(commentId),
+                "Comment");
     }
 }

@@ -1,122 +1,118 @@
 package com.yalice.wardrobe_social_app.services;
 
-import com.yalice.wardrobe_social_app.dtos.user.UserDto;
+import com.yalice.wardrobe_social_app.dtos.user.ChangePasswordDto;
+import com.yalice.wardrobe_social_app.dtos.user.UserProfileDto;
+import com.yalice.wardrobe_social_app.dtos.user.UserRegistrationDto;
 import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
+import com.yalice.wardrobe_social_app.entities.Profile;
 import com.yalice.wardrobe_social_app.entities.User;
-import com.yalice.wardrobe_social_app.exceptions.UserNotFoundException;
+import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.exceptions.UsernameAlreadyExistsException;
+import com.yalice.wardrobe_social_app.interfaces.UserManagementService;
+import com.yalice.wardrobe_social_app.mappers.UserMapper;
+import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
-import com.yalice.wardrobe_social_app.services.helpers.BaseService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Implementation of the UserManagementService that handles user registration, profile updates, password changes, and deletions.
- * This service extends BaseService to reuse common functionality like DTO conversion.
+ * Implementation of the UserManagementService that handles user registration,
+ * profile updates, password changes, and deletions.
+ * This service extends BaseService to reuse common functionality like DTO
+ * conversion.
  */
 @Service
-public class UserManagementServiceImpl extends BaseService {
+public class UserManagementServiceImpl implements UserManagementService {
 
     private final UserRepository userRepository;
+    private final ProfileRepository profileRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
 
-    /**
-     * Constructor to inject the UserRepository and PasswordEncoder dependencies.
-     *
-     * @param userRepository The repository for interacting with user data.
-     * @param passwordEncoder The encoder used for hashing passwords.
-     */
-    public UserManagementServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    @Autowired
+    public UserManagementServiceImpl(UserRepository userRepository,
+            ProfileRepository profileRepository,
+            PasswordEncoder passwordEncoder,
+            UserMapper userMapper) {
         this.userRepository = userRepository;
+        this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
+        this.userMapper = userMapper;
     }
 
-    /**
-     * Registers a new user. Checks if the username already exists, and if not, saves the new user to the database.
-     *
-     * @param userDto The data transfer object containing user details.
-     * @return A UserResponseDto containing the registered user's information.
-     * @throws UsernameAlreadyExistsException If the username is already taken.
-     */
+    @Override
     @Transactional
-    public UserResponseDto registerUser(UserDto userDto) {
-        if (userRepository.findByUsername(userDto.getUsername()).isPresent()) {
-            throw new UsernameAlreadyExistsException("Username already exists: " + userDto.getUsername());
+    public UserResponseDto registerUser(UserRegistrationDto registrationDto) {
+        if (existsByUsername(registrationDto.getUsername())) {
+            throw new UsernameAlreadyExistsException("Username already exists: " + registrationDto.getUsername());
         }
 
         User user = new User();
-        user.setUsername(userDto.getUsername());
-        user.setEmail(userDto.getEmail());
-        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
+        user.setUsername(registrationDto.getUsername());
+        user.setEmail(registrationDto.getEmail());
+        user.setPassword(passwordEncoder.encode(registrationDto.getPassword()));
+        user = userRepository.save(user);
 
-        User savedUser = userRepository.save(user);
-        logger.info("User '{}' registered successfully.", savedUser.getUsername());
+        Profile profile = new Profile();
+        profile.setUser(user);
+        profile.setVisibility(Profile.ProfileVisibility.PUBLIC);
+        profileRepository.save(profile);
 
-        return convertToUserResponseDto(savedUser);
+        return userMapper.toResponseDto(user);
     }
 
-    /**
-     * Updates the user's profile (username and email).
-     *
-     * @param userId The ID of the user to update.
-     * @param userDto The data transfer object containing the new user details.
-     * @return A UserResponseDto containing the updated user information.
-     * @throws UserNotFoundException If no user is found with the given user ID.
-     */
+    @Override
     @Transactional
-    public UserResponseDto updateUserProfile(Long userId, UserDto userDto) {
+    public UserResponseDto updateUserProfile(Long userId, UserProfileDto profileDto) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        logger.info("Found User: ID={} Username={} Email={}", user.getId(), user.getUsername(), user.getEmail());
-
-        user.setUsername(userDto.getUsername());
-        user.setEmail(userDto.getEmail());
-
-        User updatedUser = userRepository.save(user);
-        logger.info("User '{}' updated successfully.", updatedUser.getUsername());
-        logger.info("User '{}' updated successfully.", updatedUser.getEmail());
-
-
-        return convertToUserResponseDto(updatedUser);
-    }
-
-    /**
-     * Changes the user's password after validating the old password.
-     *
-     * @param userId The ID of the user whose password is being changed.
-     * @param oldPassword The current password of the user.
-     * @param newPassword The new password to set for the user.
-     * @throws UserNotFoundException If no user is found with the given user ID.
-     * @throws IllegalArgumentException If the old password is incorrect.
-     */
-    @Transactional
-    public void changePassword(Long userId, String oldPassword, String newPassword) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
-
-        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-            throw new IllegalArgumentException("Incorrect old password.");
+        Profile profile = user.getProfile();
+        if (profile == null) {
+            profile = new Profile();
+            profile.setUser(user);
+            profile.setVisibility(Profile.ProfileVisibility.PUBLIC);
         }
 
-        user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
-        logger.info("User '{}' changed password successfully.", user.getUsername());
+        profile.setBio(profileDto.getBio());
+        profile.setLocation(profileDto.getLocation());
+        profileRepository.save(profile);
+
+        return userMapper.toResponseDto(user);
     }
 
-    /**
-     * Deletes a user from the system.
-     *
-     * @param userId The ID of the user to delete.
-     * @throws UserNotFoundException If no user is found with the given user ID.
-     */
+    @Override
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordDto passwordDto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        if (!passwordEncoder.matches(passwordDto.getOldPassword(), user.getPassword())) {
+            throw new SecurityException("Invalid old password");
+        }
+
+        user.setPassword(passwordEncoder.encode(passwordDto.getNewPassword()));
+        userRepository.save(user);
+    }
+
+    @Override
     @Transactional
     public void deleteUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("User not found with id: " + userId);
+        }
+        userRepository.deleteById(userId);
+    }
 
-        userRepository.delete(user);
-        logger.info("User '{}' deleted successfully.", user.getUsername());
+    @Override
+    public boolean existsByUsername(String username) {
+        return userRepository.existsByUsername(username);
+    }
+
+    @Override
+    public boolean existsById(Long userId) {
+        return userRepository.existsById(userId);
     }
 }

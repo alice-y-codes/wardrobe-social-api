@@ -11,6 +11,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,13 +20,11 @@ import java.util.NoSuchElementException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(UserRegistrationException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleUserRegistrationException(
-            final UserRegistrationException e) {
-        HttpStatus status = "Username already taken".equals(e.getMessage()) ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST;
-        Map<String, String> errorResponse = Map.of("message", e.getMessage());
-        ApiResponse<Map<String, String>> apiResponse = new ApiResponse<>(false, e.getMessage(), errorResponse);
-        return ResponseEntity.status(status).body(apiResponse);
+    @ExceptionHandler(UsernameAlreadyExistsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUsernameAlreadyExistsException(
+            final UsernameAlreadyExistsException e) {
+        ApiResponse<Void> apiResponse = new ApiResponse<>(false, e.getMessage(), null);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiResponse);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -42,78 +41,80 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleIllegalArgumentException(
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(
             final IllegalArgumentException ex) {
-        Map<String, String> errorResponse = Map.of("message", "Invalid argument provided", "details", ex.getMessage());
-        ApiResponse<Map<String, String>> apiResponse = new ApiResponse<>(false, "Bad request", errorResponse);
+        ApiResponse<Void> apiResponse = new ApiResponse<>(false, ex.getMessage(), null);
         return ResponseEntity.badRequest().body(apiResponse);
     }
 
     @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleNoSuchElementException(
+    public ResponseEntity<ApiResponse<Void>> handleNoSuchElementException(
             final NoSuchElementException ex) {
-        Map<String, String> errorResponse = Map.of("message", "Resource not found", "details", ex.getMessage());
-        ApiResponse<Map<String, String>> apiResponse = new ApiResponse<>(false, "Not Found", errorResponse);
+        ApiResponse<Void> apiResponse = new ApiResponse<>(false, ex.getMessage(), null);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(apiResponse);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleHttpMessageNotReadableException(
+    public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(
             final HttpMessageNotReadableException ex) {
-        Map<String, String> errorResponse = Map.of("message", "Invalid request body", "details", ex.getMessage());
-        ApiResponse<Map<String, String>> apiResponse = new ApiResponse<>(false, "Bad request", errorResponse);
+        ApiResponse<Void> apiResponse = new ApiResponse<>(false, "Invalid request body", null);
         return ResponseEntity.badRequest().body(apiResponse);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleMethodArgumentTypeMismatchException(
+    public ResponseEntity<ApiResponse<Void>> handleMethodArgumentTypeMismatchException(
             final MethodArgumentTypeMismatchException ex) {
-        Map<String, String> errorResponse = Map.of(
-                "message", "Invalid parameter type",
-                "details", "Parameter '" + ex.getName() + "' should be of type " + ex.getRequiredType().getSimpleName());
-        ApiResponse<Map<String, String>> apiResponse = new ApiResponse<>(false, "Bad request", errorResponse);
+        String message = String.format("Parameter '%s' should be of type %s",
+                ex.getName(), ex.getRequiredType().getSimpleName());
+        ApiResponse<Void> apiResponse = new ApiResponse<>(false, message, null);
         return ResponseEntity.badRequest().body(apiResponse);
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleMissingServletRequestParameterException(
+    public ResponseEntity<ApiResponse<Void>> handleMissingServletRequestParameterException(
             final MissingServletRequestParameterException ex) {
-        Map<String, String> errorResponse = Map.of(
-                "message", "Missing required parameter",
-                "details", "Parameter '" + ex.getParameterName() + "' of type " + ex.getParameterType() + " is required");
-        ApiResponse<Map<String, String>> apiResponse = new ApiResponse<>(false, "Bad request", errorResponse);
+        String message = String.format("Parameter '%s' of type %s is required",
+                ex.getParameterName(), ex.getParameterType());
+        ApiResponse<Void> apiResponse = new ApiResponse<>(false, message, null);
         return ResponseEntity.badRequest().body(apiResponse);
     }
 
     @ExceptionHandler(DataAccessException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleDataAccessException(
+    public ResponseEntity<ApiResponse<Void>> handleDataAccessException(
             final DataAccessException ex) {
-        Map<String, String> errorResponse = Map.of("message", "Database error occurred", "details", ex.getMessage());
-        ApiResponse<Map<String, String>> apiResponse = new ApiResponse<>(false, "Internal Server Error", errorResponse);
+        ApiResponse<Void> apiResponse = new ApiResponse<>(false, "Database error occurred", null);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiResponse);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleResourceNotFoundException(ResourceNotFoundException ex) {
-        Map<String, String> errorResponse = Map.of("message", "Resource not found", "details", ex.getMessage());
-        ApiResponse<Map<String, String>> apiResponse = new ApiResponse<>(false, "Not Found", errorResponse);
+    public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(
+            ResourceNotFoundException ex) {
+        ApiResponse<Void> apiResponse = new ApiResponse<>(false, ex.getMessage(), null);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(apiResponse);
     }
 
     @ExceptionHandler(UnauthorizedAccessException.class)
-    public ResponseEntity<ApiResponse<String>> handleUnauthorizedAccess(UnauthorizedAccessException ex) {
-        ApiResponse<String> apiResponse = new ApiResponse<>(false, ex.getMessage(), ex.getMessage());
-        return new ResponseEntity<>(apiResponse, HttpStatus.UNAUTHORIZED);
+    public ResponseEntity<ApiResponse<Void>> handleUnauthorizedAccess(UnauthorizedAccessException ex) {
+        ApiResponse<Void> apiResponse = new ApiResponse<>(false, ex.getMessage(), null);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiResponse);
+    }
+
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<ApiResponse<Void>> handleSecurityException(SecurityException ex) {
+        ApiResponse<Void> apiResponse = new ApiResponse<>(false, ex.getMessage(), null);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiResponse);
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingPartException(MissingServletRequestPartException ex) {
+        ApiResponse<Void> apiResponse = new ApiResponse<>(false, ex.getMessage(), null);
+        return ResponseEntity.badRequest().body(apiResponse);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleAllOtherExceptions(final Exception ex) {
+    public ResponseEntity<ApiResponse<Void>> handleAllOtherExceptions(final Exception ex) {
         ex.printStackTrace();
-        Map<String, String> errorResponse = Map.of(
-                "message", "An unexpected error occurred",
-                "details", ex.getMessage(),
-                "exceptionType", ex.getClass().getName());
-        ApiResponse<Map<String, String>> apiResponse = new ApiResponse<>(false, "Internal Server Error", errorResponse);
+        ApiResponse<Void> apiResponse = new ApiResponse<>(false, "An unexpected error occurred", null);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiResponse);
     }
 }

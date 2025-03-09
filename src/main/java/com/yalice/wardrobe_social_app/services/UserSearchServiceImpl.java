@@ -4,8 +4,9 @@ import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.UserNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
-import com.yalice.wardrobe_social_app.services.helpers.BaseService;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
+import com.yalice.wardrobe_social_app.services.helpers.BaseService;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -21,14 +22,16 @@ import java.util.stream.Collectors;
 public class UserSearchServiceImpl extends BaseService implements UserSearchService {
 
     private final UserRepository userRepository;
+    private final DtoConversionService dtoConversionService;
 
     /**
      * Constructor to inject the UserRepository dependency.
      *
      * @param userRepository The repository to interact with the user database.
      */
-    public UserSearchServiceImpl(UserRepository userRepository) {
+    public UserSearchServiceImpl(UserRepository userRepository, DtoConversionService dtoConversionService) {
         this.userRepository = userRepository;
+        this.dtoConversionService = dtoConversionService;
     }
 
     /**
@@ -49,7 +52,7 @@ public class UserSearchServiceImpl extends BaseService implements UserSearchServ
                 });
 
         logger.info("User '{}' found.", user.getUsername());
-        return convertToUserResponseDto(user);
+        return dtoConversionService.convertToUserResponseDto(user);
     }
 
     /**
@@ -70,7 +73,7 @@ public class UserSearchServiceImpl extends BaseService implements UserSearchServ
                 });
 
         logger.info("User with ID '{}' found.", user.getId());
-        return convertToUserResponseDto(user);
+        return dtoConversionService.convertToUserResponseDto(user);
     }
 
     /**
@@ -109,7 +112,7 @@ public class UserSearchServiceImpl extends BaseService implements UserSearchServ
         logger.info("Found {} users matching the partial username '{}'.", users.size(), partialUsername);
 
         return users.stream()
-                .map(this::convertToUserResponseDto)
+                .map(dtoConversionService::convertToUserResponseDto)
                 .collect(Collectors.toList());
     }
 
@@ -128,7 +131,7 @@ public class UserSearchServiceImpl extends BaseService implements UserSearchServ
         logger.info("Fetched {} users for the requested page.", userPage.getNumberOfElements());
 
         return userPage.stream()
-                .map(this::convertToUserResponseDto)
+                .map(dtoConversionService::convertToUserResponseDto)
                 .collect(Collectors.toList());
     }
 }

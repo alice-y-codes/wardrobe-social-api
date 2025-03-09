@@ -2,6 +2,7 @@ package com.yalice.wardrobe_social_app.controllers;
 
 import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
 import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.dtos.common.PageResponseDto;
 import com.yalice.wardrobe_social_app.dtos.feed.FeedItemResponseDto;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
@@ -42,10 +43,9 @@ public class FeedController extends ApiBaseController {
     public ResponseEntity<ApiResponse<List<FeedItemResponseDto>>> getFeed(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return handleEntityAction(
+        return handleEntityRetrieval(
                 () -> feedService.getFeed(getLoggedInUser().getId(), page, size),
-                "retrieve feed", "Feed"
-        );
+                "Feed");
     }
 
     /**
@@ -61,10 +61,9 @@ public class FeedController extends ApiBaseController {
             @PathVariable String season,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return handleEntityAction(
+        return handleEntityRetrieval(
                 () -> feedService.getFeedBySeason(getLoggedInUser().getId(), season, page, size),
-                "retrieve seasonal feed", "Feed By Season"
-        );
+                "Feed By Season");
     }
 
     /**
@@ -80,10 +79,9 @@ public class FeedController extends ApiBaseController {
             @PathVariable String category,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return handleEntityAction(
+        return handleEntityRetrieval(
                 () -> feedService.getFeedByCategory(getLoggedInUser().getId(), category, page, size),
-                "retrieve category feed", "Feed By Category"
-        );
+                "Feed By Category");
     }
 
     /**
@@ -94,10 +92,16 @@ public class FeedController extends ApiBaseController {
      * @return ResponseEntity containing the posts of the specified user
      */
     @GetMapping("/users/{userId}/posts")
-    public ResponseEntity<ApiResponse<Page<Post>>> getUserPosts(@PathVariable Long userId,
-                                                                @PageableDefault(size = 20) Pageable pageable) {
-        User currentUser = getLoggedInUser();
-        Page<Post> posts = feedService.getUserPosts(userId, currentUser.getId(), pageable);
-        return ResponseEntity.ok(new ApiResponse<>(true, "User posts retrieved successfully", posts));
+    public ResponseEntity<ApiResponse<PageResponseDto<Post>>> getUserPosts(@PathVariable Long userId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return handleEntityRetrieval(
+                () -> {
+                    User currentUser = getLoggedInUser();
+                    if (currentUser == null || currentUser.getProfile() == null) {
+                        throw new SecurityException("User not authenticated or profile not found");
+                    }
+                    Page<Post> posts = feedService.getUserPosts(userId, currentUser.getId(), pageable);
+                    return PageResponseDto.from(posts);
+                }, "User posts");
     }
 }

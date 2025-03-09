@@ -50,8 +50,8 @@ public class ProfileController extends ApiBaseController {
     public ResponseEntity<ApiResponse<ProfileResponseDto>> updateProfile(
             @RequestPart("profile") ProfileDto profileDto,
             @RequestPart(value = "image", required = false) MultipartFile image) {
-        return handleEntityUpdate(() -> profileService.updateProfile(getLoggedInUser().getId(), profileDto, image),
-                "Profile updated successfully");
+        return handleEntityAction(() -> profileService.updateProfile(getLoggedInUser().getId(), profileDto, image),
+                "update", "Profile", "updated");
     }
 
     /**
@@ -59,7 +59,7 @@ public class ProfileController extends ApiBaseController {
      */
     @PutMapping("/me/visibility")
     public ResponseEntity<ApiResponse<ProfileResponseDto>> updateProfileVisibility(@RequestParam boolean isPublic) {
-        return handleEntityUpdate(() -> profileService.updateProfileVisibility(getLoggedInUser().getId(), isPublic),
-                "Profile visibility updated successfully");
+        return handleEntityAction(() -> profileService.updateProfileVisibility(getLoggedInUser().getId(), isPublic),
+                "update", "Profile visibility", "updated");
     }
 }

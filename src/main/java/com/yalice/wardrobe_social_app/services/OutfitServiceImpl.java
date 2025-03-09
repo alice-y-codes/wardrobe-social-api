@@ -10,6 +10,7 @@ import com.yalice.wardrobe_social_app.interfaces.OutfitService;
 import com.yalice.wardrobe_social_app.repositories.OutfitRepository;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
+import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,12 +25,14 @@ public class OutfitServiceImpl extends BaseService implements OutfitService {
     private final ProfileRepository profileRepository;
     private final ItemService itemService;
     private final OutfitRepository outfitRepository;
+    private final DtoConversionService dtoConversionService;
 
     public OutfitServiceImpl(OutfitRepository outfitRepository, ProfileRepository profileRepository,
-            ItemService itemService) {
+                             ItemService itemService, DtoConversionService dtoConversionService) {
         this.outfitRepository = outfitRepository;
         this.profileRepository = profileRepository;
         this.itemService = itemService;
+        this.dtoConversionService = dtoConversionService;
     }
 
     @Override
@@ -60,7 +63,7 @@ public class OutfitServiceImpl extends BaseService implements OutfitService {
         logger.info("Outfit '{}' created successfully for user '{}'.", outfit.getName(),
                 profile.getUser().getUsername());
 
-        return convertToOutfitResponseDto(savedOutfit);
+        return dtoConversionService.convertToOutfitResponseDto(savedOutfit);
     }
 
     @Override
@@ -89,7 +92,7 @@ public class OutfitServiceImpl extends BaseService implements OutfitService {
         Outfit updatedOutfit = outfitRepository.save(outfit);
         logger.info("Outfit '{}' updated successfully.", updatedOutfit.getName());
 
-        return convertToOutfitResponseDto(updatedOutfit);
+        return dtoConversionService.convertToOutfitResponseDto(updatedOutfit);
     }
 
     @Override
@@ -117,7 +120,7 @@ public class OutfitServiceImpl extends BaseService implements OutfitService {
 
         List<Outfit> outfits = outfitRepository.findByProfileId(profile.getId());
         return outfits.stream()
-                .map(this::convertToOutfitResponseDto)
+                .map(dtoConversionService::convertToOutfitResponseDto)
                 .collect(Collectors.toList());
     }
 
@@ -128,7 +131,7 @@ public class OutfitServiceImpl extends BaseService implements OutfitService {
         Outfit outfit = outfitRepository.findById(outfitId)
                 .orElseThrow(() -> new EntityNotFoundException("Outfit not found with ID: " + outfitId));
 
-        return convertToOutfitResponseDto(outfit);
+        return dtoConversionService.convertToOutfitResponseDto(outfit);
     }
 
     @Override
@@ -153,7 +156,7 @@ public class OutfitServiceImpl extends BaseService implements OutfitService {
 
         logger.info("Item '{}' added to outfit '{}'.", item.getName(), outfit.getName());
 
-        return convertToOutfitResponseDto(updatedOutfit);
+        return dtoConversionService.convertToOutfitResponseDto(updatedOutfit);
     }
 
     @Override
@@ -170,6 +173,6 @@ public class OutfitServiceImpl extends BaseService implements OutfitService {
 
         logger.info("Item '{}' removed from outfit '{}'.", item.getName(), outfit.getName());
 
-        return convertToOutfitResponseDto(updatedOutfit);
+        return dtoConversionService.convertToOutfitResponseDto(updatedOutfit);
     }
 }

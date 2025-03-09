@@ -1,6 +1,8 @@
 package com.yalice.wardrobe_social_app.interfaces;
 
-import com.yalice.wardrobe_social_app.dtos.user.UserDto;
+import com.yalice.wardrobe_social_app.dtos.user.ChangePasswordDto;
+import com.yalice.wardrobe_social_app.dtos.user.UserProfileDto;
+import com.yalice.wardrobe_social_app.dtos.user.UserRegistrationDto;
 import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.exceptions.UsernameAlreadyExistsException;
 import org.springframework.stereotype.Service;
@@ -15,29 +17,28 @@ public interface UserManagementService {
     /**
      * Registers a new user in the system.
      *
-     * @param userDto The DTO containing user registration details.
+     * @param registrationDto The DTO containing user registration details.
      * @return The registered user as a response DTO.
      * @throws UsernameAlreadyExistsException if the username is already taken.
      */
-    UserResponseDto registerUser(UserDto userDto);
+    UserResponseDto registerUser(UserRegistrationDto registrationDto);
 
     /**
      * Updates a user's profile information.
      *
-     * @param userId  The ID of the user to update.
-     * @param userDto The DTO containing the updated user information.
+     * @param userId     The ID of the user to update.
+     * @param profileDto The DTO containing the updated user information.
      * @return The updated user as a response DTO.
      */
-    UserResponseDto updateUserProfile(Long userId, UserDto userDto);
+    UserResponseDto updateUserProfile(Long userId, UserProfileDto profileDto);
 
     /**
      * Changes a user's password.
      *
      * @param userId      The ID of the user.
-     * @param oldPassword The current password.
-     * @param newPassword The new password to set.
+     * @param passwordDto The DTO containing the new password.
      */
-    void changePassword(Long userId, String oldPassword, String newPassword);
+    void changePassword(Long userId, ChangePasswordDto passwordDto);
 
     /**
      * Deletes a user account.
@@ -45,4 +46,20 @@ public interface UserManagementService {
      * @param userId The ID of the user to delete.
      */
     void deleteUser(Long userId);
+
+    /**
+     * Checks if a user exists by username.
+     *
+     * @param username The username to check.
+     * @return True if the user exists, false otherwise.
+     */
+    boolean existsByUsername(String username);
+
+    /**
+     * Checks if a user exists by ID.
+     *
+     * @param userId The user ID to check.
+     * @return True if the user exists, false otherwise.
+     */
+    boolean existsById(Long userId);
 }

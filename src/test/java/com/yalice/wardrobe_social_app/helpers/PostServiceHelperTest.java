@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.Post.PostVisibility;
 import com.yalice.wardrobe_social_app.entities.Profile;
-import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.services.helpers.PostServiceHelper;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +57,7 @@ class PostServiceHelperTest {
     @Test
     void testIsPostAccessibleToUser_PrivateVisibility_NotOwner() {
         // Arrange
-        post.setVisibility(Post.PostVisibility.PRIVATE);  // Private post
+        post.setVisibility(Post.PostVisibility.PRIVATE); // Private post
         viewerId = 2L; // Viewer is not the owner
 
         // Act
@@ -71,8 +70,8 @@ class PostServiceHelperTest {
     @Test
     void testIsPostAccessibleToUser_PrivateVisibility_Owner() {
         // Arrange
-        post.setVisibility(Post.PostVisibility.PRIVATE);  // Private post
-        viewerId = postOwner.getId();  // Viewer is the owner
+        post.setVisibility(Post.PostVisibility.PRIVATE); // Private post
+        viewerId = postOwner.getId(); // Viewer is the owner
 
         // Act
         boolean result = postServiceHelper.isPostAccessibleToUser(post, viewerId);
@@ -84,8 +83,8 @@ class PostServiceHelperTest {
     @Test
     void testIsPostAccessibleToUser_PublicVisibility_Owner() {
         // Arrange
-        post.setVisibility(Post.PostVisibility.PUBLIC);  // Public post
-        viewerId = postOwner.getId();  // Viewer is the owner
+        post.setVisibility(Post.PostVisibility.PUBLIC); // Public post
+        viewerId = postOwner.getId(); // Viewer is the owner
 
         // Act
         boolean result = postServiceHelper.isPostAccessibleToUser(post, viewerId);
@@ -97,8 +96,8 @@ class PostServiceHelperTest {
     @Test
     void testIsPostAccessibleToUser_FriendsOnly_ViewerIsFriend() {
         // Arrange
-        post.setVisibility(Post.PostVisibility.FRIENDS_ONLY);  // Friends-only post
-        viewerId = 2L;  // Viewer is not the owner
+        post.setVisibility(Post.PostVisibility.FRIENDS_ONLY); // Friends-only post
+        viewerId = 2L; // Viewer is not the owner
         when(friendService.areFriends(postOwner.getId(), viewerId)).thenReturn(true); // Mock friendship
 
         // Act
@@ -111,8 +110,8 @@ class PostServiceHelperTest {
     @Test
     void testIsPostAccessibleToUser_FriendsOnly_ViewerIsNotFriend() {
         // Arrange
-        post.setVisibility(PostVisibility.FRIENDS_ONLY);  // Friends-only post
-        viewerId = 2L;  // Viewer is not the owner
+        post.setVisibility(PostVisibility.FRIENDS_ONLY); // Friends-only post
+        viewerId = 2L; // Viewer is not the owner
         when(friendService.areFriends(postOwner.getId(), viewerId)).thenReturn(false); // Mock no friendship
 
         // Act
@@ -125,8 +124,8 @@ class PostServiceHelperTest {
     @Test
     void testIsPostAccessibleToUser_PostOwnerCanViewOwnPost() {
         // Arrange
-        post.setVisibility(Post.PostVisibility.FRIENDS_ONLY);  // Friends-only post
-        viewerId = postOwner.getId();  // Viewer is the post owner
+        post.setVisibility(Post.PostVisibility.FRIENDS_ONLY); // Friends-only post
+        viewerId = postOwner.getId(); // Viewer is the post owner
 
         // Act
         boolean result = postServiceHelper.isPostAccessibleToUser(post, viewerId);

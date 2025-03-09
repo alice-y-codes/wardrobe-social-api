@@ -1,203 +1,236 @@
-//package com.yalice.wardrobe_social_app.controllers;
-//
-//import com.fasterxml.jackson.databind.ObjectMapper;
-//import com.yalice.wardrobe_social_app.dtos.user.UserDto;
-//import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
-//import com.yalice.wardrobe_social_app.entities.User;
-//import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
-//import com.yalice.wardrobe_social_app.exceptions.UserRegistrationException;
-//import com.yalice.wardrobe_social_app.interfaces.UserManagementService;
-//import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.Test;
-//import org.mockito.InjectMocks;
-//import org.mockito.Mock;
-//import org.mockito.MockitoAnnotations;
-//import org.springframework.http.MediaType;
-//import org.springframework.test.web.servlet.MockMvc;
-//import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-//
-//import static org.hamcrest.Matchers.*;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.Mockito.*;
-//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-//import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-//
-//class UserManagementControllerTest {
-//
-//    private MockMvc mockMvc;
-//
-//    @Mock
-//    private UserManagementService userManagementService;
-//
-//    @Mock
-//    private AuthUtils authUtils;
-//
-//    @InjectMocks
-//    private UserManagementController userManagementController;
-//
-//    private final ObjectMapper objectMapper = new ObjectMapper();
-//    private UserDto testUserDto;
-//    private UserResponseDto testUserResponseDto;
-//
-//    @BeforeEach
-//    void setUp() {
-//        MockitoAnnotations.openMocks(this);
-//        mockMvc = MockMvcBuilders.standaloneSetup(userManagementController)
-//                .setControllerAdvice(new GlobalExceptionHandler())
-//                .build();
-//
-//        initializeTestData();
-//    }
-//
-//    private void initializeTestData() {
-//        testUserDto = UserDto.builder()
-//                .username("testuser")
-//                .email("test@example.com")
-//                .password("password123")
-//                .build();
-//
-//        testUserResponseDto = UserResponseDto.builder()
-//                .id(1L)
-//                .username("testuser")
-//                .email("test@example.com")
-//                .build();
-//    }
-//
-//    @Test
-//    void registerUser_Success() throws Exception {
-//        when(userManagementService.registerUser(any(UserDto.class))).thenReturn(testUserResponseDto);
-//
-//        mockMvc.perform(post("/api/users/register")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(objectMapper.writeValueAsString(testUserDto)))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.success", is(true)))
-//                .andExpect(jsonPath("$.message", is("User registered successfully")))
-//                .andExpect(jsonPath("$.data.id", is(1)))
-//                .andExpect(jsonPath("$.data.username", is("testuser")));
-//
-//        verify(userManagementService).registerUser(any(UserDto.class));
-//    }
-//
-//    @Test
-//    void registerUser_ValidationError() throws Exception {
-//        UserDto invalidUserDto = UserDto.builder()
-//                .username("") // Empty username
-//                .email("invalid-email") // Invalid email
-//                .password("") // Empty password
-//                .build();
-//
-//        mockMvc.perform(post("/api/users/register")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(objectMapper.writeValueAsString(invalidUserDto)))
-//                .andExpect(status().isBadRequest())
-//                .andExpect(jsonPath("$.success", is(false)))
-//                .andExpect(jsonPath("$.message", containsString("Validation failed")));
-//
-//        verify(userManagementService, never()).registerUser(any(UserDto.class));
-//    }
-//
-//    @Test
-//    void registerUser_DuplicateUsername() throws Exception {
-//        when(userManagementService.registerUser(any(UserDto.class)))
-//                .thenThrow(new UserRegistrationException("Username already exists"));
-//
-//        mockMvc.perform(post("/api/users/register")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(objectMapper.writeValueAsString(testUserDto)))
-//                .andExpect(status().isBadRequest())
-//                .andExpect(jsonPath("$.success", is(false)))
-//                .andExpect(jsonPath("$.message", is("Username already exists")));
-//
-//        verify(userManagementService).registerUser(any(UserDto.class));
-//    }
-//
-//    @Test
-//    void updateUserProfile_Success() throws Exception {
-//        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(User.builder().id(1L).build());
-//        when(userManagementService.updateUserProfile(anyLong(), any(UserDto.class))).thenReturn(testUserResponseDto);
-//
-//        mockMvc.perform(patch("/api/users/1")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(objectMapper.writeValueAsString(testUserDto)))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.success", is(true)))
-//                .andExpect(jsonPath("$.message", is("User profile updated successfully")))
-//                .andExpect(jsonPath("$.data.id", is(1)))
-//                .andExpect(jsonPath("$.data.username", is("testuser")));
-//
-//        verify(userManagementService).updateUserProfile(anyLong(), any(UserDto.class));
-//    }
-//
-//    @Test
-//    void updateUserProfile_Unauthorized() throws Exception {
-//        User unauthorizedUser = User.builder().id(2L).username("otheruser").build();
-//        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(unauthorizedUser);
-//
-//        mockMvc.perform(patch("/api/users/1")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(objectMapper.writeValueAsString(testUserDto)))
-//                .andExpect(status().isForbidden())
-//                .andExpect(jsonPath("$.success", is(false)))
-//                .andExpect(jsonPath("$.message", is("You can only update your own profile")));
-//
-//        verify(userManagementService, never()).updateUserProfile(anyLong(), any(UserDto.class));
-//    }
-//
-//    @Test
-//    void changePassword_Success() throws Exception {
-//        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(User.builder().id(1L).build());
-//        doNothing().when(userManagementService).changePassword(anyLong(), anyString(), anyString());
-//
-//        mockMvc.perform(post("/api/users/1/password")
-//                        .param("oldPassword", "oldpass123")
-//                        .param("newPassword", "newpass123"))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.success", is(true)))
-//                .andExpect(jsonPath("$.message", is("Password changed successfully")));
-//
-//        verify(userManagementService).changePassword(anyLong(), anyString(), anyString());
-//    }
-//
-//    @Test
-//    void changePassword_Unauthorized() throws Exception {
-//        User unauthorizedUser = User.builder().id(2L).username("otheruser").build();
-//        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(unauthorizedUser);
-//
-//        mockMvc.perform(post("/api/users/1/password")
-//                        .param("oldPassword", "oldpass123")
-//                        .param("newPassword", "newpass123"))
-//                .andExpect(status().isForbidden())
-//                .andExpect(jsonPath("$.success", is(false)))
-//                .andExpect(jsonPath("$.message", is("You can only change your own password")));
-//
-//        verify(userManagementService, never()).changePassword(anyLong(), anyString(), anyString());
-//    }
-//
-//    @Test
-//    void deleteUser_Success() throws Exception {
-//        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(User.builder().id(1L).build());
-//        doNothing().when(userManagementService).deleteUser(anyLong());
-//
-//        mockMvc.perform(delete("/api/users/1"))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.success", is(true)))
-//                .andExpect(jsonPath("$.message", is("User deleted successfully")));
-//
-//        verify(userManagementService).deleteUser(anyLong());
-//    }
-//
-//    @Test
-//    void deleteUser_Unauthorized() throws Exception {
-//        User unauthorizedUser = User.builder().id(2L).username("otheruser").build();
-//        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(unauthorizedUser);
-//
-//        mockMvc.perform(delete("/api/users/1"))
-//                .andExpect(status().isForbidden())
-//                .andExpect(jsonPath("$.success", is(false)))
-//                .andExpect(jsonPath("$.message", is("You can only delete your own account")));
-//
-//        verify(userManagementService, never()).deleteUser(anyLong());
-//    }
-//}
+package com.yalice.wardrobe_social_app.controllers;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.yalice.wardrobe_social_app.controllers.helpers.UserDtoValidator;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.dtos.user.ChangePasswordDto;
+import com.yalice.wardrobe_social_app.dtos.user.UserProfileDto;
+import com.yalice.wardrobe_social_app.dtos.user.UserRegistrationDto;
+import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
+import com.yalice.wardrobe_social_app.entities.Profile;
+import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
+import com.yalice.wardrobe_social_app.exceptions.UsernameAlreadyExistsException;
+import com.yalice.wardrobe_social_app.interfaces.UserManagementService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.validation.BindingResult;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+class UserManagementControllerTest {
+
+        @Mock
+        private UserManagementService userManagementService;
+
+        @Mock
+        private AuthUtils authUtils;
+
+        @Mock
+        private UserDtoValidator userDtoValidator;
+
+        private MockMvc mockMvc;
+        private ObjectMapper objectMapper;
+        private User testUser;
+
+        @InjectMocks
+        private UserManagementController userManagementController;
+
+        @BeforeEach
+        void setUp() {
+                MockitoAnnotations.openMocks(this);
+                mockMvc = MockMvcBuilders
+                                .standaloneSetup(userManagementController)
+                                .setControllerAdvice(new GlobalExceptionHandler())
+                                .build();
+                objectMapper = new ObjectMapper();
+                testUser = User.builder()
+                                .id(1L)
+                                .profile(Profile.builder().id(1L).build())
+                                .build();
+        }
+
+        @Test
+        void registerUser() throws Exception {
+                UserRegistrationDto registrationDto = createTestRegistrationDto();
+                UserResponseDto responseDto = createTestUserResponse();
+
+                when(userManagementService.registerUser(any(UserRegistrationDto.class))).thenReturn(responseDto);
+                doNothing().when(userDtoValidator).validate(any(), any(BindingResult.class));
+
+                mockMvc.perform(post("/api/users/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(registrationDto)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success").value(true))
+                                .andExpect(jsonPath("$.data").exists());
+        }
+
+        @Test
+        void registerUser_UsernameExists() throws Exception {
+                UserRegistrationDto registrationDto = createTestRegistrationDto();
+                when(userManagementService.registerUser(any(UserRegistrationDto.class)))
+                                .thenThrow(new UsernameAlreadyExistsException("Username already exists"));
+                doNothing().when(userDtoValidator).validate(any(), any(BindingResult.class));
+
+                mockMvc.perform(post("/api/users/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(registrationDto)))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.success").value(false))
+                                .andExpect(jsonPath("$.message").value("Username already exists"))
+                                .andExpect(jsonPath("$.data").doesNotExist());
+        }
+
+        @Test
+        void updateUserProfile() throws Exception {
+                UserProfileDto profileDto = createTestProfileDto();
+                UserResponseDto responseDto = createTestUserResponse();
+
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(userManagementService.existsById(1L)).thenReturn(true);
+                when(userManagementService.updateUserProfile(eq(1L), any(UserProfileDto.class)))
+                                .thenReturn(responseDto);
+                doNothing().when(userDtoValidator).validate(any(), any(BindingResult.class));
+
+                mockMvc.perform(put("/api/users/1/profile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(profileDto)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success").value(true))
+                                .andExpect(jsonPath("$.data").exists())
+                                .andExpect(jsonPath("$.data.id").value(1L));
+        }
+
+        @Test
+        void updateUserProfile_NotFound() throws Exception {
+                UserProfileDto profileDto = createTestProfileDto();
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(userManagementService.existsById(999L)).thenReturn(false);
+
+                mockMvc.perform(put("/api/users/999/profile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(profileDto)))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.success").value(false))
+                                .andExpect(jsonPath("$.message").value("User not found"))
+                                .andExpect(jsonPath("$.data").doesNotExist());
+        }
+
+        @Test
+        void updateUserProfile_Unauthorized() throws Exception {
+                UserProfileDto profileDto = createTestProfileDto();
+                User differentUser = User.builder().id(2L).build();
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(differentUser);
+                when(userManagementService.existsById(1L)).thenReturn(true);
+
+                mockMvc.perform(put("/api/users/1/profile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(profileDto)))
+                                .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.success").value(false))
+                                .andExpect(jsonPath("$.message").value("Unauthorized"))
+                                .andExpect(jsonPath("$.data").doesNotExist());
+        }
+
+        @Test
+        void changePassword() throws Exception {
+                ChangePasswordDto passwordDto = createTestPasswordDto();
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(userManagementService.existsById(1L)).thenReturn(true);
+                doNothing().when(userManagementService).changePassword(eq(1L), any(ChangePasswordDto.class));
+
+                mockMvc.perform(put("/api/users/1/password")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(passwordDto)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        void changePassword_Unauthorized() throws Exception {
+                ChangePasswordDto passwordDto = createTestPasswordDto();
+                User differentUser = User.builder().id(2L).build();
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(differentUser);
+                when(userManagementService.existsById(1L)).thenReturn(true);
+
+                mockMvc.perform(put("/api/users/1/password")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(passwordDto)))
+                                .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.success").value(false))
+                                .andExpect(jsonPath("$.message").value("Unauthorized"))
+                                .andExpect(jsonPath("$.data").doesNotExist());
+        }
+
+        @Test
+        void deleteUser() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(userManagementService.existsById(1L)).thenReturn(true);
+                doNothing().when(userManagementService).deleteUser(1L);
+
+                mockMvc.perform(delete("/api/users/1"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        void deleteUser_Unauthorized() throws Exception {
+                User differentUser = User.builder().id(2L).build();
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(differentUser);
+                when(userManagementService.existsById(1L)).thenReturn(true);
+
+                mockMvc.perform(delete("/api/users/1"))
+                                .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.success").value(false))
+                                .andExpect(jsonPath("$.message").value("Unauthorized"))
+                                .andExpect(jsonPath("$.data").doesNotExist());
+        }
+
+        @Test
+        void deleteUser_NotFound() throws Exception {
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(userManagementService.existsById(999L)).thenReturn(false);
+
+                mockMvc.perform(delete("/api/users/999"))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.success").value(false))
+                                .andExpect(jsonPath("$.message").value("User not found"))
+                                .andExpect(jsonPath("$.data").doesNotExist());
+        }
+
+        private UserRegistrationDto createTestRegistrationDto() {
+                return new UserRegistrationDto("testuser", "test@example.com", "testpass");
+        }
+
+        private UserProfileDto createTestProfileDto() {
+                UserProfileDto dto = new UserProfileDto();
+                dto.setBio("Test bio");
+                dto.setLocation("Test location");
+                return dto;
+        }
+
+        private ChangePasswordDto createTestPasswordDto() {
+                return new ChangePasswordDto("oldpass", "newpass");
+        }
+
+        private UserResponseDto createTestUserResponse() {
+                return UserResponseDto.builder()
+                                .id(1L)
+                                .username("testuser")
+                                .email("test@example.com")
+                                .build();
+        }
+}
