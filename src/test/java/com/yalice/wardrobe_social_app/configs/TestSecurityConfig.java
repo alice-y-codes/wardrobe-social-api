@@ -1,23 +1,22 @@
-package com.yalice.wardrobe_social_app.config;
+package com.yalice.wardrobe_social_app.configs;
 
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
-@Configuration
+@TestConfiguration
 @EnableWebSecurity
-public class SecurityConfig {
+public class TestSecurityConfig {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/images/**").permitAll() // Allow public access to images
-                        .anyRequest().authenticated());
+                        .anyRequest().permitAll());
+
         return http.build();
     }
 }

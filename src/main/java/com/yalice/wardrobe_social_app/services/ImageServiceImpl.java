@@ -3,6 +3,7 @@ package com.yalice.wardrobe_social_app.services;
 import com.yalice.wardrobe_social_app.exceptions.ImageProcessingException;
 import com.yalice.wardrobe_social_app.interfaces.ImageService;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -26,6 +27,19 @@ public class ImageServiceImpl extends BaseService implements ImageService {
 
     @Value("${app.image.allowed-types:image/jpeg,image/png,image/gif}")
     private String[] allowedTypes;
+
+    @PostConstruct
+    public void init() {
+        try {
+            String cleanPath = StringUtils.cleanPath(uploadDir);
+            Path path = Paths.get(cleanPath);
+            if (!Files.exists(path)) {
+                Files.createDirectories(path);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Could not create upload directory!", e);
+        }
+    }
 
     @Override
     public String uploadImage(MultipartFile file, String entityType, Long entityId) {

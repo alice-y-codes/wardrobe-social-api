@@ -8,17 +8,8 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "app")
 @Data
 public class AppConfig {
-    private final Database database = new Database();
     private final Jwt jwt = new Jwt();
-    private final Server server = new Server();
-    private final Logging logging = new Logging();
-
-    @Data
-    public static class Database {
-        private String url;
-        private String username;
-        private String password;
-    }
+    private final Upload upload = new Upload();
 
     @Data
     public static class Jwt {
@@ -27,13 +18,14 @@ public class AppConfig {
     }
 
     @Data
-    public static class Server {
-        private int port;
-    }
+    public static class Upload {
+        private String dir;
+        private Image image = new Image();
 
-    @Data
-    public static class Logging {
-        private String rootLevel;
-        private String appLevel;
+        @Data
+        public static class Image {
+            private long maxSize;
+            private String[] allowedTypes;
+        }
     }
 }

@@ -1,4 +1,4 @@
-package com.yalice.wardrobe_social_app.config;
+package com.yalice.wardrobe_social_app.configs;
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
