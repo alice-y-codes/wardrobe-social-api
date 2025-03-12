@@ -243,7 +243,7 @@ class ItemControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Required part 'image' is not present."))
-                .andExpect(jsonPath("$.data").value("Required part 'image' is not present."));
+                .andExpect(jsonPath("$.data").doesNotExist());
     }
 
     @Test

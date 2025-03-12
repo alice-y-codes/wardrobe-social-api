@@ -8,300 +8,261 @@ import com.yalice.wardrobe_social_app.exceptions.PostNotFoundException;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.OutfitService;
 import com.yalice.wardrobe_social_app.interfaces.ProfileService;
+import com.yalice.wardrobe_social_app.mappers.PostMapper;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.PostServiceImpl;
-import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import com.yalice.wardrobe_social_app.services.helpers.PostServiceHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class PostServiceImplTest {
+
+    @Mock
+    private PostRepository postRepository;
+    @Mock
+    private LikeRepository likeRepository;
+    @Mock
+    private ProfileService profileService;
+    @Mock
+    private OutfitService outfitService;
+    @Mock
+    private PostMapper postMapper;
+    @Mock
+    private PostServiceHelper postServiceHelper;
 
     @InjectMocks
     private PostServiceImpl postService;
 
-    @Mock
-    private PostRepository postRepository;
-
-    @Mock
-    private LikeRepository likeRepository;
-
-    @Mock
-    private ProfileService profileService;
-
-    @Mock
-    private OutfitService outfitService;
-
-    @Mock
-    private DtoConversionService dtoConversionService;
-
-    @Mock
-    private PostServiceHelper postServiceHelper;
-
-    @Mock
     private Profile profile;
-
-    @Mock
-    private User user;
-
-    @Mock
     private Post post;
-
-    @Mock
+    private Outfit outfit;
     private PostDto postDto;
 
-    @Mock
-    private Outfit outfit;
-
-    @Mock
-    private Like like;
-
-    private Long postId = 1L;
-    private Long profileId = 1L;
-    private Long outfitId = 1L;
-    private Long userId = 1L;
+    private static final Long POST_ID = 1L;
+    private static final Long PROFILE_ID = 1L;
+    private static final Long OUTFIT_ID = 1L;
+    private static final Long USER_ID = 1L;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        User user = new User();
+        user.setId(USER_ID);
 
-        user = new User();
-        user.setId(userId);
-
-        // Mock common objects
         profile = new Profile();
-        profile.setId(profileId);
+        profile.setId(PROFILE_ID);
         profile.setUser(user);
 
         outfit = new Outfit();
-        outfit.setId(outfitId);
+        outfit.setId(OUTFIT_ID);
 
         post = new Post();
-        post.setId(postId);
+        post.setId(POST_ID);
         post.setTitle("Test Title");
         post.setContent("Test Content");
         post.setProfile(profile);
         post.setVisibility(Post.PostVisibility.PUBLIC);
         post.setOutfit(outfit);
 
-
         postDto = new PostDto();
         postDto.setTitle("Test Title");
         postDto.setFeatureImage("http://image.url");
         postDto.setContent("Test Content");
-        postDto.setOutfitId(outfitId);
+        postDto.setOutfitId(OUTFIT_ID);
         postDto.setVisibility("PUBLIC");
     }
 
     @Test
-    void testCreatePost_Success() {
-        when(profileService.getProfileEntityById(profileId)).thenReturn(profile);
-        when(outfitService.getOutfitEntityById(outfitId)).thenReturn(outfit);
-        when(postRepository.save(any(Post.class))).thenReturn(post);
+    void createPost_Success() {
+        when(profileService.getProfileEntityById(PROFILE_ID)).thenReturn(profile);
+        when(outfitService.getOutfitEntityById(OUTFIT_ID)).thenReturn(outfit);
 
-        PostResponseDto mockPostResponseDto = new PostResponseDto();
-        mockPostResponseDto.setId(postId);
-        mockPostResponseDto.setContent("Test Content");
-        mockPostResponseDto.setTitle("Test Title");
-        mockPostResponseDto.setVisibility("PUBLIC");
+        // Strict matching with argThat
+        when(postRepository.save(argThat(post ->
+                post.getTitle().equals("Test Title") &&
+                        post.getContent().equals("Test Content") &&
+                        post.getVisibility() == Post.PostVisibility.PUBLIC
+        ))).thenReturn(post);
 
-        when(dtoConversionService.convertToPostResponseDto(any(Post.class))).thenReturn(mockPostResponseDto);
+        PostResponseDto mockPostResponseDto = createPostResponseDto();
+        when(postMapper.toResponseDto(argThat(p -> p.getId().equals(POST_ID)))).thenReturn(mockPostResponseDto);
 
-        PostResponseDto postResponseDto = postService.createPost(profileId, postDto);
+        PostResponseDto postResponseDto = postService.createPost(PROFILE_ID, postDto);
 
-        assertNotNull(postResponseDto);
-        assertEquals(postId, postResponseDto.getId());
-        assertEquals("Test Title", postResponseDto.getTitle());
-        assertEquals("Test Content", postResponseDto.getContent());
-        assertEquals("PUBLIC", postResponseDto.getVisibility());
-
-        verify(postRepository, times(1)).save(any(Post.class));
+        assertPostResponse(postResponseDto, POST_ID, "Test Title", "Test Content", "PUBLIC");
+        verify(postRepository).save(any(Post.class));
     }
 
     @Test
-    void testCreatePost_ProfileNotFound() {
-        when(profileService.getProfileEntityById(profileId)).thenReturn(null);
+    void createPost_ProfileNotFound() {
+        when(profileService.getProfileEntityById(PROFILE_ID)).thenReturn(null);
 
-        assertThrows(ResourceNotFoundException.class, () -> postService.createPost(profileId, postDto));
-
+        assertThrows(ResourceNotFoundException.class, () -> postService.createPost(PROFILE_ID, postDto));
         verify(postRepository, never()).save(any(Post.class));
     }
 
     @Test
-    void testCreatePost_OutfitNotFound() {
-        when(profileService.getProfileEntityById(profileId)).thenReturn(profile);
-        when(outfitService.getOutfitEntityById(outfitId)).thenReturn(null);
+    void createPost_OutfitNotFound() {
+        when(profileService.getProfileEntityById(PROFILE_ID)).thenReturn(profile);
+        when(outfitService.getOutfitEntityById(OUTFIT_ID)).thenReturn(null);
 
-        assertThrows(ResourceNotFoundException.class, () -> postService.createPost(profileId, postDto));
-
+        assertThrows(ResourceNotFoundException.class, () -> postService.createPost(PROFILE_ID, postDto));
         verify(postRepository, never()).save(any(Post.class));
     }
 
     @Test
-    void testGetPost_Success() {
-        // Setup mock Post entity
-        Post mockPost = new Post();
-        mockPost.setId(postId);
-        mockPost.setContent("This is a post content");
-        mockPost.setTitle("Post Title");
+    void getPost_Success() {
+        when(postRepository.findById(POST_ID)).thenReturn(Optional.of(post));
+        when(postServiceHelper.isPostAccessibleToUser(post, PROFILE_ID)).thenReturn(true);
+        when(postMapper.toResponseDto(post)).thenReturn(createPostResponseDto());
 
-        // Create the expected PostResponseDto
-        PostResponseDto mockPostResponseDto = new PostResponseDto();
-        mockPostResponseDto.setId(postId);
-        mockPostResponseDto.setContent("This is a post content");
-        mockPostResponseDto.setTitle("Post Title");
+        PostResponseDto postResponseDto = postService.getPost(POST_ID, PROFILE_ID);
 
-        when(postRepository.findById(postId)).thenReturn(Optional.of(mockPost));
-
-
-        when(postServiceHelper.isPostAccessibleToUser(mockPost, profileId)).thenReturn(true);
-
-
-        when(dtoConversionService.convertToPostResponseDto(mockPost)).thenReturn(mockPostResponseDto);
-
-        PostResponseDto postResponseDto = postService.getPost(postId, profileId);
-
-        // Verify the result
-        assertNotNull(postResponseDto);
-        assertEquals(postId, postResponseDto.getId());
-        assertEquals("This is a post content", postResponseDto.getContent());
-        assertEquals("Post Title", postResponseDto.getTitle());
-
-        verify(postRepository, times(1)).findById(postId);
-        verify(postServiceHelper, times(1)).isPostAccessibleToUser(mockPost, profileId);
-    }
-
-
-    @Test
-    void testGetPost_PostNotFound() {
-        when(postRepository.findById(postId)).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () -> postService.getPost(postId, profileId));
-
-        verify(postRepository, times(1)).findById(postId);
+        assertPostResponse(postResponseDto, POST_ID, "Test Title", "Test Content", "PUBLIC");
+        verify(postRepository).findById(POST_ID);
+        verify(postServiceHelper).isPostAccessibleToUser(post, PROFILE_ID);
     }
 
     @Test
-    void testGetPost_NotAccessible() {
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-        when(postServiceHelper.isPostAccessibleToUser(post, profileId)).thenReturn(false);
+    void getPost_PostNotFound() {
+        when(postRepository.findById(POST_ID)).thenReturn(Optional.empty());
 
-        assertThrows(PostAccessException.class, () -> postService.getPost(postId, profileId));
-
-        verify(postRepository, times(1)).findById(postId);
+        assertThrows(PostNotFoundException.class, () -> postService.getPost(POST_ID, PROFILE_ID));
+        verify(postRepository).findById(POST_ID);
     }
 
     @Test
-    void testUpdatePost_Success() {
-        // Setup: Create mock DTO and entities
+    void getPost_NotAccessible() {
+        when(postRepository.findById(POST_ID)).thenReturn(Optional.of(post));
+        when(postServiceHelper.isPostAccessibleToUser(post, PROFILE_ID)).thenReturn(false);
+
+        assertThrows(PostAccessException.class, () -> postService.getPost(POST_ID, PROFILE_ID));
+        verify(postRepository).findById(POST_ID);
+    }
+
+    @Test
+    void updatePost_Success() {
         PostDto updateDto = new PostDto();
         updateDto.setContent("Updated Content");
         updateDto.setVisibility("PRIVATE");
-        updateDto.setOutfitId(outfitId);
+        updateDto.setOutfitId(OUTFIT_ID);
 
         Post mockPost = new Post();
-        mockPost.setId(postId);
-        mockPost.setProfile(profile);
-        mockPost.setContent("Original Content");
-        mockPost.setVisibility(Post.PostVisibility.PUBLIC);
+        mockPost.setId(POST_ID);
+        mockPost.setTitle("Updated Title");
+        mockPost.setContent("Updated Content");
+        mockPost.setVisibility(Post.PostVisibility.PRIVATE);
         mockPost.setOutfit(outfit);
+        mockPost.setProfile(profile);
 
-        PostResponseDto mockPostResponseDto = new PostResponseDto();
-        mockPostResponseDto.setContent("Updated Content");
-        mockPostResponseDto.setVisibility("PRIVATE");
+        PostResponseDto postResponseDto = new PostResponseDto();
+        postResponseDto.setId(mockPost.getId());
+        postResponseDto.setTitle(mockPost.getTitle());
+        postResponseDto.setContent(mockPost.getContent());
+        postResponseDto.setVisibility(mockPost.getVisibility().toString());
 
-        when(postRepository.findById(postId)).thenReturn(Optional.of(mockPost));
-        when(profileService.getProfileEntityById(profileId)).thenReturn(profile);
-        when(outfitService.getOutfitEntityById(outfitId)).thenReturn(outfit);
-        when(postRepository.saveAndFlush(any(Post.class))).thenReturn(mockPost);
-        when(dtoConversionService.convertToPostResponseDto(any(Post.class))).thenReturn(mockPostResponseDto);
+        when(postRepository.findById(POST_ID)).thenReturn(Optional.of(mockPost));
+        when(postRepository.save(argThat(post ->
+                post.getContent().equals("Updated Content") &&
+                        post.getVisibility() == Post.PostVisibility.PRIVATE
+        ))).thenReturn(mockPost);
+        when(postMapper.toResponseDto(argThat(p -> p.getId().equals(mockPost.getId())))).thenReturn(postResponseDto);
 
+        PostResponseDto updatedPost = postService.updatePost(POST_ID, PROFILE_ID, updateDto);
 
-        PostResponseDto updatedPost = postService.updatePost(postId, profileId, updateDto);
-
-        assertNotNull(updatedPost);
-        assertEquals("Updated Content", updatedPost.getContent());
-        assertEquals("PRIVATE", updatedPost.getVisibility());
-
-        verify(postRepository, times(1)).saveAndFlush(any(Post.class));
-    }
-
-
-    @Test
-    void testUpdatePost_NotAuthorized() {
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-
-        assertThrows(PostAccessException.class, () -> postService.updatePost(postId, 2L, postDto));
-
-        verify(postRepository, never()).saveAndFlush(any(Post.class));
+        assertPostResponse(updatedPost, POST_ID, "Updated Title", "Updated Content", "PRIVATE");
+        verify(postRepository).save(any(Post.class));
     }
 
     @Test
-    void testDeletePost_Success() {
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+    void updatePost_NotAuthorized() {
+        when(postRepository.findById(POST_ID)).thenReturn(Optional.of(post));
 
-        postService.deletePost(postId, profileId);
-
-        verify(postRepository, times(1)).deleteById(postId);
+        assertThrows(PostAccessException.class, () -> postService.updatePost(POST_ID, 2L, postDto));
+        verify(postRepository, never()).save(any(Post.class));
     }
 
     @Test
-    void testDeletePost_PostNotFound() {
-        when(postRepository.findById(postId)).thenReturn(Optional.empty());
+    void deletePost_Success() {
+        when(postRepository.findById(POST_ID)).thenReturn(Optional.of(post));
 
-        assertThrows(PostNotFoundException.class, () -> postService.deletePost(postId, profileId));
+        postService.deletePost(POST_ID, PROFILE_ID);
 
-        verify(postRepository, never()).deleteById(postId);
+        verify(postRepository).deleteById(POST_ID);
     }
 
     @Test
-    void testDeletePost_NotAuthorized() {
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+    void deletePost_PostNotFound() {
+        when(postRepository.findById(POST_ID)).thenReturn(Optional.empty());
 
-        assertThrows(PostAccessException.class, () -> postService.deletePost(postId, 2L));
-
-        verify(postRepository, never()).deleteById(postId);
+        assertThrows(PostNotFoundException.class, () -> postService.deletePost(POST_ID, PROFILE_ID));
+        verify(postRepository, never()).deleteById(POST_ID);
     }
 
     @Test
-    void testToggleLikePost_Success() {
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-        when(profileService.getProfileEntityById(profileId)).thenReturn(profile);
-        when(postServiceHelper.hasProfileLikedPost(postId, profileId)).thenReturn(false);
+    void deletePost_NotAuthorized() {
+        when(postRepository.findById(POST_ID)).thenReturn(Optional.of(post));
 
-        boolean result = postService.toggleLikePost(postId, profileId);
+        assertThrows(PostAccessException.class, () -> postService.deletePost(POST_ID, 2L));
+        verify(postRepository, never()).deleteById(POST_ID);
+    }
+
+    @Test
+    void toggleLikePost_Success() {
+        when(postRepository.findById(POST_ID)).thenReturn(Optional.of(post));
+        when(profileService.getProfileEntityById(PROFILE_ID)).thenReturn(profile);
+        when(postServiceHelper.hasProfileLikedPost(POST_ID, PROFILE_ID)).thenReturn(false);
+
+        boolean result = postService.toggleLikePost(POST_ID, PROFILE_ID);
 
         assertTrue(result);
-        verify(likeRepository, times(1)).save(any(Like.class));
-        verify(postRepository, times(1)).save(any(Post.class));
+        verify(likeRepository).save(any(Like.class));
+        verify(postRepository).save(any(Post.class));
     }
 
     @Test
-    void testToggleLikePost_LikeNotFound() {
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-        when(profileService.getProfileEntityById(profileId)).thenReturn(profile);
-        when(postServiceHelper.hasProfileLikedPost(postId, profileId)).thenReturn(true);
+    void toggleLikePost_LikeNotFound() {
+        when(postRepository.findById(POST_ID)).thenReturn(Optional.of(post));
+        when(profileService.getProfileEntityById(PROFILE_ID)).thenReturn(profile);
+        when(postServiceHelper.hasProfileLikedPost(POST_ID, PROFILE_ID)).thenReturn(true);
         when(likeRepository.findByPostAndProfile(post, profile)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> postService.toggleLikePost(postId, profileId));
+        assertThrows(ResourceNotFoundException.class, () -> postService.toggleLikePost(POST_ID, PROFILE_ID));
     }
 
     @Test
-    void testToggleLikePost_PostNotFound() {
-        when(postRepository.findById(postId)).thenReturn(Optional.empty());
+    void toggleLikePost_PostNotFound() {
+        when(postRepository.findById(POST_ID)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> postService.toggleLikePost(postId, profileId));
-
+        assertThrows(PostNotFoundException.class, () -> postService.toggleLikePost(POST_ID, PROFILE_ID));
         verify(likeRepository, never()).save(any(Like.class));
         verify(postRepository, never()).save(any(Post.class));
+    }
+
+    private PostResponseDto createPostResponseDto() {
+        PostResponseDto postResponseDto = new PostResponseDto();
+        postResponseDto.setId(POST_ID);
+        postResponseDto.setTitle("Test Title");
+        postResponseDto.setContent("Test Content");
+        postResponseDto.setVisibility("PUBLIC");
+        return postResponseDto;
+    }
+
+    private void assertPostResponse(PostResponseDto postResponseDto, Long id, String title, String content, String visibility) {
+        assertNotNull(postResponseDto);
+        assertEquals(id, postResponseDto.getId());
+        assertEquals(title, postResponseDto.getTitle());
+        assertEquals(content, postResponseDto.getContent());
+        assertEquals(visibility, postResponseDto.getVisibility());
     }
 }

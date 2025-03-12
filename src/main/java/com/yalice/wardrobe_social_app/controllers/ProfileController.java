@@ -31,7 +31,7 @@ public class ProfileController extends ApiBaseController {
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<ProfileResponseDto>> getMyProfile() {
         return handleEntityRetrieval(() -> profileService.getProfile(getLoggedInUser().getId()),
-                "Profile retrieved successfully");
+                "Profile");
     }
 
     /**
@@ -40,7 +40,7 @@ public class ProfileController extends ApiBaseController {
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<ProfileResponseDto>> getProfile(@PathVariable Long userId) {
         return handleEntityRetrieval(() -> profileService.getProfile(userId),
-                "Profile retrieved successfully");
+                "Profile");
     }
 
     /**

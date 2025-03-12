@@ -7,16 +7,17 @@ import com.yalice.wardrobe_social_app.entities.Profile;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.entities.Wardrobe;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
+import com.yalice.wardrobe_social_app.mappers.ItemMapper;
 import com.yalice.wardrobe_social_app.repositories.ItemRepository;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import com.yalice.wardrobe_social_app.repositories.WardrobeRepository;
 import com.yalice.wardrobe_social_app.services.ItemServiceImpl;
-import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -25,6 +26,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class ItemServiceImplTest {
 
     @Mock
@@ -34,7 +36,7 @@ class ItemServiceImplTest {
     private ProfileRepository profileRepository;
 
     @Mock
-    private DtoConversionService dtoConversionService;
+    private ItemMapper itemMapper;
 
     @Mock
     private WardrobeRepository wardrobeRepository;
@@ -43,192 +45,186 @@ class ItemServiceImplTest {
     private ItemServiceImpl itemService;
 
     private Profile profile;
-    private User user;
     private Wardrobe wardrobe;
     private ItemDto itemDto;
     private Item item;
-
-    @Mock
+    private ItemResponseDto itemResponseDto;
     private MultipartFile image;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-
-        user = User.builder()
+        User user = User.builder()
+                .id(1L)
                 .username("testusername")
                 .build();
 
-        user.setId(1L);
+        profile = Profile.builder()
+                .id(1L)
+                .user(user)
+                .build();
 
-        // Create mock entities
-        profile = new Profile();
-        profile.setId(1L);
-        profile.setUser(user);
-        wardrobe = new Wardrobe();
-        wardrobe.setId(1L);
+        wardrobe = Wardrobe.builder()
+                .id(1L)
+                .build();
 
-        itemDto = new ItemDto();
-        itemDto.setName("T-shirt");
-        itemDto.setBrand("BrandX");
-        itemDto.setCategory("Casual");
-        itemDto.setSize("M");
-        itemDto.setColor("Red");
+        itemDto = ItemDto.builder()
+                .name("T-shirt")
+                .brand("BrandX")
+                .category("Casual")
+                .size("M")
+                .color("Red")
+                .build();
 
-        item = new Item();
-        item.setId(1L);
-        item.setName("T-shirt");
-        item.setBrand("BrandX");
-        item.setCategory("Casual");
-        item.setSize("M");
-        item.setColor("Red");
-        item.setWardrobe(wardrobe);
-        item.setProfile(profile);
+        item = Item.builder()
+                .id(1L)
+                .name("T-shirt")
+                .brand("BrandX")
+                .category("Casual")
+                .size("M")
+                .color("Red")
+                .wardrobe(wardrobe)
+                .profile(profile)
+                .build();
 
         image = mock(MultipartFile.class);
+
+        itemResponseDto = ItemResponseDto.builder()
+                .name("T-shirt")
+                .brand("BrandX")
+                .category("Casual")
+                .size("M")
+                .color("Red")
+                .build();
     }
 
     @Test
-    void testMocksInjection() {
-        assertNotNull(itemRepository);
-        assertNotNull(profileRepository);
-        assertNotNull(dtoConversionService);
-    }
+    void shouldCreateItemSuccessfully() {
+        // Arrange
+        when(profileRepository.findById(eq(1L))).thenReturn(Optional.of(profile));
+        when(wardrobeRepository.findById(eq(1L))).thenReturn(Optional.of(wardrobe));
+        when(itemRepository.findByNameAndWardrobeId(eq("T-shirt"), eq(1L))).thenReturn(Optional.empty());
+        when(itemRepository.save(argThat(itemArg -> itemArg.getName().equals("T-shirt")))).thenReturn(item);
+        when(itemMapper.toResponseDto(argThat(itemArg -> itemArg.getName().equals("T-shirt")))).thenReturn(itemResponseDto);
 
-    @Test
-    void createItem_ShouldCreateItemSuccessfully() {
-        // Given
-        when(profileRepository.findByUserId(1L)).thenReturn(Optional.of(profile));
-        when(wardrobeRepository.findById(1L)).thenReturn(Optional.of(wardrobe));
-        when(itemRepository.findByNameAndWardrobeId("T-shirt", 1L)).thenReturn(Optional.empty());
-        when(itemRepository.save(any(Item.class))).thenReturn(item);
-
-        ItemResponseDto mockResponseDto = new ItemResponseDto();
-        mockResponseDto.setName("T-shirt");  // Set the correct name or other fields here
-        when(dtoConversionService.convertToItemResponseDto(any(Item.class)))
-                .thenReturn(mockResponseDto);
-
-        // When
+        // Act
         ItemResponseDto response = itemService.createItem(1L, 1L, itemDto, image);
 
-        // Then
+        // Assert
         assertNotNull(response);
         assertEquals("T-shirt", response.getName());
-        verify(itemRepository, times(1)).save(any(Item.class));
+        assertEquals("BrandX", response.getBrand());
+        assertEquals("Casual", response.getCategory());
+        assertEquals("M", response.getSize());
+        assertEquals("Red", response.getColor());
+        verify(itemRepository, times(1)).save(argThat(itemArg -> itemArg.getName().equals("T-shirt")));
     }
 
     @Test
-    void createItem_ShouldThrowException_WhenItemAlreadyExists() {
-        // Given
-        when(profileRepository.findByUserId(1L)).thenReturn(Optional.of(profile));
-        when(wardrobeRepository.findById(1L)).thenReturn(Optional.of(wardrobe));
-        when(itemRepository.findByNameAndWardrobeId("T-shirt", 1L)).thenReturn(Optional.of(item));
+    void shouldThrowExceptionWhenItemAlreadyExists() {
+        // Arrange
+        when(profileRepository.findById(eq(1L))).thenReturn(Optional.of(profile));
+        when(wardrobeRepository.findById(eq(1L))).thenReturn(Optional.of(wardrobe));
+        when(itemRepository.findByNameAndWardrobeId(eq("T-shirt"), eq(1L))).thenReturn(Optional.of(item));
 
-        // When & Then
-        assertThrows(IllegalStateException.class, () -> {
-            itemService.createItem(1L, 1L, itemDto, image);
-        });
+        // Act & Assert
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> itemService.createItem(1L, 1L, itemDto, image));
+        assertEquals("Item already exists in the wardrobe", exception.getMessage());
     }
 
     @Test
-    void updateItem_ShouldUpdateItemSuccessfully() {
-        // Given
-        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
-        when(profileRepository.findByUserId(1L)).thenReturn(Optional.of(profile));
-        when(itemRepository.saveAndFlush(any(Item.class))).thenReturn(item);
-        ItemResponseDto mockResponseDto = new ItemResponseDto();
-        mockResponseDto.setName("T-shirt");  // Set the correct name or other fields here
-        when(dtoConversionService.convertToItemResponseDto(any(Item.class)))
-                .thenReturn(mockResponseDto);
+    void shouldUpdateItemSuccessfully() {
+        // Arrange
+        when(itemRepository.findById(eq(1L))).thenReturn(Optional.of(item));
+        when(itemRepository.saveAndFlush(argThat(itemArg -> itemArg.getId().equals(1L)))).thenReturn(item);
+        when(itemMapper.toResponseDto(argThat(itemArg -> itemArg.getName().equals("T-shirt")))).thenReturn(itemResponseDto);
 
-        // When
+        // Act
         ItemResponseDto response = itemService.updateItem(1L, 1L, itemDto, image);
 
-        // Then
+        // Assert
         assertNotNull(response);
         assertEquals("T-shirt", response.getName());
-        verify(itemRepository, times(1)).saveAndFlush(any(Item.class));
+        verify(itemRepository, times(1)).saveAndFlush(argThat(itemArg -> itemArg.getId().equals(1L)));
     }
 
     @Test
-    void updateItem_ShouldThrowException_WhenItemNotFound() {
-        // Given
-        when(itemRepository.findById(1L)).thenReturn(Optional.empty());
+    void shouldThrowExceptionWhenItemNotFoundForUpdate() {
+        // Arrange
+        when(itemRepository.findById(eq(1L))).thenReturn(Optional.empty());
 
-        // When & Then
-        assertThrows(ResourceNotFoundException.class, () -> {
-            itemService.updateItem(1L, 1L, itemDto, image);
-        });
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> itemService.updateItem(1L, 1L, itemDto, image));
+        assertEquals("Item not found with ID: 1", exception.getMessage());
     }
 
     @Test
-    void deleteItem_ShouldDeleteItemSuccessfully() {
-        // Given
-        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+    void shouldDeleteItemSuccessfully() {
+        // Arrange
+        when(itemRepository.findById(eq(1L))).thenReturn(Optional.of(item));
 
-        // When
+        // Act
         itemService.deleteItem(1L, 1L);
 
-        // Then
-        verify(itemRepository, times(1)).deleteById(1L);
+        // Assert
+        verify(itemRepository, times(1)).deleteById(eq(1L));
     }
 
     @Test
-    void deleteItem_ShouldThrowException_WhenItemNotFound() {
-        // Given
-        when(itemRepository.findById(1L)).thenReturn(Optional.empty());
+    void shouldThrowExceptionWhenItemNotFoundForDeletion() {
+        // Arrange
+        when(itemRepository.findById(eq(1L))).thenReturn(Optional.empty());
 
-        // When & Then
-        assertThrows(ResourceNotFoundException.class, () -> {
-            itemService.deleteItem(1L, 1L);
-        });
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> itemService.deleteItem(1L, 1L));
+        assertEquals("Item not found with ID: 1", exception.getMessage());
     }
 
     @Test
-    void getUserItems_ShouldReturnItemsSuccessfully() {
-        // Given
-        when(profileRepository.findByUserId(1L)).thenReturn(Optional.of(profile));
-        when(wardrobeRepository.findByProfileId(1L)).thenReturn(Optional.of(wardrobe));
-        when(itemRepository.findAllByWardrobeId(1L)).thenReturn(List.of(item));
-        ItemResponseDto mockResponseDto = new ItemResponseDto();
-        mockResponseDto.setName("T-shirt");  // Set the correct name or other fields here
-        when(dtoConversionService.convertToItemResponseDto(any(Item.class)))
-                .thenReturn(mockResponseDto);
+    void shouldReturnItemsSuccessfully() {
+        // Arrange
+        when(profileRepository.findById(eq(1L))).thenReturn(Optional.of(profile));
+        when(wardrobeRepository.findByProfileId(eq(1L))).thenReturn(Optional.of(wardrobe));
+        when(itemRepository.findAllByWardrobeId(eq(1L))).thenReturn(List.of(item));
+        when(itemMapper.toResponseDto(argThat(itemArg -> itemArg.getName().equals("T-shirt")))).thenReturn(itemResponseDto);
 
-        // When
+        // Act
         List<ItemResponseDto> items = itemService.getUserItems(1L);
 
-        // Then
+        // Assert
         assertNotNull(items);
         assertEquals(1, items.size());
-        assertEquals("T-shirt", items.get(0).getName());
+        assertEquals("T-shirt", items.getFirst().getName());
+        assertEquals("BrandX", items.getFirst().getBrand());
+        assertEquals("Casual", items.getFirst().getCategory());
+        assertEquals("M", items.getFirst().getSize());
+        assertEquals("Red", items.getFirst().getColor());
     }
 
     @Test
-    void getItem_ShouldReturnItemSuccessfully() {
-        // Given
-        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
-        ItemResponseDto mockResponseDto = new ItemResponseDto();
-        mockResponseDto.setName("T-shirt");  // Set the correct name or other fields here
-        when(dtoConversionService.convertToItemResponseDto(any(Item.class)))
-                .thenReturn(mockResponseDto);
+    void shouldReturnItemSuccessfully() {
+        // Arrange
+        when(itemRepository.findById(eq(1L))).thenReturn(Optional.of(item));
+        when(itemMapper.toResponseDto(argThat(itemArg -> itemArg.getName().equals("T-shirt")))).thenReturn(itemResponseDto);
 
-        // When
+        // Act
         ItemResponseDto response = itemService.getItem(1L);
 
-        // Then
+        // Assert
         assertNotNull(response);
         assertEquals("T-shirt", response.getName());
+        assertEquals("BrandX", response.getBrand());
+        assertEquals("Casual", response.getCategory());
+        assertEquals("M", response.getSize());
+        assertEquals("Red", response.getColor());
     }
 
     @Test
-    void getItem_ShouldThrowException_WhenItemNotFound() {
-        // Given
-        when(itemRepository.findById(1L)).thenReturn(Optional.empty());
+    void shouldThrowExceptionWhenItemNotFoundForRetrieval() {
+        // Arrange
+        when(itemRepository.findById(eq(1L))).thenReturn(Optional.empty());
 
-        // When & Then
-        assertThrows(ResourceNotFoundException.class, () -> {
-            itemService.getItem(1L);
-        });
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> itemService.getItem(1L));
+        assertEquals("Item not found with ID: 1", exception.getMessage());
     }
 }

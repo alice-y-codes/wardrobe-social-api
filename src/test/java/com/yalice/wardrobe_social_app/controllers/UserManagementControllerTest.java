@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yalice.wardrobe_social_app.controllers.helpers.UserDtoValidator;
 import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import com.yalice.wardrobe_social_app.dtos.user.ChangePasswordDto;
-import com.yalice.wardrobe_social_app.dtos.user.UserProfileDto;
 import com.yalice.wardrobe_social_app.dtos.user.UserRegistrationDto;
 import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.entities.Profile;
@@ -95,57 +94,6 @@ class UserManagementControllerTest {
         }
 
         @Test
-        void updateUserProfile() throws Exception {
-                UserProfileDto profileDto = createTestProfileDto();
-                UserResponseDto responseDto = createTestUserResponse();
-
-                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(userManagementService.existsById(1L)).thenReturn(true);
-                when(userManagementService.updateUserProfile(eq(1L), any(UserProfileDto.class)))
-                                .thenReturn(responseDto);
-                doNothing().when(userDtoValidator).validate(any(), any(BindingResult.class));
-
-                mockMvc.perform(put("/api/users/1/profile")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(profileDto)))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.success").value(true))
-                                .andExpect(jsonPath("$.data").exists())
-                                .andExpect(jsonPath("$.data.id").value(1L));
-        }
-
-        @Test
-        void updateUserProfile_NotFound() throws Exception {
-                UserProfileDto profileDto = createTestProfileDto();
-                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(userManagementService.existsById(999L)).thenReturn(false);
-
-                mockMvc.perform(put("/api/users/999/profile")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(profileDto)))
-                                .andExpect(status().isNotFound())
-                                .andExpect(jsonPath("$.success").value(false))
-                                .andExpect(jsonPath("$.message").value("User not found"))
-                                .andExpect(jsonPath("$.data").doesNotExist());
-        }
-
-        @Test
-        void updateUserProfile_Unauthorized() throws Exception {
-                UserProfileDto profileDto = createTestProfileDto();
-                User differentUser = User.builder().id(2L).build();
-                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(differentUser);
-                when(userManagementService.existsById(1L)).thenReturn(true);
-
-                mockMvc.perform(put("/api/users/1/profile")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(profileDto)))
-                                .andExpect(status().isUnauthorized())
-                                .andExpect(jsonPath("$.success").value(false))
-                                .andExpect(jsonPath("$.message").value("Unauthorized"))
-                                .andExpect(jsonPath("$.data").doesNotExist());
-        }
-
-        @Test
         void changePassword() throws Exception {
                 ChangePasswordDto passwordDto = createTestPasswordDto();
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
@@ -212,14 +160,7 @@ class UserManagementControllerTest {
         }
 
         private UserRegistrationDto createTestRegistrationDto() {
-                return new UserRegistrationDto("testuser", "test@example.com", "testpass");
-        }
-
-        private UserProfileDto createTestProfileDto() {
-                UserProfileDto dto = new UserProfileDto();
-                dto.setBio("Test bio");
-                dto.setLocation("Test location");
-                return dto;
+                return new UserRegistrationDto("testuser", "test@example.com", "testpass", User.Provider.GOOGLE);
         }
 
         private ChangePasswordDto createTestPasswordDto() {

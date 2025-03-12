@@ -1,7 +1,6 @@
 package com.yalice.wardrobe_social_app.interfaces;
 
 import com.yalice.wardrobe_social_app.dtos.user.ChangePasswordDto;
-import com.yalice.wardrobe_social_app.dtos.user.UserProfileDto;
 import com.yalice.wardrobe_social_app.dtos.user.UserRegistrationDto;
 import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.exceptions.UsernameAlreadyExistsException;
@@ -23,14 +22,6 @@ public interface UserManagementService {
      */
     UserResponseDto registerUser(UserRegistrationDto registrationDto);
 
-    /**
-     * Updates a user's profile information.
-     *
-     * @param userId     The ID of the user to update.
-     * @param profileDto The DTO containing the updated user information.
-     * @return The updated user as a response DTO.
-     */
-    UserResponseDto updateUserProfile(Long userId, UserProfileDto profileDto);
 
     /**
      * Changes a user's password.

@@ -14,7 +14,9 @@ import java.util.Optional;
 public interface FriendRepository extends JpaRepository<Friendship, Long> {
     boolean existsBySenderIdAndRecipientId(Long senderId, Long recipientId);
     List<Friendship> findByRecipientIdAndStatus(Long recipientId, FriendshipStatus status);
-    Optional<Friendship> findFriendshipBetweenUsers(Long userId1, Long userId2);
+
+    @Query("SELECT f FROM Friendship f WHERE (f.sender.id = :userId1 AND f.recipient.id = :userId2) OR (f.sender.id = :userId2 AND f.recipient.id = :userId1)")
+    Optional<Friendship> findFriendshipBetweenUsers(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
     @Query("SELECT f FROM Friendship f WHERE (f.sender.id = :userId OR f.recipient.id = :userId) AND f.status = :status")
     List<Friendship> findAllByUserIdAndStatus(@Param("userId") Long userId, @Param("status") FriendshipStatus status);
 }

@@ -172,14 +172,14 @@ class FeedControllerTest {
         void getUserPosts_NotFound() throws Exception {
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
                 when(feedService.getUserPosts(eq(999L), eq(1L), any()))
-                                .thenThrow(new ResourceNotFoundException("User not found"));
+                                .thenThrow(new ResourceNotFoundException("User posts not found"));
 
                 mockMvc.perform(get("/api/feed/users/999/posts")
                                 .param("page", "0")
                                 .param("size", "20"))
                                 .andExpect(status().isNotFound())
                                 .andExpect(jsonPath("$.success").value(false))
-                                .andExpect(jsonPath("$.message").value("User not found"))
+                                .andExpect(jsonPath("$.message").value("User posts not found"))
                                 .andExpect(jsonPath("$.data").doesNotExist());
         }
 

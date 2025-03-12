@@ -3,7 +3,6 @@ package com.yalice.wardrobe_social_app.controllers;
 import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
 import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
 import com.yalice.wardrobe_social_app.dtos.user.ChangePasswordDto;
-import com.yalice.wardrobe_social_app.dtos.user.UserProfileDto;
 import com.yalice.wardrobe_social_app.dtos.user.UserRegistrationDto;
 import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
@@ -49,35 +48,6 @@ public class UserManagementController extends ApiBaseController {
             return userManagementService.registerUser(registrationDto);
         }, "register", "User", "registered");
     }
-
-    /**
-     * Updates a user's profile.
-     */
-    @PutMapping("/{userId}/profile")
-    public ResponseEntity<ApiResponse<UserResponseDto>> updateUserProfile(
-            @PathVariable Long userId,
-            @Valid @RequestBody UserProfileDto profileDto,
-            BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            return handleValidationErrors(bindingResult);
-        }
-
-        return handleEntityAction(() -> {
-            // First check if the user exists
-            if (!userManagementService.existsById(userId)) {
-                throw new ResourceNotFoundException("User not found");
-            }
-
-            // Then check authorization
-            User currentUser = getLoggedInUser();
-            if (!currentUser.getId().equals(userId)) {
-                throw new SecurityException("Unauthorized");
-            }
-
-            return userManagementService.updateUserProfile(userId, profileDto);
-        }, "update", "User", "updated");
-    }
-
     /**
      * Changes a user's password.
      */

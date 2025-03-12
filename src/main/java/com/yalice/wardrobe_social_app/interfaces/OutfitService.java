@@ -14,39 +14,39 @@ public interface OutfitService {
     /**
      * Creates a new outfit.
      *
-     * @param userId    the ID of the user creating the outfit
+     * @param profileId    the ID of the profile creating the outfit
      * @param outfitDto the outfit data
      * @param image     the outfit image file (optional)
      * @return the created outfit
      */
-    OutfitResponseDto createOutfit(Long userId, OutfitDto outfitDto, MultipartFile image);
+    OutfitResponseDto createOutfit(Long profileId, OutfitDto outfitDto, MultipartFile image);
 
     /**
      * Updates an existing outfit.
      *
-     * @param userId    the ID of the user updating the outfit
+     * @param profileId    the ID of the profile updating the outfit
      * @param outfitId  the ID of the outfit to update
      * @param outfitDto the updated outfit data
      * @param image     the new outfit image file (optional)
      * @return the updated outfit
      */
-    OutfitResponseDto updateOutfit(Long userId, Long outfitId, OutfitDto outfitDto, MultipartFile image);
+    OutfitResponseDto updateOutfit(Long profileId, Long outfitId, OutfitDto outfitDto, MultipartFile image);
 
     /**
      * Deletes an outfit.
      *
-     * @param userId   the ID of the user deleting the outfit
+     * @param profileId   the ID of the profile deleting the outfit
      * @param outfitId the ID of the outfit to delete
      */
-    void deleteOutfit(Long userId, Long outfitId);
+    void deleteOutfit(Long profileId, Long outfitId);
 
     /**
-     * Gets all outfits for a specific user.
+     * Gets all outfits for a specific profile.
      *
-     * @param userId the ID of the user
+     * @param profileId the ID of the profile
      * @return the list of outfits
      */
-    List<OutfitResponseDto> getUserOutfits(Long userId);
+    List<OutfitResponseDto> getUserOutfits(Long profileId);
 
     /**
      * Gets a specific outfit by ID.

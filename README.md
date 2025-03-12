@@ -10,9 +10,11 @@ A Spring Boot application for managing your wardrobe and creating outfits.
 - [API Documentation](#api-documentation)
   - [Authentication](#authentication)
   - [Users](#users)
+  - [Posts](#posts)
+  - [Feed](#feed)
   - [Items](#items)
   - [Outfits](#outfits)
-  - [Feed](#feed)
+  - [Comments](#comments)
   - [Friendship](#friendship)
   - [Profile](#profile)
 - [Setup and Installation](#setup-and-installation)
@@ -29,6 +31,8 @@ Wardrobe Social App is a platform that allows users to digitize their wardrobe, 
 - JWT-based authentication
 - Wardrobe management (add, update, delete clothing items)
 - Outfit creation and management
+- Social features (posts, comments, likes)
+- Feed customization and filtering
 - Search functionality for items and outfits
 
 ## Technologies
@@ -84,20 +88,123 @@ Wardrobe Social App is a platform that allows users to digitize their wardrobe, 
   {
     "username": "string",
     "email": "string",
-    "password": "string",
-    "provider": "string"
+    "password": "string"
   }
   ```
-- **Response**: The registered user
+- **Response**: User details
 - **Description**: Registers a new user
 
-#### Find User by Username
+#### Change Password
 
-- **URL**: `/api/users/findByUsername`
+- **URL**: `/api/users/{userId}/password`
+- **Method**: `PUT`
+- **Request Body**:
+  ```json
+  {
+    "currentPassword": "string",
+    "newPassword": "string"
+  }
+  ```
+- **Description**: Changes the password for the authenticated user
+
+#### Delete User Account
+
+- **URL**: `/api/users/{userId}`
+- **Method**: `DELETE`
+- **Description**: Deletes the user account (must be authenticated as the user)
+
+### Posts
+
+#### Create Post
+
+- **URL**: `/api/feed/post`
+- **Method**: `POST`
+- **Request Body**:
+  ```json
+  {
+    "content": "string",
+    "imageUrls": ["string"],
+    "outfitId": "number"
+  }
+  ```
+- **Response**: Created post details
+- **Description**: Creates a new post
+
+#### Get Post
+
+- **URL**: `/api/feed/{postId}`
 - **Method**: `GET`
-- **Query Parameters**: `username=string`
-- **Response**: User details
-- **Description**: Finds a user by their username
+- **Response**: Post details
+- **Description**: Retrieves a specific post
+
+#### Update Post
+
+- **URL**: `/api/feed/{postId}`
+- **Method**: `PATCH`
+- **Request Body**:
+  ```json
+  {
+    "content": "string",
+    "imageUrls": ["string"]
+  }
+  ```
+- **Response**: Updated post details
+- **Description**: Updates an existing post
+
+#### Delete Post
+
+- **URL**: `/api/feed/{postId}`
+- **Method**: `DELETE`
+- **Description**: Deletes a post
+
+#### Toggle Like Post
+
+- **URL**: `/api/feed/{postId}/like`
+- **Method**: `POST`
+- **Response**: Like status message
+- **Description**: Toggles like status on a post
+
+### Feed
+
+#### Get Feed
+
+- **URL**: `/api/feed`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `page` (default: 0)
+  - `size` (default: 20)
+- **Response**: List of feed items
+- **Description**: Retrieves the user's feed with pagination
+
+#### Get Feed By Season
+
+- **URL**: `/api/feed/season/{season}`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `page` (default: 0)
+  - `size` (default: 20)
+- **Response**: List of feed items filtered by season
+- **Description**: Retrieves feed items filtered by season
+
+#### Get Feed By Category
+
+- **URL**: `/api/feed/category/{category}`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `page` (default: 0)
+  - `size` (default: 20)
+- **Response**: List of feed items filtered by category
+- **Description**: Retrieves feed items filtered by category
+
+#### Get User Posts
+
+- **URL**: `/api/feed/users/{userId}/posts`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `page` (default: 0)
+  - `size` (default: 20)
+- **Response**: Page of user's posts
+- **Description**: Retrieves posts from a specific user
 
 ### Items
 
@@ -271,187 +378,114 @@ Wardrobe Social App is a platform that allows users to digitize their wardrobe, 
 - **Response**: List of outfits
 - **Description**: Gets outfits filtered by occasion
 
-### Feed
-
-#### Get User Feed
-
-- **URL**: `/api/feed`
-- **Method**: `GET`
-- **Query Parameters**: Supports pagination with `page`, `size`, and `sort` parameters
-- **Response**: Page of posts
-- **Description**: Gets the feed of posts for the authenticated user
-
-#### Get User Posts
-
-- **URL**: `/api/feed/users/{userId}`
-- **Method**: `GET`
-- **Path Parameters**: `userId=number`
-- **Query Parameters**: Supports pagination with `page`, `size`, and `sort` parameters
-- **Response**: Page of posts
-- **Description**: Gets posts created by a specific user
-
-#### Create Post
-
-- **URL**: `/api/feed/post`
-- **Method**: `POST`
-- **Request Body**:
-  ```json
-  {
-    "content": "string",
-    "outfitId": "number",
-    "visibility": "string"
-  }
-  ```
-- **Response**: The created post
-- **Description**: Creates a new post, optionally linked to an outfit
-
-#### Delete Post
-
-- **URL**: `/api/feed/{postId}`
-- **Method**: `DELETE`
-- **Path Parameters**: `postId=number`
-- **Response**: Success message
-- **Description**: Deletes a post created by the authenticated user
-
-#### Like Post
-
-- **URL**: `/api/feed/{postId}/like`
-- **Method**: `POST`
-- **Path Parameters**: `postId=number`
-- **Response**: Success message
-- **Description**: Likes a post
-
-#### Unlike Post
-
-- **URL**: `/api/feed/{postId}/like`
-- **Method**: `DELETE`
-- **Path Parameters**: `postId=number`
-- **Response**: Success message
-- **Description**: Removes a like from a post
+### Comments
 
 #### Add Comment
 
-- **URL**: `/api/feed/{postId}/comment`
+- **URL**: `/api/comments/post/{postId}`
 - **Method**: `POST`
-- **Path Parameters**: `postId=number`
 - **Request Body**:
   ```json
   {
     "content": "string"
   }
   ```
-- **Response**: The created comment
+- **Response**: Created comment details
 - **Description**: Adds a comment to a post
+
+#### Get Comments
+
+- **URL**: `/api/comments/post/{postId}`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `page` (default: 0)
+  - `size` (default: 20)
+- **Response**: List of comments
+- **Description**: Retrieves comments for a post
+
+#### Update Comment
+
+- **URL**: `/api/comments/{commentId}`
+- **Method**: `PUT`
+- **Request Body**:
+  ```json
+  {
+    "content": "string"
+  }
+  ```
+- **Response**: Updated comment details
+- **Description**: Updates an existing comment
 
 #### Delete Comment
 
-- **URL**: `/api/feed/comments/{commentId}`
+- **URL**: `/api/comments/{commentId}`
 - **Method**: `DELETE`
-- **Path Parameters**: `commentId=number`
-- **Response**: Success message
-- **Description**: Deletes a comment created by the authenticated user
-
-#### Get Post Comments
-
-- **URL**: `/api/feed/{postId}/comments`
-- **Method**: `GET`
-- **Path Parameters**: `postId=number`
-- **Query Parameters**: Supports pagination with `page`, `size`, and `sort` parameters
-- **Response**: Page of comments
-- **Description**: Gets comments for a specific post
+- **Description**: Deletes a comment
 
 ### Friendship
 
 #### Send Friend Request
 
-- **URL**: `/api/friends/request`
+- **URL**: `/api/friendship/request/{userId}`
 - **Method**: `POST`
-- **Request Body**:
-  ```json
-  {
-    "recipientId": "number"
-  }
-  ```
-- **Response**: The created friendship
 - **Description**: Sends a friend request to another user
 
 #### Accept Friend Request
 
-- **URL**: `/api/friends/accept`
+- **URL**: `/api/friendship/accept/{requestId}`
 - **Method**: `POST`
-- **Request Body**:
-  ```json
-  {
-    "requestId": "number"
-  }
-  ```
-- **Response**: The updated friendship
-- **Description**: Accepts a pending friend request
+- **Description**: Accepts a friend request
 
 #### Reject Friend Request
 
-- **URL**: `/api/friends/reject`
+- **URL**: `/api/friendship/reject/{requestId}`
 - **Method**: `POST`
-- **Request Body**:
-  ```json
-  {
-    "requestId": "number"
-  }
-  ```
-- **Response**: Success message
-- **Description**: Rejects a pending friend request
+- **Description**: Rejects a friend request
 
-#### Remove Friend
+#### Get Friend Requests
 
-- **URL**: `/api/friends/remove`
-- **Method**: `DELETE`
-- **Request Body**:
-  ```json
-  {
-    "friendId": "number"
-  }
-  ```
-- **Response**: Success message
-- **Description**: Removes a user from friends list
+- **URL**: `/api/friendship/requests`
+- **Method**: `GET`
+- **Response**: List of friend requests
+- **Description**: Gets all pending friend requests
 
 #### Get Friends
 
-- **URL**: `/api/friends`
+- **URL**: `/api/friendship/friends`
 - **Method**: `GET`
-- **Response**: List of users
-- **Description**: Gets all friends of the authenticated user
+- **Response**: List of friends
+- **Description**: Gets all friends of the current user
 
-#### Get Pending Friend Requests
+#### Remove Friend
 
-- **URL**: `/api/friends/pending`
-- **Method**: `GET`
-- **Response**: List of pending friendship requests
-- **Description**: Gets all pending friend requests for the authenticated user
+- **URL**: `/api/friendship/{friendId}`
+- **Method**: `DELETE`
+- **Description**: Removes a friend
 
 ### Profile
 
-#### Get User Profile
+#### Get Profile
 
-- **URL**: `/api/users/{userId}/profile`
+- **URL**: `/api/profile/{userId}`
 - **Method**: `GET`
-- **Path Parameters**: `userId=number`
-- **Response**: Profile details
-- **Description**: Gets a user's profile if accessible to the authenticated user
+- **Response**: User profile details
+- **Description**: Gets a user's profile
 
 #### Update Profile
 
-- **URL**: `/api/users/{userId}/profile`
+- **URL**: `/api/profile`
 - **Method**: `PUT`
-- **Path Parameters**: `userId=number`
 - **Request Body**:
   ```json
   {
+    "displayName": "string",
     "bio": "string",
-    "visibility": "string"
+    "location": "string",
+    "avatarUrl": "string"
   }
   ```
-- **Response**: The updated profile
-- **Description**: Updates the authenticated user's profile
+- **Response**: Updated profile details
+- **Description**: Updates the current user's profile
 
 ## Setup and Installation
 

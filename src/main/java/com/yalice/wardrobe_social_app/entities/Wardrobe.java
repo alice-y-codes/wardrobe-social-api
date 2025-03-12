@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Represents a wardrobe that contains clothing items.
@@ -48,5 +48,5 @@ public class Wardrobe extends BaseEntity {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     @Builder.Default
-    private List<Item> items = new ArrayList<>();
+    private Set<Item> items = new HashSet<>();
 }

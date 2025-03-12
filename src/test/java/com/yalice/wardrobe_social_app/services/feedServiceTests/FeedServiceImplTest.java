@@ -7,9 +7,9 @@ import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
+import com.yalice.wardrobe_social_app.mappers.FeedItemMapper;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
 import com.yalice.wardrobe_social_app.services.FeedServiceImpl;
-import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -36,23 +36,19 @@ class FeedServiceImplTest {
     private UserSearchService userSearchService;
 
     @Mock
-    DtoConversionService dtoConversionService;
+    private FeedItemMapper feedItemMapper;
 
     @InjectMocks
     private FeedServiceImpl feedService;
 
-    private Long userId;
-    private Long viewerId;
-    private int page;
-    private int size;
+    private static final Long USER_ID = 1L;
+    private static final Long VIEWER_ID = 1L;
+    private static final int PAGE = 0;
+    private static final int SIZE = 5;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        userId = 1L;
-        viewerId = 1L;
-        page = 0;
-        size = 5;
     }
 
     private List<FriendResponseDto> mockFriendships() {
@@ -66,101 +62,84 @@ class FeedServiceImplTest {
         Post post = new Post();
         post.setId(1L);
         post.setTitle(title);
-        List<Post> posts = List.of(post);
-        return new PageImpl<>(posts, PageRequest.of(page, size), posts.size());
+        return new PageImpl<>(List.of(post), PageRequest.of(PAGE, SIZE), 1);
     }
 
     @Test
-    void testGetFeed() {
-        // Arrange
-        when(friendService.getFriends(userId)).thenReturn(mockFriendships());
+    void shouldReturnFeedForUser() {
+        when(friendService.getFriends(USER_ID)).thenReturn(mockFriendships());
         when(postRepository.findByProfileIdInOrderByCreatedAtDesc(anyList(), any())).thenReturn(mockPosts("Outfit Post"));
 
-        // Stub DtoConversionService's convert method
-        FeedItemResponseDto feedItemResponseDto = new FeedItemResponseDto();
-        feedItemResponseDto.setTitle("Outfit Post");
-        when(dtoConversionService.convertToFeedItemResponseDto(any(Post.class))).thenReturn(feedItemResponseDto);
+        FeedItemResponseDto responseDto = new FeedItemResponseDto();
+        responseDto.setTitle("Outfit Post");
+        when(feedItemMapper.toResponseDto(any(Post.class))).thenReturn(responseDto);
 
-        // Act
-        List<FeedItemResponseDto> feed = feedService.getFeed(userId, page, size);
+        List<FeedItemResponseDto> feed = feedService.getFeed(USER_ID, PAGE, SIZE);
 
-        // Assert
         assertNotNull(feed);
         assertEquals(1, feed.size());
-        assertEquals("Outfit Post", feed.get(0).getTitle());
+        assertEquals("Outfit Post", feed.getFirst().getTitle());
     }
 
     @Test
-    void testGetFeedBySeason() {
-        // Arrange
+    void shouldReturnFeedFilteredBySeason() {
         String season = "Winter";
-        when(friendService.getFriends(userId)).thenReturn(mockFriendships());
+        when(friendService.getFriends(USER_ID)).thenReturn(mockFriendships());
         when(postRepository.findByProfileIdInAndOutfitSeasonOrderByCreatedAtDesc(anyList(), eq(season), any()))
                 .thenReturn(mockPosts("Winter Outfit Post"));
 
-        // Stub DtoConversionService's convert method
-        FeedItemResponseDto feedItemResponseDto = new FeedItemResponseDto();
-        feedItemResponseDto.setTitle("Winter Outfit Post");
-        when(dtoConversionService.convertToFeedItemResponseDto(any(Post.class))).thenReturn(feedItemResponseDto);
+        FeedItemResponseDto responseDto = new FeedItemResponseDto();
+        responseDto.setTitle("Winter Outfit Post");
+        when(feedItemMapper.toResponseDto(any(Post.class))).thenReturn(responseDto);
 
-        // Act
-        List<FeedItemResponseDto> feed = feedService.getFeedBySeason(userId, season, page, size);
+        List<FeedItemResponseDto> feed = feedService.getFeedBySeason(USER_ID, season, PAGE, SIZE);
 
-        // Assert
         assertNotNull(feed);
         assertEquals(1, feed.size());
-        assertEquals("Winter Outfit Post", feed.get(0).getTitle());
+        assertEquals("Winter Outfit Post", feed.getFirst().getTitle());
     }
 
     @Test
-    void testGetFeedByCategory() {
-        // Arrange
+    void shouldReturnFeedFilteredByCategory() {
         String category = "Casual";
-        when(friendService.getFriends(userId)).thenReturn(mockFriendships());
+        when(friendService.getFriends(USER_ID)).thenReturn(mockFriendships());
         when(postRepository.findByProfileIdInAndOutfitCategoryOrderByCreatedAtDesc(anyList(), eq(category), any()))
                 .thenReturn(mockPosts("Casual Outfit Post"));
 
-        // Stub DtoConversionService's convert method
-        FeedItemResponseDto feedItemResponseDto = new FeedItemResponseDto();
-        feedItemResponseDto.setTitle("Casual Outfit Post");
-        when(dtoConversionService.convertToFeedItemResponseDto(any(Post.class))).thenReturn(feedItemResponseDto);
+        FeedItemResponseDto responseDto = new FeedItemResponseDto();
+        responseDto.setTitle("Casual Outfit Post");
+        when(feedItemMapper.toResponseDto(any(Post.class))).thenReturn(responseDto);
 
-        // Act
-        List<FeedItemResponseDto> feed = feedService.getFeedByCategory(userId, category, page, size);
+        List<FeedItemResponseDto> feed = feedService.getFeedByCategory(USER_ID, category, PAGE, SIZE);
 
-        // Assert
         assertNotNull(feed);
         assertEquals(1, feed.size());
-        assertEquals("Casual Outfit Post", feed.get(0).getTitle());
+        assertEquals("Casual Outfit Post", feed.getFirst().getTitle());
     }
 
     @Test
-    void testGetUserPosts() {
-        // Arrange
+    void shouldReturnUserPosts() {
         User user = new User();
-        user.setId(userId);
-        when(userSearchService.getUserEntityById(userId)).thenReturn(user);
-        when(postRepository.findByProfileIdAndVisibilityInOrderByCreatedAtDesc(eq(userId), any(), any()))
+        user.setId(USER_ID);
+        when(userSearchService.getUserEntityById(USER_ID)).thenReturn(user);
+        when(postRepository.findByProfileIdAndVisibilityInOrderByCreatedAtDesc(eq(USER_ID), any(), any()))
                 .thenReturn(mockPosts("User Post"));
 
-        // Act
-        Page<Post> userPosts = feedService.getUserPosts(userId, viewerId, PageRequest.of(page, size));
+        Page<Post> userPosts = feedService.getUserPosts(USER_ID, VIEWER_ID, PageRequest.of(PAGE, SIZE));
 
-        // Assert
         assertNotNull(userPosts);
         assertEquals(1, userPosts.getTotalElements());
-        assertEquals("User Post", userPosts.getContent().get(0).getTitle());
+        assertEquals("User Post", userPosts.getContent().getFirst().getTitle());
     }
 
     @Test
-    void testGetUserPostsNotFound() {
-        // Arrange
-        Long userId = 999L;
-        when(userSearchService.getUserEntityById(userId)).thenReturn(null);
+    void shouldThrowExceptionWhenUserNotFound() {
+        Long nonExistentUserId = 999L;
+        when(userSearchService.getUserEntityById(nonExistentUserId)).thenReturn(null);
 
-        // Act & Assert
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
-                () -> feedService.getUserPosts(userId, viewerId, PageRequest.of(page, size)));
+                () -> feedService.getUserPosts(nonExistentUserId, VIEWER_ID, PageRequest.of(PAGE, SIZE)));
+
         assertEquals("User not found with id: 999", exception.getMessage());
     }
 }

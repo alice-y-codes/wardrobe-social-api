@@ -1,7 +1,6 @@
 package com.yalice.wardrobe_social_app.services;
 
 import com.yalice.wardrobe_social_app.dtos.user.ChangePasswordDto;
-import com.yalice.wardrobe_social_app.dtos.user.UserProfileDto;
 import com.yalice.wardrobe_social_app.dtos.user.UserRegistrationDto;
 import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.entities.Profile;
@@ -45,43 +44,35 @@ public class UserManagementServiceImpl implements UserManagementService {
     @Override
     @Transactional
     public UserResponseDto registerUser(UserRegistrationDto registrationDto) {
+        // Check if the username already exists
         if (existsByUsername(registrationDto.getUsername())) {
             throw new UsernameAlreadyExistsException("Username already exists: " + registrationDto.getUsername());
         }
 
-        User user = new User();
-        user.setUsername(registrationDto.getUsername());
-        user.setEmail(registrationDto.getEmail());
-        user.setPassword(passwordEncoder.encode(registrationDto.getPassword()));
+        // Use builder to create the User entity
+        User user = User.builder()
+                .username(registrationDto.getUsername())
+                .email(registrationDto.getEmail())
+                .password(passwordEncoder.encode(registrationDto.getPassword()))
+                .provider(registrationDto.getProvider())
+                .build();
+
+
         user = userRepository.save(user);
 
-        Profile profile = new Profile();
-        profile.setUser(user);
-        profile.setVisibility(Profile.ProfileVisibility.PUBLIC);
+
+        Profile profile = Profile.builder()
+                .user(user)
+                .bio("")
+                .location("")
+                .visibility(Profile.ProfileVisibility.PUBLIC)
+                .build();
+
         profileRepository.save(profile);
 
         return userMapper.toResponseDto(user);
     }
 
-    @Override
-    @Transactional
-    public UserResponseDto updateUserProfile(Long userId, UserProfileDto profileDto) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        Profile profile = user.getProfile();
-        if (profile == null) {
-            profile = new Profile();
-            profile.setUser(user);
-            profile.setVisibility(Profile.ProfileVisibility.PUBLIC);
-        }
-
-        profile.setBio(profileDto.getBio());
-        profile.setLocation(profileDto.getLocation());
-        profileRepository.save(profile);
-
-        return userMapper.toResponseDto(user);
-    }
 
     @Override
     @Transactional

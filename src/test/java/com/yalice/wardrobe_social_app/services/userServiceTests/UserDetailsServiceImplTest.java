@@ -3,25 +3,25 @@ package com.yalice.wardrobe_social_app.services.userServiceTests;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
 import com.yalice.wardrobe_social_app.services.UserDetailsServiceImpl;
-import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class UserDetailsServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
-
-    @Mock
-    private DtoConversionService dtoConversionService;
 
     @InjectMocks
     private UserDetailsServiceImpl userDetailsService;
@@ -30,16 +30,15 @@ class UserDetailsServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        user = new User();
-        user.setUsername("testuser");
-        user.setPassword("password123");  // In practice, this would be a hashed password
+        user = User.builder()
+                .username("testuser")
+                .password("password123") // Typically, this would be a hashed password
+                .build();
     }
 
     @Test
-    void testLoadUserByUsername_Success() {
-        // Mock repository to return the user when searching by username
-        when(userRepository.findByUsername("testuser")).thenReturn(java.util.Optional.of(user));
+    void loadUserByUsername_ShouldReturnUserDetails_WhenUserExists() {
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
 
         UserDetails userDetails = userDetailsService.loadUserByUsername("testuser");
 
@@ -50,14 +49,13 @@ class UserDetailsServiceImplTest {
     }
 
     @Test
-    void testLoadUserByUsername_UserNotFound() {
-        // Mock repository to return empty when searching by username
-        when(userRepository.findByUsername("testuser")).thenReturn(java.util.Optional.empty());
+    void loadUserByUsername_ShouldThrowException_WhenUserNotFound() {
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.empty());
 
-        // Ensure that the UsernameNotFoundException is thrown
-        UsernameNotFoundException exception = assertThrows(UsernameNotFoundException.class, () -> {
-            userDetailsService.loadUserByUsername("testuser");
-        });
+        UsernameNotFoundException exception = assertThrows(
+                UsernameNotFoundException.class,
+                () -> userDetailsService.loadUserByUsername("testuser")
+        );
 
         assertEquals("User not found with username: testuser", exception.getMessage());
         verify(userRepository, times(1)).findByUsername("testuser");

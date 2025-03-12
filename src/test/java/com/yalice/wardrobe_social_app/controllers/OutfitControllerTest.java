@@ -244,12 +244,12 @@ class OutfitControllerTest {
 
         when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
         when(outfitService.addItemToOutfit(any(), any()))
-                .thenThrow(new ResourceNotFoundException("Outfit or item not found"));
+                .thenThrow(new ResourceNotFoundException("Outfit not found"));
 
         mockMvc.perform(post("/api/outfits/{outfitId}/items/{itemId}", outfitId, itemId))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Outfit or item not found"))
+                .andExpect(jsonPath("$.message").value("Outfit not found"))
                 .andExpect(jsonPath("$.data").doesNotExist());
     }
 
@@ -275,12 +275,12 @@ class OutfitControllerTest {
 
         when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
         when(outfitService.removeItemFromOutfit(any(), any()))
-                .thenThrow(new ResourceNotFoundException("Outfit or item not found"));
+                .thenThrow(new ResourceNotFoundException("Outfit not found"));
 
         mockMvc.perform(delete("/api/outfits/{outfitId}/items/{itemId}", outfitId, itemId))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Outfit or item not found"))
+                .andExpect(jsonPath("$.message").value("Outfit not found"))
                 .andExpect(jsonPath("$.data").doesNotExist());
     }
 

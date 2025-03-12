@@ -1,7 +1,6 @@
 package com.yalice.wardrobe_social_app.services.userServiceTests;
 
 import com.yalice.wardrobe_social_app.dtos.user.ChangePasswordDto;
-import com.yalice.wardrobe_social_app.dtos.user.UserProfileDto;
 import com.yalice.wardrobe_social_app.dtos.user.UserRegistrationDto;
 import com.yalice.wardrobe_social_app.dtos.user.UserResponseDto;
 import com.yalice.wardrobe_social_app.entities.Profile;
@@ -23,7 +22,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class UserManagementServiceImplTest {
@@ -44,7 +42,6 @@ class UserManagementServiceImplTest {
     private UserManagementServiceImpl userManagementService;
 
     private UserRegistrationDto registrationDto;
-    private UserProfileDto profileDto;
     private ChangePasswordDto passwordDto;
     private User user;
     private Profile profile;
@@ -55,84 +52,72 @@ class UserManagementServiceImplTest {
         MockitoAnnotations.openMocks(this);
 
         // Setup test data
-        registrationDto = new UserRegistrationDto("testuser", "test@example.com", "password123");
-
-        profileDto = new UserProfileDto();
-        profileDto.setBio("Test bio");
-        profileDto.setLocation("Test location");
+        registrationDto = new UserRegistrationDto("testuser", "test@example.com", "password123", User.Provider.GOOGLE);
 
         passwordDto = new ChangePasswordDto("oldpassword", "newpassword");
 
-        user = new User();
-        user.setId(1L);
-        user.setUsername("testuser");
-        user.setEmail("test@example.com");
-        user.setPassword("encodedpassword");
+        profile = Profile.builder()
+                .bio("")
+                .location("")
+                .visibility(Profile.ProfileVisibility.PUBLIC)
+                .user(user)
+                .build();
 
-        profile = new Profile();
-        profile.setUser(user);
-        profile.setBio("Test bio");
-        profile.setLocation("Test location");
-        profile.setVisibility(Profile.ProfileVisibility.PUBLIC);
-        user.setProfile(profile);
+        user = User.builder()
+                .username("testuser")
+                .email("test@example.com")
+                .password("encodedpassword")
+                .provider(User.Provider.LOCAL)
+                .profile(profile)
+                .build();
 
         userResponseDto = new UserResponseDto(1L, "testuser", "test@example.com");
     }
 
     @Test
     void testRegisterUser_Success() {
+        // Arrange
         when(userRepository.existsByUsername(registrationDto.getUsername())).thenReturn(false);
         when(passwordEncoder.encode(registrationDto.getPassword())).thenReturn("encodedpassword");
         when(userRepository.save(any(User.class))).thenReturn(user);
         when(profileRepository.save(any(Profile.class))).thenReturn(profile);
         when(userMapper.toResponseDto(user)).thenReturn(userResponseDto);
 
+        // Act
         UserResponseDto result = userManagementService.registerUser(registrationDto);
 
+        // Assert
         assertNotNull(result);
         assertEquals("testuser", result.getUsername());
         assertEquals("test@example.com", result.getEmail());
 
-        verify(userRepository).save(any(User.class));
-        verify(profileRepository).save(any(Profile.class));
-        verify(userMapper).toResponseDto(any(User.class));
+        // Verify exact objects passed to save methods
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        User savedUser = userCaptor.getValue();
+        assertEquals("testuser", savedUser.getUsername());
+        assertEquals("test@example.com", savedUser.getEmail());
+        assertEquals("encodedpassword", savedUser.getPassword());
+
+        ArgumentCaptor<Profile> profileCaptor = ArgumentCaptor.forClass(Profile.class);
+        verify(profileRepository).save(profileCaptor.capture());
+        Profile savedProfile = profileCaptor.getValue();
+        assertEquals("", savedProfile.getBio());
+        assertEquals("", savedProfile.getLocation());
+        assertEquals(Profile.ProfileVisibility.PUBLIC, savedProfile.getVisibility());
+
+        verify(userMapper).toResponseDto(user);
     }
 
     @Test
     void testRegisterUser_UsernameAlreadyExists() {
         when(userRepository.existsByUsername(registrationDto.getUsername())).thenReturn(true);
 
+        // Act & Assert
         assertThrows(UsernameAlreadyExistsException.class, () -> userManagementService.registerUser(registrationDto));
 
+        // Verify no save call was made
         verify(userRepository, never()).save(any(User.class));
-        verify(profileRepository, never()).save(any(Profile.class));
-    }
-
-    @Test
-    void testUpdateUserProfile_Success() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(profileRepository.save(any(Profile.class))).thenReturn(profile);
-        when(userMapper.toResponseDto(user)).thenReturn(userResponseDto);
-
-        UserResponseDto result = userManagementService.updateUserProfile(1L, profileDto);
-
-        assertNotNull(result);
-        verify(profileRepository).save(any(Profile.class));
-        verify(userMapper).toResponseDto(user);
-
-        ArgumentCaptor<Profile> profileCaptor = ArgumentCaptor.forClass(Profile.class);
-        verify(profileRepository).save(profileCaptor.capture());
-        Profile savedProfile = profileCaptor.getValue();
-        assertEquals(profileDto.getBio(), savedProfile.getBio());
-        assertEquals(profileDto.getLocation(), savedProfile.getLocation());
-    }
-
-    @Test
-    void testUpdateUserProfile_UserNotFound() {
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () -> userManagementService.updateUserProfile(1L, profileDto));
-
         verify(profileRepository, never()).save(any(Profile.class));
     }
 
@@ -142,10 +127,14 @@ class UserManagementServiceImplTest {
         when(passwordEncoder.matches(passwordDto.getOldPassword(), user.getPassword())).thenReturn(true);
         when(passwordEncoder.encode(passwordDto.getNewPassword())).thenReturn("newencodedpassword");
 
+        // Act
         userManagementService.changePassword(1L, passwordDto);
 
-        verify(userRepository).save(user);
-        assertEquals("newencodedpassword", user.getPassword());
+        // Assert
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        User savedUser = userCaptor.getValue();
+        assertEquals("newencodedpassword", savedUser.getPassword());
     }
 
     @Test
@@ -153,8 +142,10 @@ class UserManagementServiceImplTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(passwordDto.getOldPassword(), user.getPassword())).thenReturn(false);
 
+        // Act & Assert
         assertThrows(SecurityException.class, () -> userManagementService.changePassword(1L, passwordDto));
 
+        // Verify no save call was made
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -162,8 +153,10 @@ class UserManagementServiceImplTest {
     void testDeleteUser_Success() {
         when(userRepository.existsById(1L)).thenReturn(true);
 
+        // Act
         userManagementService.deleteUser(1L);
 
+        // Assert
         verify(userRepository).deleteById(1L);
     }
 
@@ -171,8 +164,10 @@ class UserManagementServiceImplTest {
     void testDeleteUser_UserNotFound() {
         when(userRepository.existsById(1L)).thenReturn(false);
 
+        // Act & Assert
         assertThrows(ResourceNotFoundException.class, () -> userManagementService.deleteUser(1L));
 
+        // Verify no delete call was made
         verify(userRepository, never()).deleteById(anyLong());
     }
 
@@ -180,6 +175,7 @@ class UserManagementServiceImplTest {
     void testExistsByUsername_True() {
         when(userRepository.existsByUsername("testuser")).thenReturn(true);
 
+        // Act & Assert
         assertTrue(userManagementService.existsByUsername("testuser"));
     }
 
@@ -187,6 +183,7 @@ class UserManagementServiceImplTest {
     void testExistsByUsername_False() {
         when(userRepository.existsByUsername("testuser")).thenReturn(false);
 
+        // Act & Assert
         assertFalse(userManagementService.existsByUsername("testuser"));
     }
 }

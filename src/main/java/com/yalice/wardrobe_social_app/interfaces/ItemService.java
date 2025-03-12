@@ -15,40 +15,40 @@ public interface ItemService {
     /**
      * Creates a new wardrobe item.
      *
-     * @param userId  the ID of the user creating the item
+     * @param profileId  the ID of the profile creating the item
      * @param wardrobeId  the ID of the wardrobe for the item to be held
      * @param itemDto the item data
      * @param image   the item image file (optional)
      * @return the created item
      */
-    ItemResponseDto createItem(Long userId, Long wardrobeId, ItemDto itemDto, MultipartFile image);
+    ItemResponseDto createItem(Long profileId, Long wardrobeId, ItemDto itemDto, MultipartFile image);
 
     /**
      * Updates an existing wardrobe item.
      *
-     * @param userId  the ID of the user updating the item
+     * @param profileId  the ID of the profile updating the item
      * @param itemId  the ID of the item to update
      * @param itemDto the updated item data
      * @param image   the new item image file (optional)
      * @return the updated item
      */
-    ItemResponseDto updateItem(Long userId, Long itemId, ItemDto itemDto, MultipartFile image);
+    ItemResponseDto updateItem(Long profileId, Long itemId, ItemDto itemDto, MultipartFile image);
 
     /**
      * Deletes a wardrobe item.
      *
-     * @param userId the ID of the user deleting the item
+     * @param profileId the ID of the profile deleting the item
      * @param itemId the ID of the item to delete
      */
-    void deleteItem(Long userId, Long itemId);
+    void deleteItem(Long profileId, Long itemId);
 
     /**
-     * Gets all items for a specific user.
+     * Gets all items for a specific profile.
      *
-     * @param userId the ID of the user
+     * @param profileId the ID of the profile
      * @return the list of items
      */
-    List<ItemResponseDto> getUserItems(Long userId);
+    List<ItemResponseDto> getUserItems(Long profileId);
 
     /**
      * Gets a specific item by ID.

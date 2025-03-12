@@ -1,5 +1,8 @@
 package com.yalice.wardrobe_social_app.configs;
 
+import com.yalice.wardrobe_social_app.security.JwtAuthenticationFilter;
+import com.yalice.wardrobe_social_app.services.UserDetailsServiceImpl;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,10 +19,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.yalice.wardrobe_social_app.services.UserDetailsServiceImpl;
-import com.yalice.wardrobe_social_app.security.JwtAuthenticationFilter;
-
-import lombok.RequiredArgsConstructor;
 import java.util.Arrays;
 
 @Configuration
@@ -37,7 +36,14 @@ public class SecurityConfig {
                 .and()
                 .csrf().disable()
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**", "/api/v1/public/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**",
+                                "/api/v1/public/**",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/api/users/register",
+                                "/api/auth/login",
+                                "/api/auth/logout")
+                        .permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

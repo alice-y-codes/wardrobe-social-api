@@ -11,5 +11,4 @@ public abstract class BaseService {
 
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-
 }

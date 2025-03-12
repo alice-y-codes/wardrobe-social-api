@@ -170,7 +170,7 @@ class CommentControllerTest {
         List<CommentResponseDto> comments = List.of(createTestCommentResponse());
         when(commentService.getPostComments(any())).thenReturn(comments);
 
-        mockMvc.perform(get("/api/comments/posts/1"))
+        mockMvc.perform(get("/api/comments/posts/1/comments"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").exists())
@@ -182,10 +182,10 @@ class CommentControllerTest {
         when(commentService.getPostComments(any()))
                 .thenThrow(new ResourceNotFoundException("Post not found"));
 
-        mockMvc.perform(get("/api/comments/posts/999"))
+        mockMvc.perform(get("/api/comments/posts/999/comments"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Post not found"))
+                .andExpect(jsonPath("$.message").value("Comments for post not found"))
                 .andExpect(jsonPath("$.data").doesNotExist());
     }
 

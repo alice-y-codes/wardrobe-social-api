@@ -4,64 +4,58 @@ import com.yalice.wardrobe_social_app.dtos.profile.ProfileDto;
 import com.yalice.wardrobe_social_app.dtos.profile.ProfileResponseDto;
 import com.yalice.wardrobe_social_app.entities.Item;
 import com.yalice.wardrobe_social_app.entities.Profile;
-import com.yalice.wardrobe_social_app.entities.Profile.ProfileVisibility;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.entities.Wardrobe;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.interfaces.ProfileService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
+import com.yalice.wardrobe_social_app.mappers.ProfileMapper;
 import com.yalice.wardrobe_social_app.repositories.ItemRepository;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import com.yalice.wardrobe_social_app.repositories.WardrobeRepository;
 import com.yalice.wardrobe_social_app.services.helpers.BaseService;
-import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Optional;
-
 @Service
 public class ProfileServiceImpl extends BaseService implements ProfileService {
 
+    private static final Logger logger = LoggerFactory.getLogger(ProfileServiceImpl.class);
     private final ProfileRepository profileRepository;
     private final WardrobeRepository wardrobeRepository;
     private final ItemRepository itemRepository;
     private final UserSearchService userSearchService;
     private final FriendService friendService;
-    private final DtoConversionService dtoConversionService;
+    private final ProfileMapper profileMapper;
 
-    @Autowired
     public ProfileServiceImpl(ProfileRepository profileRepository, WardrobeRepository wardrobeRepository,
-                              ItemRepository itemRepository,
-                              UserSearchService userSearchService, FriendService friendService, DtoConversionService dtoConversionService) {
+                              ItemRepository itemRepository, UserSearchService userSearchService,
+                              FriendService friendService, ProfileMapper profileMapper) {
         this.profileRepository = profileRepository;
         this.wardrobeRepository = wardrobeRepository;
         this.itemRepository = itemRepository;
         this.userSearchService = userSearchService;
         this.friendService = friendService;
-        this.dtoConversionService = dtoConversionService;
+        this.profileMapper = profileMapper;
     }
 
     @Override
     public ProfileResponseDto getProfile(Long userId) {
         logger.info("Retrieving profile for user ID: {}", userId);
-
         Profile profile = profileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Profile not found with userId: " + userId));
-
-        return dtoConversionService.convertToProfileResponseDto(profile);
+        return profileMapper.toResponseDto(profile);
     }
 
     @Override
     @Transactional
     public ProfileResponseDto updateProfile(Long userId, ProfileDto profileDto, MultipartFile image) {
-        logger.info("Attempting to update profile for user ID: {}", userId);
-
-        Profile profile = profileRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with userId: " + userId));
+        logger.info("Updating profile for user ID: {}", userId);
+        Profile profile = getProfileEntityByUserId(userId);
 
         profile.setBio(profileDto.getBio());
         profile.setLocation(profileDto.getLocation());
@@ -74,64 +68,46 @@ public class ProfileServiceImpl extends BaseService implements ProfileService {
             profile.setProfileImageUrl("placeholder_url");
         }
 
-        Profile updatedProfile = profileRepository.saveAndFlush(profile);
+        profileRepository.save(profile);
         logger.info("Profile updated successfully for user ID: {}", userId);
-
-        return dtoConversionService.convertToProfileResponseDto(updatedProfile);
+        return profileMapper.toResponseDto(profile);
     }
 
     @Override
     @Transactional
     public ProfileResponseDto updateProfileVisibility(Long userId, boolean isPublic) {
-        logger.info("Attempting to update profile visibility for user ID: {} to: {}", userId, isPublic);
-
-        Profile profile = profileRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with userId: " + userId));
-
-        profile.setVisibility(isPublic ? ProfileVisibility.PUBLIC : ProfileVisibility.PRIVATE);
-        Profile updatedProfile = profileRepository.saveAndFlush(profile);
+        logger.info("Updating profile visibility for user ID: {}", userId);
+        Profile profile = getProfileEntityByUserId(userId);
+        profile.setVisibility(isPublic ? Profile.ProfileVisibility.PUBLIC : Profile.ProfileVisibility.PRIVATE);
+        profileRepository.save(profile);
         logger.info("Profile visibility updated successfully for user ID: {}", userId);
-
-        return dtoConversionService.convertToProfileResponseDto(updatedProfile);
+        return profileMapper.toResponseDto(profile);
     }
 
     @Override
     @Transactional
     public boolean isProfileAccessibleToUser(Long profileUserId, Long viewerId) {
-        logger.info("Checking profile accessibility for user ID: {} to view profile of user ID: {}", viewerId,
-                profileUserId);
-
-        // Users can always view their own profiles
-        if (profileUserId.equals(viewerId)) {
-            return true;
-        }
-
-        Optional<Profile> profileOptional = profileRepository.findByUserId(profileUserId);
-        if (profileOptional.isEmpty()) {
-            return false;
-        }
-
-        Profile profile = profileOptional.get();
-        ProfileVisibility visibility = profile.getVisibility();
-
-        // Public profiles are accessible to everyone
-        if (visibility == ProfileVisibility.PUBLIC) {
-            return true;
-        }
-
-        // Private profiles are only accessible to friends
-        return friendService.areFriends(profileUserId, viewerId);
+        logger.debug("Checking profile accessibility for viewer ID: {} to profile ID: {}", viewerId, profileUserId);
+        if (profileUserId.equals(viewerId)) return true;
+        Profile profile = profileRepository.findByUserId(profileUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with userId: " + profileUserId));
+        return profile.getVisibility() == Profile.ProfileVisibility.PUBLIC || friendService.areFriends(profileUserId, viewerId);
     }
 
     @Override
     public Profile getProfileEntityById(Long profileId) {
-        return profileRepository.findById(profileId).orElseThrow(
-                () -> new ResourceNotFoundException("Profile not found with id: " + profileId));
+        return profileRepository.findById(profileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with id: " + profileId));
+    }
+
+    private Profile getProfileEntityByUserId(Long userId) {
+        return profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with userId: " + userId));
     }
 
     @Override
     @Transactional
-    public Profile createProfile(Long userId, String bio, ProfileVisibility visibility) {
+    public Profile createProfile(Long userId, String bio, Profile.ProfileVisibility visibility) {
         User user = userSearchService.getUserEntityById(userId);
         if (user == null) {
             throw new IllegalArgumentException("User not found with ID: " + userId);
@@ -143,7 +119,7 @@ public class ProfileServiceImpl extends BaseService implements ProfileService {
                 .visibility(visibility)
                 .build();
 
-        profile = profileRepository.save(profile);
+        profileRepository.save(profile);
 
         Wardrobe defaultWardrobe = Wardrobe.builder()
                 .name("Wardrobe")
@@ -154,38 +130,24 @@ public class ProfileServiceImpl extends BaseService implements ProfileService {
         return profile;
     }
 
-    /**
-     * Add a new wardrobe for the given profile.
-     */
     @Override
     @Transactional
     public Wardrobe addWardrobeToProfile(Long profileId, String wardrobeName) {
-        Optional<Profile> profileOptional = profileRepository.findById(profileId);
-        if (profileOptional.isEmpty()) {
-            throw new IllegalArgumentException("Profile not found for ID: " + profileId);
-        }
-
-        Profile profile = profileOptional.get();
+        Profile profile = getProfileEntityById(profileId);
         Wardrobe wardrobe = Wardrobe.builder()
                 .name(wardrobeName)
                 .profile(profile)
                 .build();
-
         return wardrobeRepository.save(wardrobe);
     }
 
-    /**
-     * Move an item to a different wardrobe within the same profile.
-     */
     @Override
     @Transactional
     public void moveItemToAnotherWardrobe(Long itemId, Long newWardrobeId) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new IllegalArgumentException("Item not found with ID: " + itemId));
-
         Wardrobe newWardrobe = wardrobeRepository.findById(newWardrobeId)
                 .orElseThrow(() -> new IllegalArgumentException("Wardrobe not found with ID: " + newWardrobeId));
-
         item.setWardrobe(newWardrobe);
         itemRepository.save(item);
     }

@@ -1,16 +1,16 @@
 package com.yalice.wardrobe_social_app.security;
 
+import com.yalice.wardrobe_social_app.configs.AppConfig;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import com.yalice.wardrobe_social_app.configs.AppConfig;
-import lombok.RequiredArgsConstructor;
-
+import javax.crypto.SecretKey;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
@@ -25,6 +25,21 @@ import java.util.function.Function;
 public class JwtService {
 
     private final AppConfig appConfig;
+    private SecretKey secretKey;
+
+    /**
+     * Gets the signing key used for JWT token signing.
+     * The key is initialized only once and reused for subsequent calls.
+     *
+     * @return Signing key
+     */
+    private Key getSigningKey() {
+        if (secretKey == null) {
+            byte[] keyBytes = Decoders.BASE64.decode("qhq4PKUbpBX9aYXH9UTHzFOZoW5mAOPxvKlP9ERqRWM="); // 256-bit key
+            secretKey = Keys.hmacShaKeyFor(keyBytes);
+        }
+        return secretKey;
+    }
 
     /**
      * Extracts the username from a given JWT token.
@@ -122,15 +137,5 @@ public class JwtService {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-    }
-
-    /**
-     * Gets the signing key used for JWT token signing.
-     *
-     * @return Signing key
-     */
-    private Key getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(appConfig.getJwt().getSecret());
-        return Keys.hmacShaKeyFor(keyBytes);
     }
 }

@@ -5,11 +5,10 @@ import com.yalice.wardrobe_social_app.dtos.friendship.FriendResponseDto;
 import com.yalice.wardrobe_social_app.entities.Friendship;
 import com.yalice.wardrobe_social_app.entities.Friendship.FriendshipStatus;
 import com.yalice.wardrobe_social_app.entities.User;
-import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
+import com.yalice.wardrobe_social_app.mappers.FriendMapper;
 import com.yalice.wardrobe_social_app.repositories.FriendRepository;
 import com.yalice.wardrobe_social_app.services.FriendServiceImpl;
-import com.yalice.wardrobe_social_app.services.helpers.DtoConversionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -31,7 +30,7 @@ class FriendServiceImplTest {
     private UserSearchService userSearchService;
 
     @Mock
-    private DtoConversionService dtoConversionService;
+    private FriendMapper friendMapper;
 
     @InjectMocks
     private FriendServiceImpl friendService;
@@ -41,30 +40,45 @@ class FriendServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        MockitoAnnotations.openMocks(this); // Ensure proper mock initialization
 
-        sender = new User();
-        sender.setId(1L);
-        sender.setUsername("senderUsername");
+        sender = createUser(1L, "senderUsername");
+        recipient = createUser(2L, "recipientUsername");
+    }
 
-        recipient = new User();
-        recipient.setId(2L);
-        recipient.setUsername("recipientUsername");
+    private User createUser(Long id, String username) {
+        User user = new User();
+        user.setId(id);
+        user.setUsername(username);
+        return user;
+    }
+
+    private Friendship createFriendship(User sender, User recipient, FriendshipStatus status) {
+        Friendship friendship = new Friendship();
+        friendship.setSender(sender);
+        friendship.setRecipient(recipient);
+        friendship.setStatus(status);
+        return friendship;
     }
 
     @Test
     void sendFriendRequest_success() {
+        FriendRequestDto mockFriendRequestDto = FriendRequestDto.builder()
+                        .id(1L)
+                        .recipientId(2L)
+                        .senderId(1L)
+                        .status("PENDING")
+                        .build();
+
         when(friendRepository.existsBySenderIdAndRecipientId(sender.getId(), recipient.getId())).thenReturn(false);
         when(userSearchService.getUserEntityById(sender.getId())).thenReturn(sender);
         when(userSearchService.getUserEntityById(recipient.getId())).thenReturn(recipient);
 
-        Friendship friendship = new Friendship();
+        Friendship friendship = createFriendship(sender, recipient, FriendshipStatus.PENDING);
         friendship.setId(100L);
-        friendship.setSender(sender);
-        friendship.setRecipient(recipient);
-        friendship.setStatus(FriendshipStatus.PENDING);
 
         when(friendRepository.save(any(Friendship.class))).thenReturn(friendship);
+        when(friendMapper.toRequestDto(any(Friendship.class))).thenReturn(mockFriendRequestDto);
 
         FriendRequestDto friendRequestDto = friendService.sendFriendRequest(sender.getId(), recipient.getId());
 
@@ -78,78 +92,59 @@ class FriendServiceImplTest {
     void sendFriendRequest_alreadyExists() {
         when(friendRepository.existsBySenderIdAndRecipientId(sender.getId(), recipient.getId())).thenReturn(true);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            friendService.sendFriendRequest(sender.getId(), recipient.getId());
-        });
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> friendService.sendFriendRequest(sender.getId(), recipient.getId()));
         assertEquals("Friend request already exists", exception.getMessage());
     }
 
     @Test
     void acceptFriendRequest_success() {
         Long requestId = 1L;
-        Long userId = recipient.getId(); // Assuming recipient is the one accepting the request.
+        Long userId = recipient.getId(); // recipient accepts the request.
 
-        // Create a valid Friendship object with PENDING status
-        Friendship friendship = new Friendship();
+        Friendship friendship = createFriendship(sender, recipient, FriendshipStatus.PENDING);
         friendship.setId(requestId);
-        friendship.setSender(sender);
-        friendship.setRecipient(recipient);
-        friendship.setStatus(FriendshipStatus.PENDING); // Ensure status is PENDING
 
-        // Mock the repository to return the Friendship with PENDING status
         when(friendRepository.findById(requestId)).thenReturn(Optional.of(friendship));
         when(friendRepository.save(any(Friendship.class))).thenReturn(friendship);
 
-        // Prepare the response DTO
         FriendResponseDto mockResponseDto = new FriendResponseDto();
         mockResponseDto.setStatus(FriendshipStatus.ACCEPTED.name());
         mockResponseDto.setUserId(sender.getId());
 
-        // Mock the DTO conversion service to return the expected FriendResponseDto
-        when(dtoConversionService.convertToFriendshipResponseDto(any(Friendship.class))).thenReturn(mockResponseDto);
+        // Use FriendMapper instead of DtoConversionService
+        when(friendMapper.toResponseDto(any(Friendship.class))).thenReturn(mockResponseDto);
 
-        // Call the method under test
         FriendResponseDto friendResponseDto = friendService.acceptFriendRequest(userId, requestId);
 
-        // Assert the result
-        assertNotNull(friendResponseDto, "FriendResponseDto should not be null");
-        assertEquals(FriendshipStatus.ACCEPTED.name(), friendResponseDto.getStatus(), "The status should be ACCEPTED");
-        assertEquals(sender.getId(), friendResponseDto.getUserId(), "The user ID should match the sender's ID");
+        assertNotNull(friendResponseDto);
+        assertEquals(FriendshipStatus.ACCEPTED.name(), friendResponseDto.getStatus());
+        assertEquals(sender.getId(), friendResponseDto.getUserId());
 
-        // Verify interactions with the friendRepository
-        verify(friendRepository, times(1)).findById(requestId); // Verify findById was called once
-        verify(friendRepository, times(1)).save(friendship); // Verify save was called once
+        verify(friendRepository, times(1)).findById(requestId);
+        verify(friendRepository, times(1)).save(friendship);
 
-        // Verify the status change to ACCEPTED
-        assertEquals(FriendshipStatus.ACCEPTED, friendship.getStatus(), "The friendship status should be ACCEPTED");
+        assertEquals(FriendshipStatus.ACCEPTED, friendship.getStatus());
     }
-
 
     @Test
     void acceptFriendRequest_notRecipient() {
         Long requestId = 1L;
-        Friendship friendship = new Friendship();
+        Friendship friendship = createFriendship(sender, recipient, FriendshipStatus.PENDING);
         friendship.setId(requestId);
-        friendship.setSender(sender);
-        friendship.setRecipient(recipient);
-        friendship.setStatus(FriendshipStatus.PENDING);
 
         when(friendRepository.findById(requestId)).thenReturn(Optional.of(friendship));
 
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
-            friendService.acceptFriendRequest(3L, requestId);
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            friendService.acceptFriendRequest(3L, requestId); // wrong user
         });
-        assertEquals("User is not the recipient of this friend request", exception.getMessage());
+        assertEquals("Invalid friend request action", exception.getMessage());
     }
 
     @Test
     void rejectFriendRequest_success() {
         Long requestId = 1L;
-        Friendship friendship = new Friendship();
+        Friendship friendship = createFriendship(sender, recipient, FriendshipStatus.PENDING);
         friendship.setId(requestId);
-        friendship.setSender(sender);
-        friendship.setRecipient(recipient);
-        friendship.setStatus(FriendshipStatus.PENDING);
 
         when(friendRepository.findById(requestId)).thenReturn(Optional.of(friendship));
 
@@ -162,27 +157,21 @@ class FriendServiceImplTest {
     @Test
     void rejectFriendRequest_notRecipient() {
         Long requestId = 1L;
-        Friendship friendship = new Friendship();
+        Friendship friendship = createFriendship(sender, recipient, FriendshipStatus.PENDING);
         friendship.setId(requestId);
-        friendship.setSender(sender);
-        friendship.setRecipient(recipient);
-        friendship.setStatus(FriendshipStatus.PENDING);
 
         when(friendRepository.findById(requestId)).thenReturn(Optional.of(friendship));
 
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
-            friendService.rejectFriendRequest(3L, requestId);
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            friendService.rejectFriendRequest(3L, requestId); // wrong user
         });
-        assertEquals("User is not the recipient of this friend request", exception.getMessage());
+        assertEquals("Invalid friend request action", exception.getMessage());
     }
 
     @Test
     void getPendingFriendRequests_success() {
-        Friendship pendingFriendship = new Friendship();
+        Friendship pendingFriendship = createFriendship(sender, recipient, FriendshipStatus.PENDING);
         pendingFriendship.setId(99L);
-        pendingFriendship.setSender(sender);
-        pendingFriendship.setRecipient(recipient);
-        pendingFriendship.setStatus(FriendshipStatus.PENDING);
 
         when(friendRepository.findByRecipientIdAndStatus(recipient.getId(), FriendshipStatus.PENDING))
                 .thenReturn(List.of(pendingFriendship));
@@ -195,11 +184,8 @@ class FriendServiceImplTest {
 
     @Test
     void areFriends_true() {
-        Friendship friendship = new Friendship();
+        Friendship friendship = createFriendship(sender, recipient, FriendshipStatus.ACCEPTED);
         friendship.setId(100L);
-        friendship.setSender(sender);
-        friendship.setRecipient(recipient);
-        friendship.setStatus(FriendshipStatus.ACCEPTED);
 
         when(friendRepository.findFriendshipBetweenUsers(sender.getId(), recipient.getId()))
                 .thenReturn(Optional.of(friendship));

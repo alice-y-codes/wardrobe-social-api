@@ -73,7 +73,8 @@ class PostControllerTest {
                                 .build();
 
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(postService.createPost(eq(1L), eq(postDto))).thenReturn(responseDto);
+                when(postService.createPost(eq(1L), any(PostDto.class))).thenReturn(responseDto);
+
 
                 mockMvc.perform(post("/api/feed/post")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -119,7 +120,7 @@ class PostControllerTest {
                                 .build();
 
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(postService.updatePost(eq(1L), eq(1L), eq(postDto))).thenReturn(responseDto);
+                when(postService.updatePost(eq(1L), eq(1L), any(PostDto.class))).thenReturn(responseDto);
 
                 mockMvc.perform(patch("/api/feed/{postId}", postId)
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -142,7 +143,7 @@ class PostControllerTest {
                                 .build();
 
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(postService.updatePost(eq(1L), eq(1L), eq(postDto)))
+                when(postService.updatePost(eq(1L), eq(1L), any(PostDto.class)))
                                 .thenThrow(new ResourceNotFoundException("Post not found"));
 
                 mockMvc.perform(patch("/api/feed/{postId}", postId)

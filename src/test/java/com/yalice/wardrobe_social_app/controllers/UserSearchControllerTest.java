@@ -70,7 +70,7 @@ class UserSearchControllerTest {
         mockMvc.perform(get("/api/users/search/username/nonexistent"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("User not found"))
+                .andExpect(jsonPath("$.message").value("User (username: nonexistent) not found"))
                 .andExpect(jsonPath("$.data").doesNotExist());
     }
 
@@ -94,7 +94,7 @@ class UserSearchControllerTest {
         mockMvc.perform(get("/api/users/search/999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("User not found"))
+                .andExpect(jsonPath("$.message").value("User (ID: 999) not found"))
                 .andExpect(jsonPath("$.data").doesNotExist());
     }
 
