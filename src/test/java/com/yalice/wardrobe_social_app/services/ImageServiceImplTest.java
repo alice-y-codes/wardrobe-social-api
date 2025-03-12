@@ -1,6 +1,7 @@
 package com.yalice.wardrobe_social_app.services;
 
 import com.yalice.wardrobe_social_app.exceptions.ImageProcessingException;
+import com.yalice.wardrobe_social_app.services.core.ImageServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

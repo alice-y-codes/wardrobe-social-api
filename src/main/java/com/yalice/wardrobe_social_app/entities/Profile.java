@@ -111,6 +111,17 @@ public class Profile extends BaseEntity {
     @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<Like> likes = new HashSet<>();
 
+    @ManyToMany
+    @JoinTable(name = "profile_followers", joinColumns = @JoinColumn(name = "profile_id"), inverseJoinColumns = @JoinColumn(name = "follower_id"))
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<Profile> followers = new HashSet<>();
+
+    @ManyToMany(mappedBy = "followers")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<Profile> following = new HashSet<>();
+
     /**
      * Enum representing the visibility of the profile.
      */

@@ -10,7 +10,7 @@ import com.yalice.wardrobe_social_app.exceptions.UsernameAlreadyExistsException;
 import com.yalice.wardrobe_social_app.mappers.UserMapper;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
-import com.yalice.wardrobe_social_app.services.UserManagementServiceImpl;
+import com.yalice.wardrobe_social_app.services.user.UserManagementServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
