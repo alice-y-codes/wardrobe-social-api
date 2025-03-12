@@ -2,7 +2,7 @@ package com.yalice.wardrobe_social_app.services.userServiceTests;
 
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
-import com.yalice.wardrobe_social_app.services.UserDetailsServiceImpl;
+import com.yalice.wardrobe_social_app.services.user.UserDetailsServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

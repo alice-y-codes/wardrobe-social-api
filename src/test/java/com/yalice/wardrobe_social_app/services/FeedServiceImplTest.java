@@ -1,4 +1,4 @@
-package com.yalice.wardrobe_social_app.services.feedServiceTests;
+package com.yalice.wardrobe_social_app.services;
 
 import com.yalice.wardrobe_social_app.dtos.feed.FeedItemResponseDto;
 import com.yalice.wardrobe_social_app.dtos.friendship.FriendResponseDto;
@@ -9,7 +9,7 @@ import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
 import com.yalice.wardrobe_social_app.mappers.FeedItemMapper;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
-import com.yalice.wardrobe_social_app.services.FeedServiceImpl;
+import com.yalice.wardrobe_social_app.services.social.FeedServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

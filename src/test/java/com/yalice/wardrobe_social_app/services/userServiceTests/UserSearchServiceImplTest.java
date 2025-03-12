@@ -5,7 +5,7 @@ import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.UserNotFoundException;
 import com.yalice.wardrobe_social_app.mappers.UserMapper;
 import com.yalice.wardrobe_social_app.repositories.UserRepository;
-import com.yalice.wardrobe_social_app.services.UserSearchServiceImpl;
+import com.yalice.wardrobe_social_app.services.user.UserSearchServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

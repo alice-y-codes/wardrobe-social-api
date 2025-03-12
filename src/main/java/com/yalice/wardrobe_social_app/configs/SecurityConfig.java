@@ -1,7 +1,7 @@
 package com.yalice.wardrobe_social_app.configs;
 
 import com.yalice.wardrobe_social_app.security.JwtAuthenticationFilter;
-import com.yalice.wardrobe_social_app.services.UserDetailsServiceImpl;
+import com.yalice.wardrobe_social_app.services.user.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

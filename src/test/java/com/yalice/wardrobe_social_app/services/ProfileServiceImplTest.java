@@ -1,4 +1,4 @@
-package com.yalice.wardrobe_social_app.services.profileServiceTests;
+package com.yalice.wardrobe_social_app.services;
 
 import com.yalice.wardrobe_social_app.dtos.profile.ProfileDto;
 import com.yalice.wardrobe_social_app.dtos.profile.ProfileResponseDto;
@@ -13,7 +13,7 @@ import com.yalice.wardrobe_social_app.mappers.ProfileMapper;
 import com.yalice.wardrobe_social_app.repositories.ItemRepository;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import com.yalice.wardrobe_social_app.repositories.WardrobeRepository;
-import com.yalice.wardrobe_social_app.services.ProfileServiceImpl;
+import com.yalice.wardrobe_social_app.services.core.ProfileServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

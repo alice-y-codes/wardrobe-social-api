@@ -1,4 +1,4 @@
-package com.yalice.wardrobe_social_app.services.commentServiceTests;
+package com.yalice.wardrobe_social_app.services;
 
 import com.yalice.wardrobe_social_app.dtos.comment.CommentDto;
 import com.yalice.wardrobe_social_app.dtos.comment.CommentResponseDto;
@@ -11,7 +11,7 @@ import com.yalice.wardrobe_social_app.interfaces.ProfileService;
 import com.yalice.wardrobe_social_app.mappers.CommentMapper;
 import com.yalice.wardrobe_social_app.repositories.CommentRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
-import com.yalice.wardrobe_social_app.services.CommentServiceImpl;
+import com.yalice.wardrobe_social_app.services.social.CommentServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

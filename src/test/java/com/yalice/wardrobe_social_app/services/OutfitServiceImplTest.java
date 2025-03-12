@@ -1,4 +1,4 @@
-package com.yalice.wardrobe_social_app.services.outfitServiceTests;
+package com.yalice.wardrobe_social_app.services;
 
 import com.yalice.wardrobe_social_app.dtos.outfit.OutfitDto;
 import com.yalice.wardrobe_social_app.dtos.outfit.OutfitResponseDto;
@@ -7,7 +7,7 @@ import com.yalice.wardrobe_social_app.interfaces.ItemService;
 import com.yalice.wardrobe_social_app.mappers.OutfitMapper;
 import com.yalice.wardrobe_social_app.repositories.OutfitRepository;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
-import com.yalice.wardrobe_social_app.services.OutfitServiceImpl;
+import com.yalice.wardrobe_social_app.services.core.OutfitServiceImpl;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,4 +1,4 @@
-package com.yalice.wardrobe_social_app.services.itemServiceTests;
+package com.yalice.wardrobe_social_app.services;
 
 import com.yalice.wardrobe_social_app.dtos.item.ItemDto;
 import com.yalice.wardrobe_social_app.dtos.item.ItemResponseDto;
@@ -11,7 +11,7 @@ import com.yalice.wardrobe_social_app.mappers.ItemMapper;
 import com.yalice.wardrobe_social_app.repositories.ItemRepository;
 import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
 import com.yalice.wardrobe_social_app.repositories.WardrobeRepository;
-import com.yalice.wardrobe_social_app.services.ItemServiceImpl;
+import com.yalice.wardrobe_social_app.services.core.ItemServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

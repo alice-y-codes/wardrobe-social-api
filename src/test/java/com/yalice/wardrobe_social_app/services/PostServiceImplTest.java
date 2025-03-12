@@ -1,4 +1,4 @@
-package com.yalice.wardrobe_social_app.services.postServiceTests;
+package com.yalice.wardrobe_social_app.services;
 
 import com.yalice.wardrobe_social_app.dtos.post.PostDto;
 import com.yalice.wardrobe_social_app.dtos.post.PostResponseDto;
@@ -12,7 +12,7 @@ import com.yalice.wardrobe_social_app.interfaces.ProfileService;
 import com.yalice.wardrobe_social_app.mappers.PostMapper;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
-import com.yalice.wardrobe_social_app.services.PostServiceImpl;
+import com.yalice.wardrobe_social_app.services.core.PostServiceImpl;
 import com.yalice.wardrobe_social_app.services.helpers.PostServiceHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
