@@ -1,149 +1,195 @@
 package com.yalice.wardrobe_social_app.services;
 
+import com.yalice.wardrobe_social_app.dtos.outfit.OutfitDto;
+import com.yalice.wardrobe_social_app.dtos.outfit.OutfitResponseDto;
 import com.yalice.wardrobe_social_app.entities.Item;
 import com.yalice.wardrobe_social_app.entities.Outfit;
-import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.entities.Profile;
 import com.yalice.wardrobe_social_app.interfaces.ItemService;
 import com.yalice.wardrobe_social_app.interfaces.OutfitService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.mappers.OutfitMapper;
 import com.yalice.wardrobe_social_app.repositories.OutfitRepository;
-import com.yalice.wardrobe_social_app.repositories.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.yalice.wardrobe_social_app.repositories.ProfileRepository;
+import com.yalice.wardrobe_social_app.services.helpers.BaseService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
-public class OutfitServiceImpl implements OutfitService {
+public class OutfitServiceImpl extends BaseService implements OutfitService {
 
-    private final OutfitRepository outfitRepository;
-    private final UserService userService;
+    private final ProfileRepository profileRepository;
     private final ItemService itemService;
-    private final UserRepository userRepository;
+    private final OutfitRepository outfitRepository;
+    private final OutfitMapper outfitMapper;
 
-    @Autowired
-    public OutfitServiceImpl(OutfitRepository outfitRepository, UserService userService,
-            ItemService itemService, UserRepository userRepository) {
+    public OutfitServiceImpl(OutfitRepository outfitRepository, ProfileRepository profileRepository,
+                             ItemService itemService, OutfitMapper outfitMapper) {
         this.outfitRepository = outfitRepository;
-        this.userService = userService;
+        this.profileRepository = profileRepository;
         this.itemService = itemService;
-        this.userRepository = userRepository;
+        this.outfitMapper = outfitMapper;
     }
 
     @Override
     @Transactional
-    public Optional<Outfit> createOutfit(Long userId, Outfit outfit) {
-        // Find the user by ID directly from the repository
-        Optional<User> userOptional = userRepository.findById(userId);
-        if (userOptional.isEmpty()) {
-            return Optional.empty();
-        }
+    public OutfitResponseDto createOutfit(Long profileId, OutfitDto outfitDto, MultipartFile image) {
+        logger.info("Creating outfit for profile ID: {}", profileId);
 
-        // Set the user and timestamps
-        outfit.setUser(userOptional.get());
-        outfit.setCreatedAt(LocalDateTime.now());
-        outfit.setUpdatedAt(LocalDateTime.now());
+        Profile profile = findProfileById(profileId);
 
-        // Save and return the outfit
+        Outfit outfit = buildOutfit(outfitDto, profile, image);
+
         Outfit savedOutfit = outfitRepository.save(outfit);
-        return Optional.of(savedOutfit);
-    }
 
-    @Override
-    public Optional<Outfit> getOutfit(Long outfitId) {
-        return outfitRepository.findById(outfitId);
-    }
+        logger.info("Outfit '{}' successfully created for profile '{}'.", outfit.getName(), profile.getUser().getUsername());
 
-    @Override
-    public List<Outfit> getAllOutfits(Long userId) {
-        return outfitRepository.findByUserId(userId);
+        return outfitMapper.toResponseDto(savedOutfit);
     }
 
     @Override
     @Transactional
-    public Outfit updateOutfit(Long outfitId, Outfit outfit) {
-        Optional<Outfit> existingOutfitOptional = outfitRepository.findById(outfitId);
-        if (existingOutfitOptional.isEmpty()) {
-            return null;
-        }
+    public OutfitResponseDto updateOutfit(Long profileId, Long outfitId, OutfitDto outfitDto, MultipartFile image) {
+        logger.info("Updating outfit with ID: {} for profile ID: {}", outfitId, profileId);
 
-        Outfit existingOutfit = existingOutfitOptional.get();
+        Outfit outfit = findOutfitByIdAndProfile(outfitId, profileId);
 
-        // Update fields
-        existingOutfit.setName(outfit.getName());
-        existingOutfit.setDescription(outfit.getDescription());
-        existingOutfit.setOccasion(outfit.getOccasion());
-        existingOutfit.setSeason(outfit.getSeason());
-        existingOutfit.setFavorite(outfit.isFavorite());
-        existingOutfit.setPublic(outfit.isPublic());
-        existingOutfit.setUpdatedAt(LocalDateTime.now());
+        updateOutfitFields(outfit, outfitDto, image);
 
-        // Save and return the updated outfit
-        return outfitRepository.save(existingOutfit);
-    }
-
-    @Override
-    @Transactional
-    public void deleteOutfit(Long outfitId) {
-        Optional<Outfit> outfitOptional = outfitRepository.findById(outfitId);
-        outfitOptional.ifPresent(outfitRepository::delete);
-    }
-
-    @Override
-    @Transactional
-    public Optional<Outfit> addItemToOutfit(Long outfitId, Long itemId) {
-        // Find the outfit
-        Optional<Outfit> outfitOptional = outfitRepository.findById(outfitId);
-        if (outfitOptional.isEmpty()) {
-            return Optional.empty();
-        }
-
-        // Find the item
-        Optional<Item> itemOptional = itemService.getItem(itemId);
-        if (itemOptional.isEmpty()) {
-            return Optional.empty();
-        }
-
-        // Add the item to the outfit
-        Outfit outfit = outfitOptional.get();
-        outfit.addItem(itemOptional.get());
-        outfit.setUpdatedAt(LocalDateTime.now());
-
-        // Save and return the updated outfit
         Outfit updatedOutfit = outfitRepository.save(outfit);
-        return Optional.of(updatedOutfit);
+
+        logger.info("Outfit '{}' successfully updated.", updatedOutfit.getName());
+
+        return outfitMapper.toResponseDto(updatedOutfit);
     }
 
     @Override
     @Transactional
-    public Optional<Outfit> removeItemFromOutfit(Long outfitId, Long itemId) {
-        // Find the outfit
-        Optional<Outfit> outfitOptional = outfitRepository.findById(outfitId);
-        if (outfitOptional.isEmpty()) {
-            return Optional.empty();
-        }
+    public void deleteOutfit(Long profileId, Long outfitId) {
+        logger.info("Deleting outfit with ID: {} for profile ID: {}", outfitId, profileId);
 
-        // Find the item
-        Optional<Item> itemOptional = itemService.getItem(itemId);
-        if (itemOptional.isEmpty()) {
-            return Optional.empty();
-        }
+        findOutfitByIdAndProfile(outfitId, profileId);
 
-        // Remove the item from the outfit
-        Outfit outfit = outfitOptional.get();
-        outfit.removeItem(itemOptional.get());
-        outfit.setUpdatedAt(LocalDateTime.now());
+        outfitRepository.deleteById(outfitId);
 
-        // Save and return the updated outfit
-        Outfit updatedOutfit = outfitRepository.save(outfit);
-        return Optional.of(updatedOutfit);
+        logger.info("Outfit with ID '{}' successfully deleted.", outfitId);
     }
 
     @Override
-    public List<Outfit> getOutfitsByOccasion(Long userId, String occasion) {
-        return outfitRepository.findByUserIdAndOccasion(userId, occasion);
+    public List<OutfitResponseDto> getUserOutfits(Long profileId) {
+        logger.info("Fetching all outfits for profile ID: {}", profileId);
+
+        Profile profile = findProfileById(profileId);
+
+        List<Outfit> outfits = outfitRepository.findByProfileId(profile.getId());
+
+        return outfits.stream()
+                .map(outfitMapper::toResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public OutfitResponseDto getOutfit(Long outfitId) {
+        logger.info("Fetching outfit with ID: {}", outfitId);
+
+        Outfit outfit = findOutfitById(outfitId);
+
+        return outfitMapper.toResponseDto(outfit);
+    }
+
+    @Override
+    public Outfit getOutfitEntityById(Long outfitId) {
+        logger.info("Fetching outfit entity with ID: {}", outfitId);
+
+        return findOutfitById(outfitId);
+    }
+
+    @Override
+    @Transactional
+    public OutfitResponseDto addItemToOutfit(Long outfitId, Long itemId) {
+        logger.info("Adding item with ID: {} to outfit with ID: {}", itemId, outfitId);
+
+        Outfit outfit = findOutfitById(outfitId);
+
+        Item item = itemService.getItemEntity(itemId);
+        outfit.addOutfitItem(item);
+
+        Outfit updatedOutfit = outfitRepository.save(outfit);
+
+        logger.info("Item '{}' successfully added to outfit '{}'.", item.getName(), outfit.getName());
+
+        return outfitMapper.toResponseDto(updatedOutfit);
+    }
+
+    @Override
+    @Transactional
+    public OutfitResponseDto removeItemFromOutfit(Long outfitId, Long itemId) {
+        logger.info("Removing item with ID: {} from outfit with ID: {}", itemId, outfitId);
+
+        Outfit outfit = findOutfitById(outfitId);
+
+        Item item = itemService.getItemEntity(itemId);
+        outfit.removeOutfitItem(item);
+
+        Outfit updatedOutfit = outfitRepository.save(outfit);
+
+        logger.info("Item '{}' successfully removed from outfit '{}'.", item.getName(), outfit.getName());
+
+        return outfitMapper.toResponseDto(updatedOutfit);
+    }
+
+    private Profile findProfileById(Long profileId) {
+        return profileRepository.findById(profileId)
+                .orElseThrow(() -> {
+                    logger.warn("Profile not found with ID: {}", profileId);
+                    return new EntityNotFoundException("Profile not found with ID: " + profileId);
+                });
+    }
+
+    private Outfit findOutfitById(Long outfitId) {
+        return outfitRepository.findById(outfitId)
+                .orElseThrow(() -> {
+                    logger.warn("Outfit not found with ID: {}", outfitId);
+                    return new EntityNotFoundException("Outfit not found with ID: " + outfitId);
+                });
+    }
+
+    private Outfit findOutfitByIdAndProfile(Long outfitId, Long profileId) {
+        Outfit outfit = findOutfitById(outfitId);
+
+        if (!outfit.getProfile().getId().equals(profileId)) {
+            throw new EntityNotFoundException("Profile does not own this outfit");
+        }
+
+        return outfit;
+    }
+
+    private Outfit buildOutfit(OutfitDto outfitDto, Profile profile, MultipartFile image) {
+        return Outfit.builder()
+                .profile(profile)
+                .name(outfitDto.getName())
+                .description(outfitDto.getDescription())
+                .season(outfitDto.getSeason())
+                .favorite(outfitDto.isFavorite())
+                .isPublic(outfitDto.isPublic())
+                .imageUrl(image != null && !image.isEmpty() ? "placeholder_url" : null) // Implement actual image logic
+                .build();
+    }
+
+    private void updateOutfitFields(Outfit outfit, OutfitDto outfitDto, MultipartFile image) {
+        outfit.setName(outfitDto.getName());
+        outfit.setDescription(outfitDto.getDescription());
+        outfit.setSeason(outfitDto.getSeason());
+        outfit.setFavorite(outfitDto.isFavorite());
+        outfit.setPublic(outfitDto.isPublic());
+
+        if (image != null && !image.isEmpty()) {
+            // TODO: Implement image upload logic
+            outfit.setImageUrl("placeholder_url");
+        }
     }
 }

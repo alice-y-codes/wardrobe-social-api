@@ -1,80 +1,84 @@
 package com.yalice.wardrobe_social_app.interfaces;
 
+import com.yalice.wardrobe_social_app.dtos.outfit.OutfitDto;
+import com.yalice.wardrobe_social_app.dtos.outfit.OutfitResponseDto;
 import com.yalice.wardrobe_social_app.entities.Outfit;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Service interface for managing outfits.
+ */
 public interface OutfitService {
-
     /**
-     * Create a new outfit for a user
-     * 
-     * @param userId the ID of the user creating the outfit
-     * @param outfit the outfit to create
-     * @return the created outfit wrapped in an Optional, or empty if creation
-     *         failed
+     * Creates a new outfit.
+     *
+     * @param profileId    the ID of the profile creating the outfit
+     * @param outfitDto the outfit data
+     * @param image     the outfit image file (optional)
+     * @return the created outfit
      */
-    Optional<Outfit> createOutfit(Long userId, Outfit outfit);
+    OutfitResponseDto createOutfit(Long profileId, OutfitDto outfitDto, MultipartFile image);
 
     /**
-     * Get all outfits for a user
-     * 
-     * @param userId the ID of the user
-     * @return a list of outfits belonging to the user
+     * Updates an existing outfit.
+     *
+     * @param profileId    the ID of the profile updating the outfit
+     * @param outfitId  the ID of the outfit to update
+     * @param outfitDto the updated outfit data
+     * @param image     the new outfit image file (optional)
+     * @return the updated outfit
      */
-    List<Outfit> getAllOutfits(Long userId);
+    OutfitResponseDto updateOutfit(Long profileId, Long outfitId, OutfitDto outfitDto, MultipartFile image);
 
     /**
-     * Get an outfit by ID
-     * 
-     * @param outfitId the ID of the outfit to retrieve
-     * @return the outfit wrapped in an Optional, or empty if not found
-     */
-    Optional<Outfit> getOutfit(Long outfitId);
-
-    /**
-     * Update an outfit
-     * 
-     * @param outfitId the ID of the outfit to update
-     * @param outfit   the updated outfit data
-     * @return the updated outfit, or null if update failed
-     */
-    Outfit updateOutfit(Long outfitId, Outfit outfit);
-
-    /**
-     * Delete an outfit
-     * 
+     * Deletes an outfit.
+     *
+     * @param profileId   the ID of the profile deleting the outfit
      * @param outfitId the ID of the outfit to delete
      */
-    void deleteOutfit(Long outfitId);
+    void deleteOutfit(Long profileId, Long outfitId);
 
     /**
-     * Add an item to an outfit
-     * 
+     * Gets all outfits for a specific profile.
+     *
+     * @param profileId the ID of the profile
+     * @return the list of outfits
+     */
+    List<OutfitResponseDto> getUserOutfits(Long profileId);
+
+    /**
+     * Gets a specific outfit by ID.
+     *
+     * @param outfitId the ID of the outfit to retrieve
+     * @return the outfit
+     */
+    OutfitResponseDto getOutfit(Long outfitId);
+
+    /**
+     * Gets the Outfit entity by ID.
+     *
+     * @param outfitId the ID of the outfit to retrieve
+     * @return the Outfit entity
+     */
+    Outfit getOutfitEntityById(Long outfitId);
+
+    /**
+     * Add an item to an outfit.
+     *
      * @param outfitId the ID of the outfit
      * @param itemId   the ID of the item to add
-     * @return the updated outfit wrapped in an Optional, or empty if the operation
-     *         failed
+     * @return the updated outfit response DTO
      */
-    Optional<Outfit> addItemToOutfit(Long outfitId, Long itemId);
+    OutfitResponseDto addItemToOutfit(Long outfitId, Long itemId);
 
     /**
-     * Remove an item from an outfit
-     * 
+     * Remove an item from an outfit.
+     *
      * @param outfitId the ID of the outfit
      * @param itemId   the ID of the item to remove
-     * @return the updated outfit wrapped in an Optional, or empty if the operation
-     *         failed
+     * @return the updated outfit response DTO
      */
-    Optional<Outfit> removeItemFromOutfit(Long outfitId, Long itemId);
-
-    /**
-     * Get outfits by occasion for a user
-     * 
-     * @param userId   the ID of the user
-     * @param occasion the occasion to filter by
-     * @return a list of outfits matching the occasion
-     */
-    List<Outfit> getOutfitsByOccasion(Long userId, String occasion);
+    OutfitResponseDto removeItemFromOutfit(Long outfitId, Long itemId);
 }

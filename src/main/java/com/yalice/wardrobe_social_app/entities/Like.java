@@ -2,37 +2,38 @@ package com.yalice.wardrobe_social_app.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
-import java.time.LocalDateTime;
-
+/**
+ * Represents a like on a post by a user.
+ */
 @Entity
 @Table(name = "likes", uniqueConstraints = {
-        @UniqueConstraint(columnNames = { "post_id", "user_id" })
+        @UniqueConstraint(columnNames = { "post_id", "profile_id" }) // Prevents duplicate likes
 })
 @Getter
 @Setter
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Like {
+@SuperBuilder
+public class Like extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne
+    /**
+     * The post that was liked.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Post post;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    /**
+     * The profile that created the like.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id", nullable = false) // Profile instead of User
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Profile profile;
 }

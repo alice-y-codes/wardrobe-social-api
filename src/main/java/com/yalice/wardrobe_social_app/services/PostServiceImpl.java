@@ -1,193 +1,202 @@
 package com.yalice.wardrobe_social_app.services;
 
+import com.yalice.wardrobe_social_app.dtos.post.PostDto;
+import com.yalice.wardrobe_social_app.dtos.post.PostResponseDto;
 import com.yalice.wardrobe_social_app.entities.Like;
+import com.yalice.wardrobe_social_app.entities.Outfit;
 import com.yalice.wardrobe_social_app.entities.Post;
-import com.yalice.wardrobe_social_app.enums.PostVisibility;
-import com.yalice.wardrobe_social_app.entities.User;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
+import com.yalice.wardrobe_social_app.entities.Profile;
+import com.yalice.wardrobe_social_app.exceptions.PostAccessException;
+import com.yalice.wardrobe_social_app.exceptions.PostNotFoundException;
+import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
+import com.yalice.wardrobe_social_app.interfaces.OutfitService;
 import com.yalice.wardrobe_social_app.interfaces.PostService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
-import com.yalice.wardrobe_social_app.repositories.CommentRepository;
+import com.yalice.wardrobe_social_app.interfaces.ProfileService;
+import com.yalice.wardrobe_social_app.mappers.PostMapper;
 import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
+import com.yalice.wardrobe_social_app.services.helpers.PostServiceHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PostServiceImpl implements PostService {
+
+    private static final Logger logger = LoggerFactory.getLogger(PostServiceImpl.class);
+
     private final PostRepository postRepository;
-    private final CommentRepository commentRepository;
     private final LikeRepository likeRepository;
-    private final UserService userService;
-    private final FriendshipService friendshipService;
+    private final ProfileService profileService;
+    private final OutfitService outfitService;
+    private final PostServiceHelper postServiceHelper;
+    private final PostMapper postMapper;
 
     @Autowired
-    public PostServiceImpl(PostRepository postRepository, CommentRepository commentRepository,
-                           LikeRepository likeRepository, UserService userService,
-                           FriendshipService friendshipService) {
+    public PostServiceImpl(PostRepository postRepository,
+                           LikeRepository likeRepository,
+                           ProfileService profileService,
+                           OutfitService outfitService,
+                           PostServiceHelper postServiceHelper,
+                           PostMapper postMapper) {
         this.postRepository = postRepository;
-        this.commentRepository = commentRepository;
         this.likeRepository = likeRepository;
-        this.userService = userService;
-        this.friendshipService = friendshipService;
+        this.profileService = profileService;
+        this.outfitService = outfitService;
+        this.postServiceHelper = postServiceHelper;
+        this.postMapper = postMapper;
     }
 
     @Override
-    public Post createPost(Long userId, String content, Long outfitId, PostVisibility visibility) {
-        Optional<User> userOptional = userService.findById(userId);
-        if (userOptional.isEmpty()) {
-            throw new IllegalArgumentException("User not found with ID: " + userId);
-        }
+    @Transactional
+    public PostResponseDto createPost(Long profileId, PostDto postDto) {
+        logger.info("Creating post for profileId: {}", profileId);
 
-        User user = userOptional.get();
+        Profile profile = validateProfile(profileId);
+        Outfit outfit = validateOutfit(postDto.getOutfitId());
+
         Post post = Post.builder()
-                .user(user)
-                .content(content)
-                .visibility(visibility)
+                .profile(profile)
+                .title(postDto.getTitle())
+                .featureImage(postDto.getFeatureImage())
+                .outfit(outfit)
+                .content(postDto.getContent())
+                .visibility(Post.PostVisibility.valueOf(postDto.getVisibility()))
                 .build();
 
-        // TODO: Add outfit to post if outfitId is provided
+        post = postRepository.save(post);
+        logger.info("Post created successfully with ID: {}", post.getId());
 
-        return postRepository.save(post);
+        return postMapper.toResponseDto(post);
     }
 
     @Override
-    public Optional<Post> getPost(Long postId, Long viewerId) {
-        Optional<Post> postOptional = postRepository.findById(postId);
-        if (postOptional.isEmpty()) {
-            return Optional.empty();
-        }
+    @Transactional
+    public PostResponseDto getPost(Long postId, Long viewerId) {
+        logger.info("Fetching post with ID: {} for viewerId: {}", postId, viewerId);
 
-        Post post = postOptional.get();
-        Long postOwnerId = post.getUser().getId();
+        Post post = validatePost(postId);
+        validatePostAccess(post, viewerId);
 
-        // Check if the viewer has access to the post
-        if (isPostAccessibleToUser(post, viewerId)) {
-            return Optional.of(post);
-        }
-
-        return Optional.empty();
+        return postMapper.toResponseDto(post);
     }
 
     @Override
-    public void deletePost(Long postId, Long userId) {
-        Optional<Post> postOptional = postRepository.findById(postId);
-        if (postOptional.isEmpty()) {
-            throw new IllegalArgumentException("Post not found with ID: " + postId);
+    @Transactional
+    public PostResponseDto updatePost(Long postId, Long profileId, PostDto postDto) {
+        logger.info("Updating post with ID: {} for profileId: {}", postId, profileId);
+
+        Post existingPost = validatePost(postId);
+        validateOwnership(existingPost, profileId);
+
+        existingPost.setContent(postDto.getContent());
+        existingPost.setVisibility(Post.PostVisibility.valueOf(postDto.getVisibility()));
+
+        if (!existingPost.getOutfit().getId().equals(postDto.getOutfitId())) {
+            Outfit newOutfit = validateOutfit(postDto.getOutfitId());
+            existingPost.setOutfit(newOutfit);
         }
 
-        Post post = postOptional.get();
-        if (!post.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("Only the post owner can delete the post");
-        }
+        Post updatedPost = postRepository.save(existingPost);
+        logger.info("Post updated successfully with ID: {}", updatedPost.getId());
 
-        postRepository.delete(post);
+        return postMapper.toResponseDto(updatedPost);
     }
 
     @Override
-    public boolean likePost(Long postId, Long userId) {
-        Optional<Post> postOptional = postRepository.findById(postId);
-        Optional<User> userOptional = userService.findById(userId);
+    @Transactional
+    public void deletePost(Long postId, Long profileId) {
+        logger.info("Deleting post with ID: {} by profileId: {}", postId, profileId);
 
-        if (postOptional.isEmpty() || userOptional.isEmpty()) {
-            throw new IllegalArgumentException("Post or user not found");
+        Post post = validatePost(postId);
+        validateOwnership(post, profileId);
+
+        postRepository.deleteById(postId);
+        logger.info("Post with ID: {} deleted successfully", postId);
+    }
+
+    @Override
+    @Transactional
+    public boolean toggleLikePost(Long postId, Long profileId) {
+        logger.info("Toggling like for post with ID: {} by profileId: {}", postId, profileId);
+
+        Post post = validatePost(postId);
+        Profile profile = validateProfile(profileId);
+
+        boolean hasProfileLiked = postServiceHelper.hasProfileLikedPost(postId, profileId);
+        logger.debug("Has profile ID: {} liked post with ID: {}? {}", profileId, postId, hasProfileLiked);
+
+        if (hasProfileLiked) {
+            return unlikePost(post, profile);
+        } else {
+            return likePost(post, profile);
+        }
+    }
+
+    private Profile validateProfile(Long profileId) {
+        Profile profile = profileService.getProfileEntityById(profileId);
+
+        if (profile == null) {
+            throw new ResourceNotFoundException("Profile not found with ID: " + profileId);
         }
 
-        Post post = postOptional.get();
-        User user = userOptional.get();
+        return profile;
+    }
 
-        // Check if the user has already liked the post
-        if (likeRepository.existsByPostAndUser(post, user)) {
-            return false;
+    private Outfit validateOutfit(Long outfitId) {
+        Outfit outfit = outfitService.getOutfitEntityById(outfitId);
+
+        if (outfit == null) {
+            throw new ResourceNotFoundException("Outfit not found with ID: " + outfitId);
         }
 
-        // Create a new like
+        return outfit;
+    }
+
+    private Post validatePost(Long postId) {
+        return postRepository.findById(postId)
+                .orElseThrow(() -> new PostNotFoundException("Post not found with ID: " + postId));
+    }
+
+    private void validatePostAccess(Post post, Long viewerId) {
+        if (!postServiceHelper.isPostAccessibleToUser(post, viewerId)) {
+            logger.error("Post with ID: {} is not accessible to viewerId: {}", post.getId(), viewerId);
+            throw new PostAccessException("Post is not accessible to the viewer");
+        }
+    }
+
+    private void validateOwnership(Post post, Long profileId) {
+        if (!post.getProfile().getId().equals(profileId)) {
+            logger.error("Profile ID: {} is not authorized to modify post ID: {}", profileId, post.getId());
+            throw new PostAccessException("You are not authorized to modify this post.");
+        }
+    }
+
+    private boolean likePost(Post post, Profile profile) {
         Like like = Like.builder()
                 .post(post)
-                .user(user)
+                .profile(profile)
                 .build();
 
         likeRepository.save(like);
-
-        // Update the post's like count
         post.setLikeCount(post.getLikeCount() + 1);
         postRepository.save(post);
+        logger.info("Post with ID: {} liked by profile ID: {}", post.getId(), profile.getId());
 
         return true;
     }
 
-    @Override
-    public boolean unlikePost(Long postId, Long userId) {
-        Optional<Post> postOptional = postRepository.findById(postId);
-        Optional<User> userOptional = userService.findById(userId);
+    private boolean unlikePost(Post post, Profile profile) {
+        Like like = likeRepository.findByPostAndProfile(post, profile)
+                .orElseThrow(() -> new ResourceNotFoundException("Like not found"));
 
-        if (postOptional.isEmpty() || userOptional.isEmpty()) {
-            throw new IllegalArgumentException("Post or user not found");
-        }
-
-        Post post = postOptional.get();
-        User user = userOptional.get();
-
-        // Check if the user has liked the post
-        Optional<Like> likeOptional = likeRepository.findByPostAndUser(post, user);
-        if (likeOptional.isEmpty()) {
-            return false;
-        }
-
-        // Delete the like
-        likeRepository.deleteByPostAndUser(post, user);
-
-        // Update the post's like count
-        post.setLikeCount(Math.max(0, post.getLikeCount() - 1));
+        likeRepository.delete(like);
+        post.setLikeCount(post.getLikeCount() - 1);
         postRepository.save(post);
+        logger.info("Post with ID: {} unliked by profile ID: {}", post.getId(), profile.getId());
 
         return true;
-    }
-
-    @Override
-    public boolean hasUserLikedPost(Long postId, Long userId) {
-        Optional<Post> postOptional = postRepository.findById(postId);
-        Optional<User> userOptional = userService.findById(userId);
-
-        if (postOptional.isEmpty() || userOptional.isEmpty()) {
-            return false;
-        }
-
-        Post post = postOptional.get();
-        User user = userOptional.get();
-
-        return likeRepository.existsByPostAndUser(post, user);
-    }
-
-    @Override
-    public long getPostLikeCount(Long postId) {
-        return likeRepository.countByPostId(postId);
-    }
-
-    private boolean isPostAccessibleToUser(Post post, Long viewerId) {
-        Long postOwnerId = post.getUser().getId();
-
-        // Post owner can always view their own posts
-        if (postOwnerId.equals(viewerId)) {
-            return true;
-        }
-
-        // Check post visibility
-        PostVisibility visibility = post.getVisibility();
-
-        // Public posts are accessible to everyone
-        if (visibility == PostVisibility.PUBLIC) {
-            return true;
-        }
-
-        // Private posts are only accessible to the owner
-        if (visibility == PostVisibility.PRIVATE) {
-            return false;
-        }
-
-        // FRIENDS_ONLY posts are accessible to friends
-        return friendshipService.areFriends(postOwnerId, viewerId);
     }
 }

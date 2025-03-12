@@ -1,82 +1,100 @@
 package com.yalice.wardrobe_social_app.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Represents an outfit created by a user, which consists of a collection of
+ * items.
+ */
 @Entity
 @Table(name = "outfits")
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Outfit {
+@SuperBuilder
+public class Outfit extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    /**
+     * The profile (user) associated with this outfit.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Profile profile;
 
+    /**
+     * The name of the outfit.
+     */
     @Column(nullable = false)
     private String name;
 
+    /**
+     * The description of the outfit.
+     */
     @Column(length = 1000)
     private String description;
 
-    @Column(name = "occasion")
-    private String occasion;
-
-    @Column(name = "season")
+    /**
+     * The season associated with the outfit.
+     */
+    @Column
     private String season;
 
-    @Column(name = "is_favorite")
-    @Builder.Default
-    private boolean isFavorite = false;
+    /**
+     * The category of the outfit (e.g., "Casual", "Formal").
+     */
+    @Column
+    private String category;
 
-    @Column(name = "is_public")
-    @Builder.Default
-    private boolean isPublic = false;
+    /**
+     * The URL for an image of the outfit.
+     */
+    @Column
+    private String imageUrl;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    /**
+     * Indicates whether the outfit is marked as a favorite.
+     */
+    @Column
+    private boolean favorite;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    /**
+     * Indicates whether the outfit is public or private.
+     */
+    @Column
+    private boolean isPublic;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    @JsonIgnore
-    private User user;
-
+    /**
+     * The list of items that belong to this outfit.
+     */
     @ManyToMany
     @JoinTable(name = "outfit_items", joinColumns = @JoinColumn(name = "outfit_id"), inverseJoinColumns = @JoinColumn(name = "item_id"))
-    @Builder.Default
     private Set<Item> items = new HashSet<>();
 
-    // Helper methods for managing items
-    public void addItem(Item item) {
-        this.items.add(item);
+    /**
+     * Adds an item to the outfit.
+     * If the item is not already in the outfit, it is added.
+     *
+     * @param item the item to add to the outfit
+     */
+    public void addOutfitItem(Item item) {
+        items.add(item);
     }
 
-    public void removeItem(Item item) {
-        this.items.remove(item);
-    }
-
-    // Helper methods for timestamps
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+    /**
+     * Removes an item from the outfit.
+     *
+     * @param item the item to remove from the outfit
+     */
+    public void removeOutfitItem(Item item) {
+        items.remove(item);
     }
 }

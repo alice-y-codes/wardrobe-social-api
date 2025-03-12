@@ -1,88 +1,120 @@
 package com.yalice.wardrobe_social_app.services;
 
+import com.yalice.wardrobe_social_app.dtos.comment.CommentDto;
+import com.yalice.wardrobe_social_app.dtos.comment.CommentResponseDto;
 import com.yalice.wardrobe_social_app.entities.Comment;
 import com.yalice.wardrobe_social_app.entities.Post;
-import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.entities.Profile;
+import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.CommentService;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.interfaces.ProfileService;
+import com.yalice.wardrobe_social_app.mappers.CommentMapper;
 import com.yalice.wardrobe_social_app.repositories.CommentRepository;
-import com.yalice.wardrobe_social_app.repositories.LikeRepository;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import com.yalice.wardrobe_social_app.services.helpers.BaseService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
-public class CommentServiceImpl implements CommentService {
+public class CommentServiceImpl extends BaseService implements CommentService {
 
-    private final PostRepository postRepository;
     private final CommentRepository commentRepository;
-    private final LikeRepository likeRepository;
-    private final UserService userService;
-    private final FriendshipService friendshipService;
+    private final PostRepository postRepository;
+    private final ProfileService profileService;
+    private final CommentMapper commentMapper;
 
-    @Autowired
-    public CommentServiceImpl(PostRepository postRepository, CommentRepository commentRepository,
-                           LikeRepository likeRepository, UserService userService,
-                           FriendshipService friendshipService) {
-        this.postRepository = postRepository;
+    public CommentServiceImpl(
+            CommentRepository commentRepository,
+            PostRepository postRepository,
+            ProfileService profileService,
+            CommentMapper commentMapper) {
         this.commentRepository = commentRepository;
-        this.likeRepository = likeRepository;
-        this.userService = userService;
-        this.friendshipService = friendshipService;
+        this.postRepository = postRepository;
+        this.profileService = profileService;
+        this.commentMapper = commentMapper;
     }
 
     @Override
-    public Comment addComment(Long postId, Long userId, String content) {
-        Optional<Post> postOptional = postRepository.findById(postId);
-        Optional<User> userOptional = userService.findById(userId);
+    @Transactional
+    public CommentResponseDto createComment(Long profileId, Long postId, CommentDto commentDto) {
+        logger.info("Creating comment on post ID: {} by profile ID: {}", postId, profileId);
 
-        if (postOptional.isEmpty() || userOptional.isEmpty()) {
-            throw new IllegalArgumentException("Post or user not found");
+        Profile profile = getValidProfileById(profileId);
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post not found with ID: " + postId));
+
+        Comment comment = new Comment();
+        comment.setProfile(profile);
+        comment.setPost(post);
+        comment.setContent(commentDto.getContent());
+
+        Comment savedComment = commentRepository.save(comment);
+        logger.info("Comment created with ID: {} on post ID: {}", savedComment.getId(), postId);
+
+        return commentMapper.toResponseDto(savedComment);
+    }
+
+    @Override
+    @Transactional
+    public CommentResponseDto updateComment(Long profileId, Long commentId, CommentDto commentDto) {
+        logger.info("Updating comment with ID: {} by profile ID: {}", commentId, profileId);
+
+        Comment comment = findCommentById(commentId);
+        validateCommentOwnership(profileId, comment);
+
+        comment.setContent(commentDto.getContent());
+        Comment updatedComment = commentRepository.saveAndFlush(comment);
+        logger.info("Comment updated successfully with ID: {}", commentId);
+
+        return commentMapper.toResponseDto(updatedComment);
+    }
+
+    @Override
+    @Transactional
+    public void deleteComment(Long profileId, Long commentId) {
+        logger.info("Deleting comment with ID: {} by profile ID: {}", commentId, profileId);
+
+        Comment comment = findCommentById(commentId);
+        validateCommentOwnership(profileId, comment);
+
+        commentRepository.deleteById(commentId);
+        logger.info("Comment deleted with ID: {}", commentId);
+    }
+
+    @Override
+    public List<CommentResponseDto> getPostComments(Long postId) {
+        logger.info("Fetching comments for post ID: {}", postId);
+
+        List<Comment> comments = commentRepository.findByPostIdOrderByCreatedAtDesc(postId);
+        logger.info("Retrieved {} comments for post ID: {}", comments.size(), postId);
+
+        return comments.stream()
+                .map(commentMapper::toResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public CommentResponseDto getComment(Long commentId) {
+        logger.info("Fetching comment with ID: {}", commentId);
+        Comment comment = findCommentById(commentId);
+        return commentMapper.toResponseDto(comment);
+    }
+
+    private Profile getValidProfileById(Long profileId) {
+        return profileService.getProfileEntityById(profileId);
+    }
+
+    private Comment findCommentById(Long commentId) {
+        return commentRepository.findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Comment not found with ID: " + commentId));
+    }
+
+    private void validateCommentOwnership(Long profileId, Comment comment) {
+        if (!comment.getProfile().getId().equals(profileId)) {
+            throw new ResourceNotFoundException("Profile does not own this comment");
         }
-
-        Post post = postOptional.get();
-        User user = userOptional.get();
-
-        // Create a new comment
-        Comment comment = Comment.builder()
-                .post(post)
-                .user(user)
-                .content(content)
-                .build();
-
-        return commentRepository.save(comment);
-    }
-
-    @Override
-    public void deleteComment(Long commentId, Long userId) {
-        Optional<Comment> commentOptional = commentRepository.findById(commentId);
-        if (commentOptional.isEmpty()) {
-            throw new IllegalArgumentException("Comment not found with ID: " + commentId);
-        }
-
-        Comment comment = commentOptional.get();
-
-        // Check if the user is the comment owner or the post owner
-        if (!comment.getUser().getId().equals(userId) && !comment.getPost().getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("Only the comment owner or post owner can delete the comment");
-        }
-
-        commentRepository.delete(comment);
-    }
-
-    @Override
-    public List<Comment> getPostComments(Long postId) {
-        return commentRepository.findByPostIdOrderByCreatedAtAsc(postId);
-    }
-
-    @Override
-    public Page<Comment> getPostComments(Long postId, Pageable pageable) {
-        return commentRepository.findByPostIdOrderByCreatedAtAsc(postId, pageable);
     }
 }

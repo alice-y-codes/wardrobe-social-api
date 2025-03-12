@@ -1,85 +1,65 @@
 package com.yalice.wardrobe_social_app.controllers;
 
-import com.yalice.wardrobe_social_app.dtos.ProfileUpdateRequest;
-import com.yalice.wardrobe_social_app.entities.Profile;
-import com.yalice.wardrobe_social_app.entities.User;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
+import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.dtos.profile.ProfileDto;
+import com.yalice.wardrobe_social_app.dtos.profile.ProfileResponseDto;
 import com.yalice.wardrobe_social_app.interfaces.ProfileService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Optional;
-
+/**
+ * Controller responsible for handling profile-related operations.
+ */
 @RestController
-@RequestMapping("/api/users")
-public class ProfileController {
+@RequestMapping("/api/profiles")
+public class ProfileController extends ApiBaseController {
 
     private final ProfileService profileService;
-    private final UserService userService;
-    private final FriendshipService friendshipService;
 
     @Autowired
-    public ProfileController(ProfileService profileService, UserService userService,
-            FriendshipService friendshipService) {
+    public ProfileController(ProfileService profileService, AuthUtils authUtils) {
+        super(authUtils);
         this.profileService = profileService;
-        this.userService = userService;
-        this.friendshipService = friendshipService;
-    }
-
-    @GetMapping("/{userId}/profile")
-    public ResponseEntity<?> getUserProfile(@PathVariable Long userId) {
-        Optional<User> currentUserOptional = getCurrentUser();
-        if (currentUserOptional.isEmpty()) {
-            return ResponseEntity.status(401).body("Unauthorized");
-        }
-
-        Long currentUserId = currentUserOptional.get().getId();
-
-        // Check if the profile is accessible to the current user
-        if (!profileService.isProfileAccessibleToUser(userId, currentUserId)) {
-            return ResponseEntity.status(403).body("You don't have permission to view this profile");
-        }
-
-        Optional<Profile> profileOptional = profileService.getProfileByUserId(userId);
-        if (profileOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok(profileOptional.get());
-    }
-
-    @PutMapping("/{userId}/profile")
-    public ResponseEntity<?> updateProfile(@PathVariable Long userId, @RequestBody ProfileUpdateRequest request) {
-        Optional<User> currentUserOptional = getCurrentUser();
-        if (currentUserOptional.isEmpty()) {
-            return ResponseEntity.status(401).body("Unauthorized");
-        }
-
-        Long currentUserId = currentUserOptional.get().getId();
-
-        // Only the profile owner can update their profile
-        if (!userId.equals(currentUserId)) {
-            return ResponseEntity.status(403).body("You don't have permission to update this profile");
-        }
-
-        Profile updatedProfile = profileService.updateProfile(userId, request.getBio(), request.getVisibility());
-        return ResponseEntity.ok(updatedProfile);
     }
 
     /**
-     * Utility method to get the current authenticated user
+     * Gets the current user's profile.
      */
-    private Optional<User> getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return Optional.empty();
-        }
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<ProfileResponseDto>> getMyProfile() {
+        return handleEntityRetrieval(() -> profileService.getProfile(getLoggedInUser().getId()),
+                "Profile");
+    }
 
-        String username = authentication.getName();
-        return userService.findUserByUsername(username);
+    /**
+     * Gets a user's profile by ID.
+     */
+    @GetMapping("/{userId}")
+    public ResponseEntity<ApiResponse<ProfileResponseDto>> getProfile(@PathVariable Long userId) {
+        return handleEntityRetrieval(() -> profileService.getProfile(userId),
+                "Profile");
+    }
+
+    /**
+     * Updates the current user's profile.
+     */
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<ProfileResponseDto>> updateProfile(
+            @RequestPart("profile") ProfileDto profileDto,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+        return handleEntityAction(() -> profileService.updateProfile(getLoggedInUser().getId(), profileDto, image),
+                "update", "Profile", "updated");
+    }
+
+    /**
+     * Updates the current user's profile visibility.
+     */
+    @PutMapping("/me/visibility")
+    public ResponseEntity<ApiResponse<ProfileResponseDto>> updateProfileVisibility(@RequestParam boolean isPublic) {
+        return handleEntityAction(() -> profileService.updateProfileVisibility(getLoggedInUser().getId(), isPublic),
+                "update", "Profile visibility", "updated");
     }
 }

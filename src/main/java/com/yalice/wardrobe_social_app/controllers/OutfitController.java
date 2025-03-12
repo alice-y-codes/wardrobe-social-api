@@ -1,202 +1,134 @@
 package com.yalice.wardrobe_social_app.controllers;
 
-import com.yalice.wardrobe_social_app.entities.Outfit;
-import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.dtos.outfit.OutfitDto;
+import com.yalice.wardrobe_social_app.dtos.outfit.OutfitResponseDto;
+import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.OutfitService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Controller for handling outfit-related operations.
+ */
 @RestController
 @RequestMapping("/api/outfits")
-public class OutfitController {
+public class OutfitController extends ApiBaseController {
 
     private final OutfitService outfitService;
-    private final UserService userService;
 
     @Autowired
-    public OutfitController(OutfitService outfitService, UserService userService) {
+    public OutfitController(OutfitService outfitService, AuthUtils authUtils) {
+        super(authUtils);
         this.outfitService = outfitService;
-        this.userService = userService;
     }
 
     /**
-     * Create a new outfit
+     * Creates a new outfit.
      */
     @PostMapping
-    public ResponseEntity<Outfit> createOutfit(@RequestBody Outfit outfit) {
-        Optional<User> userOptional = getCurrentUser();
+    public ResponseEntity<ApiResponse<OutfitResponseDto>> createOutfit(
+            @RequestPart("outfit") OutfitDto outfitDto,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
 
-        if (userOptional.isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        Long userId = userOptional.get().getId();
-        Optional<Outfit> createdOutfit = outfitService.createOutfit(userId, outfit);
-
-        return createdOutfit.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.badRequest().build());
+        return handleEntityAction(() -> outfitService.createOutfit(getLoggedInUser().getId(), outfitDto, image),
+                "create", "Outfit", "created");
     }
 
     /**
-     * Get all outfits for the current user
+     * Updates an existing outfit.
+     */
+    @PatchMapping("/{outfitId}")
+    public ResponseEntity<ApiResponse<OutfitResponseDto>> updateOutfit(
+            @PathVariable Long outfitId,
+            @RequestPart("outfit") OutfitDto outfitDto,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+
+        return handleEntityAction(
+                () -> outfitService.updateOutfit(getLoggedInUser().getId(), outfitId, outfitDto, image),
+                "update", "Outfit", "updated");
+    }
+
+    /**
+     * Deletes an outfit.
+     */
+    @DeleteMapping("/{outfitId}")
+    public ResponseEntity<ApiResponse<Void>> deleteOutfit(@PathVariable Long outfitId) {
+        return handleVoidAction(() -> outfitService.deleteOutfit(getLoggedInUser().getId(), outfitId),
+                "delete", "Outfit", "deleted");
+    }
+
+    /**
+     * Retrieves all outfits for the current user.
      */
     @GetMapping("/my-outfits")
-    public ResponseEntity<List<Outfit>> getMyOutfits() {
-        Optional<User> userOptional = getCurrentUser();
-
-        if (userOptional.isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        Long userId = userOptional.get().getId();
-        List<Outfit> outfits = outfitService.getAllOutfits(userId);
-
-        return ResponseEntity.ok(outfits);
+    public ResponseEntity<ApiResponse<List<OutfitResponseDto>>> getMyOutfits() {
+        return handleEntityAction(() -> outfitService.getUserOutfits(getLoggedInUser().getId()),
+                "retrieve", "Outfit", "retrieved");
     }
 
     /**
-     * Get all outfits for a specific user
+     * Retrieves a specific outfit by ID.
+     */
+    @GetMapping("/{outfitId}")
+    public ResponseEntity<ApiResponse<OutfitResponseDto>> getOutfit(@PathVariable Long outfitId) {
+        return handleEntityAction(() -> outfitService.getOutfit(outfitId),
+                "retrieve", "Outfit", "retrieved");
+    }
+
+    /**
+     * Retrieves all outfits for a specific user.
      */
     @GetMapping("/users/{userId}")
-    public ResponseEntity<List<Outfit>> getUserOutfits(@PathVariable Long userId) {
-        List<Outfit> outfits = outfitService.getAllOutfits(userId);
-        return ResponseEntity.ok(outfits);
+    public ResponseEntity<ApiResponse<List<OutfitResponseDto>>> getUserOutfits(@PathVariable Long userId) {
+        return handleEntityAction(() -> outfitService.getUserOutfits(userId),
+                "retrieve", "Outfit", "retrieved");
     }
 
     /**
-     * Get an outfit by ID
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<Outfit> getOutfitById(@PathVariable Long id) {
-        Optional<Outfit> outfit = outfitService.getOutfit(id);
-        return outfit.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-    /**
-     * Update an outfit
-     */
-    @PutMapping("/{id}")
-    public ResponseEntity<Outfit> updateOutfit(@PathVariable Long id, @RequestBody Outfit outfit) {
-        // Verify the current user owns this outfit
-        Optional<User> userOptional = getCurrentUser();
-        Optional<Outfit> existingOutfitOptional = outfitService.getOutfit(id);
-
-        if (userOptional.isEmpty() || existingOutfitOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        // Check if the outfit belongs to the current user
-        if (!existingOutfitOptional.get().getUser().getId().equals(userOptional.get().getId())) {
-            return ResponseEntity.status(403).build(); // Forbidden
-        }
-
-        Outfit updatedOutfit = outfitService.updateOutfit(id, outfit);
-        return updatedOutfit != null ? ResponseEntity.ok(updatedOutfit) : ResponseEntity.notFound().build();
-    }
-
-    /**
-     * Delete an outfit
-     */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteOutfit(@PathVariable Long id) {
-        // Verify the current user owns this outfit
-        Optional<User> userOptional = getCurrentUser();
-        Optional<Outfit> existingOutfitOptional = outfitService.getOutfit(id);
-
-        if (userOptional.isEmpty() || existingOutfitOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        // Check if the outfit belongs to the current user
-        if (!existingOutfitOptional.get().getUser().getId().equals(userOptional.get().getId())) {
-            return ResponseEntity.status(403).build(); // Forbidden
-        }
-
-        outfitService.deleteOutfit(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * Add an item to an outfit
+     * Adds an item to an outfit.
      */
     @PostMapping("/{outfitId}/items/{itemId}")
-    public ResponseEntity<Outfit> addItemToOutfit(@PathVariable Long outfitId, @PathVariable Long itemId) {
-        // Verify the current user owns this outfit
-        Optional<User> userOptional = getCurrentUser();
-        Optional<Outfit> existingOutfitOptional = outfitService.getOutfit(outfitId);
-
-        if (userOptional.isEmpty() || existingOutfitOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<ApiResponse<OutfitResponseDto>> addItemToOutfit(
+            @PathVariable Long outfitId, @PathVariable Long itemId) {
+        try {
+            return handleEntityAction(() -> outfitService.addItemToOutfit(outfitId, itemId),
+                    "add item to", "Outfit", "added to outfit");
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse<>(false, "Outfit or item not found", null));
         }
-
-        // Check if the outfit belongs to the current user
-        if (!existingOutfitOptional.get().getUser().getId().equals(userOptional.get().getId())) {
-            return ResponseEntity.status(403).build(); // Forbidden
-        }
-
-        Optional<Outfit> updatedOutfit = outfitService.addItemToOutfit(outfitId, itemId);
-        return updatedOutfit.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     /**
-     * Remove an item from an outfit
+     * Removes an item from an outfit.
      */
     @DeleteMapping("/{outfitId}/items/{itemId}")
-    public ResponseEntity<Outfit> removeItemFromOutfit(@PathVariable Long outfitId, @PathVariable Long itemId) {
-        // Verify the current user owns this outfit
-        Optional<User> userOptional = getCurrentUser();
-        Optional<Outfit> existingOutfitOptional = outfitService.getOutfit(outfitId);
-
-        if (userOptional.isEmpty() || existingOutfitOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<ApiResponse<OutfitResponseDto>> removeItemFromOutfit(
+            @PathVariable Long outfitId, @PathVariable Long itemId) {
+        try {
+            return handleEntityAction(() -> outfitService.removeItemFromOutfit(outfitId, itemId),
+                    "remove item from", "Outfit", "removed from outfit");
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse<>(false, "Outfit or item not found", null));
         }
-
-        // Check if the outfit belongs to the current user
-        if (!existingOutfitOptional.get().getUser().getId().equals(userOptional.get().getId())) {
-            return ResponseEntity.status(403).build(); // Forbidden
-        }
-
-        Optional<Outfit> updatedOutfit = outfitService.removeItemFromOutfit(outfitId, itemId);
-        return updatedOutfit.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * Get outfits by occasion
-     */
-    @GetMapping("/occasion/{occasion}")
-    public ResponseEntity<List<Outfit>> getOutfitsByOccasion(@PathVariable String occasion) {
-        Optional<User> userOptional = getCurrentUser();
-
-        if (userOptional.isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        Long userId = userOptional.get().getId();
-        List<Outfit> outfits = outfitService.getOutfitsByOccasion(userId, occasion);
-
-        return ResponseEntity.ok(outfits);
-    }
-
-    /**
-     * Utility method to get the current authenticated user
-     */
-    private Optional<User> getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return Optional.empty();
-        }
-
-        String username = authentication.getName();
-        return userService.findUserByUsername(username);
-    }
+    // /**
+    // * Retrieves outfits by season.
+    // */
+    // @GetMapping("/season/{season}")
+    // public ResponseEntity<ApiResponse<List<OutfitResponseDto>>>
+    // getOutfitsBySeason(@PathVariable String season) {
+    // return handleEntityAction(() ->
+    // outfitService.getOutfitsBySeason(getLoggedInUser().getId(), season),
+    // "Outfits filtered by season retrieved successfully");
+    // }
 }

@@ -2,46 +2,99 @@ package com.yalice.wardrobe_social_app.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Represents a clothing item in a user's wardrobe.
+ * This entity captures details about an item, including its name, brand,
+ * category, size, and other optional attributes.
+ */
 @Entity
 @Table(name = "items")
 @Getter
 @Setter
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Item {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@SuperBuilder
+public class Item extends BaseEntity {
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId; // Owner of the item
+    /**
+     * The profile associated with this item.
+     * Represents the owner of the item.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Profile profile;
 
+    /**
+     * The wardrobe to which this item belongs.
+     * Represents the collection or wardrobe where the item is categorized.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "wardrobe_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Wardrobe wardrobe;
+
+    /**
+     * The name of the item.
+     * This field is required.
+     */
     @Column(nullable = false)
     private String name;
 
+    /**
+     * The brand of the item.
+     * This field is optional.
+     */
     @Column(nullable = true)
     private String brand;
 
+    /**
+     * The category of the item (e.g., "Shoes", "Jacket", "Dress").
+     * This field is required.
+     */
     @Column(nullable = false)
-    private String category; // (e.g., "Shoes", "Jacket", "Dress")
+    private String category;
 
+    /**
+     * The size of the item.
+     * This field is optional.
+     */
     @Column(nullable = true)
     private String size;
 
+    /**
+     * The color of the item.
+     * This field is optional.
+     */
     @Column(nullable = true)
     private String color;
 
+    /**
+     * The URL for an image of the item.
+     */
     @Column(nullable = false)
     private String imageUrl;
 
-    // Additional features
-    // private String visibility; // e.g., "public", "private", "friends"
-    // private LocalDateTime createdDate;
-    // private LocalDateTime lastUpdatedDate;
-    // @ElementCollection
-    // private List<String> tags; // A list of tags that describe the outfit for
-    // better categorization and searching.
+    /**
+     * The description of the item.
+     */
+    @Column(length = 500)
+    private String description;
 
+    /**
+     * The outfits that include this item.
+     */
+    @ManyToMany(mappedBy = "items")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @Builder.Default
+    private List<Outfit> outfits = new ArrayList<>();
 }

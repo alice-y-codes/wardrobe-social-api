@@ -1,103 +1,233 @@
 package com.yalice.wardrobe_social_app.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yalice.wardrobe_social_app.dtos.CommentDto;
-import com.yalice.wardrobe_social_app.entities.Comment;
-import com.yalice.wardrobe_social_app.entities.Post;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.dtos.comment.CommentDto;
+import com.yalice.wardrobe_social_app.dtos.comment.CommentResponseDto;
 import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.exceptions.GlobalExceptionHandler;
+import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.CommentService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
-import com.yalice.wardrobe_social_app.utils.AuthenticationTestUtils;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.List;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class CommentControllerTest {
 
-    private MockMvc mockMvc;
-
     @Mock
     private CommentService commentService;
 
     @Mock
-    private UserService userService;
+    private AuthUtils authUtils;
+
+    private MockMvc mockMvc;
+    private ObjectMapper objectMapper;
+    private User testUser;
 
     @InjectMocks
     private CommentController commentController;
 
-    private User user;
-    private Post post;
-    private Comment comment;
-    private CommentDto commentDto;
-
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(commentController).build();
-
-        user = User.builder()
-                .id(1L)
-                .username("testuser")
-                .email("test@example.com")
+        mockMvc = MockMvcBuilders
+                .standaloneSetup(commentController)
+                .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
+        objectMapper = new ObjectMapper();
+        testUser = User.builder().id(1L).build();
+    }
 
-        post = Post.builder()
-                .id(1L)
-                .user(user)
-                .content("Test post content")
-                .build();
+    @Test
+    void createComment() throws Exception {
+        CommentDto commentDto = createTestCommentDto();
+        CommentResponseDto responseDto = createTestCommentResponse();
+        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+        when(commentService.createComment(any(), any(), any())).thenReturn(responseDto);
 
-        comment = Comment.builder()
-                .id(1L)
-                .post(post)
-                .user(user)
+        mockMvc.perform(post("/api/comments/posts/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(commentDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").exists())
+                .andExpect(jsonPath("$.data.id").exists());
+    }
+
+    @Test
+    void createComment_Unauthorized() throws Exception {
+        CommentDto commentDto = createTestCommentDto();
+        when(authUtils.getCurrentUserOrElseThrow())
+                .thenThrow(new SecurityException("Unauthorized"));
+
+        mockMvc.perform(post("/api/comments/posts/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(commentDto)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Unauthorized"))
+                .andExpect(jsonPath("$.data").doesNotExist());
+    }
+
+    @Test
+    void updateComment() throws Exception {
+        CommentDto commentDto = createTestCommentDto();
+        CommentResponseDto responseDto = createTestCommentResponse();
+        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+        when(commentService.updateComment(any(), any(), any())).thenReturn(responseDto);
+
+        mockMvc.perform(put("/api/comments/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(commentDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").exists())
+                .andExpect(jsonPath("$.data.id").exists());
+    }
+
+    @Test
+    void updateComment_Unauthorized() throws Exception {
+        CommentDto commentDto = createTestCommentDto();
+        when(authUtils.getCurrentUserOrElseThrow())
+                .thenThrow(new SecurityException("Unauthorized"));
+
+        mockMvc.perform(put("/api/comments/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(commentDto)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Unauthorized"))
+                .andExpect(jsonPath("$.data").doesNotExist());
+    }
+
+    @Test
+    void updateComment_NotFound() throws Exception {
+        CommentDto commentDto = createTestCommentDto();
+        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+        when(commentService.updateComment(any(), any(), any()))
+                .thenThrow(new ResourceNotFoundException("Comment not found"));
+
+        mockMvc.perform(put("/api/comments/999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(commentDto)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Comment not found"))
+                .andExpect(jsonPath("$.data").doesNotExist());
+    }
+
+    @Test
+    void deleteComment() throws Exception {
+        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+        doNothing().when(commentService).deleteComment(any(), any());
+
+        mockMvc.perform(delete("/api/comments/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void deleteComment_Unauthorized() throws Exception {
+        when(authUtils.getCurrentUserOrElseThrow())
+                .thenThrow(new SecurityException("Unauthorized"));
+
+        mockMvc.perform(delete("/api/comments/1"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Unauthorized"))
+                .andExpect(jsonPath("$.data").doesNotExist());
+    }
+
+    @Test
+    void deleteComment_NotFound() throws Exception {
+        when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+        doThrow(new ResourceNotFoundException("Comment not found"))
+                .when(commentService).deleteComment(any(), any());
+
+        mockMvc.perform(delete("/api/comments/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Comment not found"))
+                .andExpect(jsonPath("$.data").doesNotExist());
+    }
+
+    @Test
+    void getPostComments() throws Exception {
+        List<CommentResponseDto> comments = List.of(createTestCommentResponse());
+        when(commentService.getPostComments(any())).thenReturn(comments);
+
+        mockMvc.perform(get("/api/comments/posts/1/comments"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").exists())
+                .andExpect(jsonPath("$.data[0].id").exists());
+    }
+
+    @Test
+    void getPostComments_NotFound() throws Exception {
+        when(commentService.getPostComments(any()))
+                .thenThrow(new ResourceNotFoundException("Post not found"));
+
+        mockMvc.perform(get("/api/comments/posts/999/comments"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Comments for post not found"))
+                .andExpect(jsonPath("$.data").doesNotExist());
+    }
+
+    @Test
+    void getComment() throws Exception {
+        CommentResponseDto responseDto = createTestCommentResponse();
+        when(commentService.getComment(any())).thenReturn(responseDto);
+
+        mockMvc.perform(get("/api/comments/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").exists())
+                .andExpect(jsonPath("$.data.id").exists());
+    }
+
+    @Test
+    void getComment_NotFound() throws Exception {
+        when(commentService.getComment(any()))
+                .thenThrow(new ResourceNotFoundException("Comment not found"));
+
+        mockMvc.perform(get("/api/comments/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Comment not found"))
+                .andExpect(jsonPath("$.data").doesNotExist());
+    }
+
+    private CommentDto createTestCommentDto() {
+        return CommentDto.builder()
                 .content("Test comment")
                 .build();
-
-        commentDto = new CommentDto();
-        commentDto.setContent("Test comment");
-
-        AuthenticationTestUtils.setupAuthentication("testuser");
     }
 
-    @AfterEach
-    void tearDown() {
-        SecurityContextHolder.clearContext(); // Clears the security context after each test
-    }
-
-    @Test
-    void addComment_addsAndReturnsComment() throws Exception {
-        when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
-        when(commentService.addComment(eq(1L), eq(1L), anyString())).thenReturn(comment);
-
-        mockMvc.perform(post("/api/feed/1/comments")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(new ObjectMapper().writeValueAsString(commentDto)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.content").value("Test comment"));
-    }
-
-    @Test
-    void deleteComment_deletesComment() throws Exception {
-        when(userService.findUserByUsername("testuser")).thenReturn(Optional.of(user));
-
-        mockMvc.perform(delete("/api/feed/1/comments/1"))
-                .andExpect(status().isOk());
+    private CommentResponseDto createTestCommentResponse() {
+        return CommentResponseDto.builder()
+                .id(1L)
+                .content("Test comment")
+                .userId(1L)
+                .username("testuser")
+                .postId(1L)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
     }
 }

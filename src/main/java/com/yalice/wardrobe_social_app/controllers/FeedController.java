@@ -1,72 +1,107 @@
 package com.yalice.wardrobe_social_app.controllers;
 
+import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.dtos.common.PageResponseDto;
+import com.yalice.wardrobe_social_app.dtos.feed.FeedItemResponseDto;
 import com.yalice.wardrobe_social_app.entities.Post;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.interfaces.FeedService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
-import com.yalice.wardrobe_social_app.utilities.CurrentUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * Controller responsible for handling feed-related operations.
- * Provides endpoints for posts, comments, and likes management.
+ * Provides endpoints for retrieving and managing the user's feed.
  */
 @RestController
 @RequestMapping("/api/feed")
-public class FeedController {
+public class FeedController extends ApiBaseController {
 
     private final FeedService feedService;
-    private final CurrentUser currentUser;
 
-    /**
-     * Constructor for FeedController.
-     *
-     * @param feedService Service for feed-related operations
-     * @param userService Service for user-related operations
-     */
     @Autowired
-    public FeedController(FeedService feedService, UserService userService) {
+    public FeedController(FeedService feedService, AuthUtils authUtils) {
+        super(authUtils);
         this.feedService = feedService;
-        this.currentUser = new CurrentUser(userService);
     }
 
     /**
-     * Retrieves the feed for the current authenticated user.
+     * Retrieves the user's feed with pagination.
      *
-     * @param pageable the pagination information
-     * @return ResponseEntity containing the feed of the current user
+     * @param page the page number (zero-based)
+     * @param size the number of items per page
+     * @return ResponseEntity containing the feed items
      */
     @GetMapping
-    public ResponseEntity<?> getUserFeed(Pageable pageable) {
-        User currentUser = this.currentUser.getCurrentUserOrElseThrow();
+    public ResponseEntity<ApiResponse<List<FeedItemResponseDto>>> getFeed(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return handleEntityRetrieval(
+                () -> feedService.getFeed(getLoggedInUser().getId(), page, size),
+                "Feed");
+    }
 
-        Long currentUserId = currentUser.getId();
-        Page<Post> feed = feedService.getUserFeed(currentUserId, pageable);
-        return ResponseEntity.ok(feed);
+    /**
+     * Retrieves the user's feed filtered by season with pagination.
+     *
+     * @param season the season to filter by
+     * @param page   the page number (zero-based)
+     * @param size   the number of items per page
+     * @return ResponseEntity containing the filtered feed items
+     */
+    @GetMapping("/season/{season}")
+    public ResponseEntity<ApiResponse<List<FeedItemResponseDto>>> getFeedBySeason(
+            @PathVariable String season,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return handleEntityRetrieval(
+                () -> feedService.getFeedBySeason(getLoggedInUser().getId(), season, page, size),
+                "Feed By Season");
+    }
+
+    /**
+     * Retrieves the user's feed filtered by category with pagination.
+     *
+     * @param category the category to filter by
+     * @param page     the page number (zero-based)
+     * @param size     the number of items per page
+     * @return ResponseEntity containing the filtered feed items
+     */
+    @GetMapping("/category/{category}")
+    public ResponseEntity<ApiResponse<List<FeedItemResponseDto>>> getFeedByCategory(
+            @PathVariable String category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return handleEntityRetrieval(
+                () -> feedService.getFeedByCategory(getLoggedInUser().getId(), category, page, size),
+                "Feed By Category");
     }
 
     /**
      * Retrieves the posts of a specific user.
      *
-     * @param userId the ID of the user whose posts are to be fetched
+     * @param userId   the ID of the user whose posts are to be fetched
      * @param pageable the pagination information
      * @return ResponseEntity containing the posts of the specified user
      */
     @GetMapping("/users/{userId}/posts")
-    public ResponseEntity<?> getUserPosts(@PathVariable Long userId,
-                                          @PageableDefault(size = 20) Pageable pageable) {
-        User currentUser = this.currentUser.getCurrentUserOrElseThrow();
-
-        Long currentUserId = currentUser.getId();
-        Page<Post> posts = feedService.getUserPosts(userId, currentUserId, pageable);
-        return ResponseEntity.ok(posts);
+    public ResponseEntity<ApiResponse<PageResponseDto<Post>>> getUserPosts(@PathVariable Long userId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return handleEntityRetrieval(
+                () -> {
+                    User currentUser = getLoggedInUser();
+                    if (currentUser == null || currentUser.getProfile() == null) {
+                        throw new SecurityException("User not authenticated or profile not found");
+                    }
+                    Page<Post> posts = feedService.getUserPosts(userId, currentUser.getId(), pageable);
+                    return PageResponseDto.from(posts);
+                }, "User posts");
     }
 }

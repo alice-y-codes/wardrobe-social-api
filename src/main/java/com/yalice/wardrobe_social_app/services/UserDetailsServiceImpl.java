@@ -1,47 +1,54 @@
 package com.yalice.wardrobe_social_app.services;
 
 import com.yalice.wardrobe_social_app.entities.User;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
+import com.yalice.wardrobe_social_app.repositories.UserRepository;
+import com.yalice.wardrobe_social_app.services.helpers.BaseService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Optional;
+import java.util.Collections;
 
 /**
  * Implementation of Spring Security's UserDetailsService.
  * This service is responsible for loading user details during authentication.
  */
 @Service
-public class UserDetailsServiceImpl implements UserDetailsService {
+public class UserDetailsServiceImpl extends BaseService implements UserDetailsService  {
 
-    /** Service for user-related operations. */
-    @Autowired
-    @Lazy
-    private UserService userService;
+    /** Repository to fetch user authentication details. */
+    private final UserRepository userRepository;
+
+    public UserDetailsServiceImpl(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     /**
-     * Loads a user by their username for authentication purposes.
+     * Loads a user by their username for authentication.
      *
      * @param username The username to load
-     * @return UserDetails object containing user information
+     * @return UserDetails object containing user authentication info
      * @throws UsernameNotFoundException If the user is not found
      */
     @Override
     public UserDetails loadUserByUsername(final String username)
             throws UsernameNotFoundException {
-        final Optional<User> userOptional = userService.findUserByUsername(username);
-        final User user = userOptional
-                .orElseThrow(() -> new UsernameNotFoundException(
-                        "User not found with username: " + username));
+
+        logger.info("Attempting to load user by username: {}", username);
+
+        // Fetch user from the database (including the password)
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> {
+                    logger.warn("User not found with username: {}", username);
+                    return new UsernameNotFoundException("User not found with username: " + username);
+                });
+
+        logger.info("User '{}' found. Loading authentication details.", user.getUsername());
 
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
-                user.getPassword(),
-                new ArrayList<>());
+                user.getPassword(),  // Password is securely retrieved
+                Collections.emptyList()); // You can set authorities/roles here if needed
     }
 }

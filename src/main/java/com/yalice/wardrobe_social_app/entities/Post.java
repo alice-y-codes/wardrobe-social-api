@@ -1,64 +1,151 @@
 package com.yalice.wardrobe_social_app.entities;
 
-import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+/**
+ * Represents a post created by a user, which may include an outfit and user
+ * interactions such as likes and comments.
+ */
 @Entity
 @Table(name = "posts")
 @Getter
 @Setter
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Post {
+@SuperBuilder
+public class Post extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    /**
+     * The profile (user) associated with this post.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Profile profile;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    /**
+     * The title of the post.
+     */
+    @Column(nullable = false)
+    private String title;
 
-    @Column(length = 1000)
+    /**
+     * The content of the post.
+     */
+    @Column(length = 2000)
     private String content;
 
-    @ManyToOne
-    @JoinColumn(name = "outfit_id")
+    /**
+     * The outfit associated with this post.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "outfit_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Outfit outfit;
 
+    /**
+     * The visibility status of the post (e.g., Public, Private).
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    @Builder.Default
-    private PostVisibility visibility = PostVisibility.FRIENDS_ONLY;
+    private PostVisibility visibility;
 
-    @Column(name = "like_count")
-    @Builder.Default
-    private int likeCount = 0;
+    /**
+     * The URL of the featured image for the post.
+     */
+    private String featureImage;
 
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    /**
+     * The number of likes this post has received.
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer likeCount = 0;
+
+    /**
+     * The set of users who liked the post.
+     */
+    @ManyToMany
+    @JoinTable(name = "post_likes", joinColumns = @JoinColumn(name = "post_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
+    @Builder.Default
+    private Set<User> likes = new HashSet<>();
+
+    /**
+     * The list of comments associated with this post.
+     */
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @Builder.Default
     private List<Comment> comments = new ArrayList<>();
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+    /**
+     * Adds a like from a user to the post.
+     *
+     * @param user the user who liked the post
+     */
+    public void addLike(User user) {
+        likes.add(user);
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    /**
+     * Removes a like from a user from the post.
+     *
+     * @param user the user whose like is being removed
+     */
+    public void removeLike(User user) {
+        likes.remove(user);
+    }
+
+    /**
+     *
+     * @return likes count
+     */
+    public int getLikesCount() {
+        return likes.size();
+    }
+    /**
+     * Adds a comment to the post.
+     *
+     * @param comment the comment to add
+     */
+    public void addComment(Comment comment) {
+        comments.add(comment);
+    }
+
+    /**
+     * Removes a comment from the post.
+     *
+     * @param comment the comment to remove
+     */
+    public void removeComment(Comment comment) {
+        comments.remove(comment);
+    }
+
+    /**
+     *
+     * @return comment count
+     */
+    public int getCommentsCount() {
+        return comments.size();
+    }
+
+    /**
+     * Enum representing the visibility of the post.
+     */
+    public enum PostVisibility {
+        PUBLIC,
+        PRIVATE,
+        FRIENDS_ONLY
     }
 }

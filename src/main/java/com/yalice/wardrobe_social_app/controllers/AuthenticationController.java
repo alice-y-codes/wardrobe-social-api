@@ -1,9 +1,11 @@
 package com.yalice.wardrobe_social_app.controllers;
 
-import com.yalice.wardrobe_social_app.dtos.AuthenticationRequest;
-import com.yalice.wardrobe_social_app.dtos.AuthenticationResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.dtos.authentication.AuthenticationRequest;
+import com.yalice.wardrobe_social_app.dtos.authentication.AuthenticationResponse;
+import com.yalice.wardrobe_social_app.security.JwtService;
 import com.yalice.wardrobe_social_app.services.UserDetailsServiceImpl;
-import com.yalice.wardrobe_social_app.utilities.JwtTokenUtil;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,31 +27,35 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/auth")
-public class AuthenticationController {
+public class AuthenticationController extends ApiBaseController {
+
+    private final AuthenticationManager authenticationManager;
+    private final UserDetailsServiceImpl userDetailsService;
+    private final JwtService jwtService;
 
     @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private UserDetailsServiceImpl userDetailsService;
-
-    @Autowired
-    private JwtTokenUtil jwtTokenUtil;
+    public AuthenticationController(AuthenticationManager authenticationManager,
+                                    UserDetailsServiceImpl userDetailsService,
+                                    JwtService jwtService,
+                                    AuthUtils authUtils) {
+        super(authUtils); // Call to ApiBaseController constructor
+        this.authenticationManager = authenticationManager;
+        this.userDetailsService = userDetailsService;
+        this.jwtService = jwtService;
+    }
 
     /**
      * Handles user login requests.
-     * Authenticates the user and generates a JWT token upon successful
-     * authentication.
+     * Authenticates the user and generates a JWT token upon successful authentication.
      *
-     * @param authenticationRequest Contains the username and password for
-     *                              authentication
+     * @param authenticationRequest Contains the username and password for authentication
      * @param response              HTTP response to set the JWT cookie
      * @return ResponseEntity with authentication response or error message
-     * @throws Exception If authentication fails
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody AuthenticationRequest authenticationRequest,
-            HttpServletResponse response) throws Exception {
+    public ResponseEntity<ApiResponse<AuthenticationResponse>> login(
+            @RequestBody AuthenticationRequest authenticationRequest,
+            HttpServletResponse response) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -61,18 +67,20 @@ public class AuthenticationController {
             final UserDetails userDetails = userDetailsService
                     .loadUserByUsername(authenticationRequest.getUsername());
 
-            final String token = jwtTokenUtil.generateToken(userDetails);
+            final String token = jwtService.generateToken(userDetails);
 
             // Create a cookie with the JWT token
             Cookie jwtCookie = new Cookie("jwt", token);
             jwtCookie.setHttpOnly(true);
             jwtCookie.setPath("/");
-            // Don't set max age for session cookie
+
             response.addCookie(jwtCookie);
 
-            return ResponseEntity.ok(new AuthenticationResponse(token, userDetails.getUsername()));
+            // Return success response with the token and username
+            AuthenticationResponse authResponse = new AuthenticationResponse(token, userDetails.getUsername());
+            return createSuccessResponse("Login successful", authResponse);
         } catch (BadCredentialsException e) {
-            return ResponseEntity.status(401).body("Invalid username or password");
+            return createUnauthorizedResponse("Invalid username or password");
         }
     }
 
@@ -84,7 +92,7 @@ public class AuthenticationController {
      * @return ResponseEntity with success message
      */
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse response) {
         // Clear the JWT cookie
         Cookie jwtCookie = new Cookie("jwt", null);
         jwtCookie.setHttpOnly(true);
@@ -94,6 +102,6 @@ public class AuthenticationController {
 
         SecurityContextHolder.clearContext();
 
-        return ResponseEntity.ok("Logged out successfully");
+        return createSuccessResponse("Logged out successfully", null);
     }
 }

@@ -8,21 +8,6 @@ import java.util.List;
 
 @Repository
 public interface OutfitRepository extends JpaRepository<Outfit, Long> {
-
-    /**
-     * Find all outfits for a user
-     * 
-     * @param userId the ID of the user
-     * @return a list of outfits
-     */
-    List<Outfit> findByUserId(Long userId);
-
-    /**
-     * Find outfits by user ID and occasion
-     * 
-     * @param userId   the ID of the user
-     * @param occasion the occasion to filter by
-     * @return a list of outfits
-     */
-    List<Outfit> findByUserIdAndOccasion(Long userId, String occasion);
+    List<Outfit> findByProfileId(Long profileId);
+    List<Outfit> findByProfileIdAndSeason(Long profileId, String season);
 }

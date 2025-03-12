@@ -1,114 +1,101 @@
 package com.yalice.wardrobe_social_app.controllers;
 
-import com.yalice.wardrobe_social_app.dtos.FriendRequestDto;
-import com.yalice.wardrobe_social_app.entities.Friendship;
-import com.yalice.wardrobe_social_app.entities.User;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
+import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.dtos.friendship.FriendRequestDto;
+import com.yalice.wardrobe_social_app.dtos.friendship.FriendResponseDto;
+import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
+import com.yalice.wardrobe_social_app.interfaces.FriendService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Controller responsible for handling friendship-related operations.
+ * Provides endpoints for managing friend requests and friendships.
+ */
 @RestController
-@RequestMapping("/api/friends")
-public class FriendshipController {
+@RequestMapping("/api/friendships")
+public class FriendshipController extends ApiBaseController {
 
-    private final FriendshipService friendshipService;
-    private final UserService userService;
+    private final FriendService friendService;
 
     @Autowired
-    public FriendshipController(FriendshipService friendshipService, UserService userService) {
-        this.friendshipService = friendshipService;
-        this.userService = userService;
-    }
-
-    @PostMapping("/request")
-    public ResponseEntity<?> sendFriendRequest(@RequestBody FriendRequestDto request) {
-        Optional<User> currentUserOptional = getCurrentUser();
-        if (currentUserOptional.isEmpty()) {
-            return ResponseEntity.status(401).body("Unauthorized");
-        }
-
-        Long currentUserId = currentUserOptional.get().getId();
-        Friendship friendship = friendshipService.sendFriendRequest(currentUserId, request.getRecipientId());
-        return ResponseEntity.ok(friendship);
-    }
-
-    @PostMapping("/accept")
-    public ResponseEntity<?> acceptFriendRequest(@RequestBody FriendRequestDto request) {
-        Optional<User> currentUserOptional = getCurrentUser();
-        if (currentUserOptional.isEmpty()) {
-            return ResponseEntity.status(401).body("Unauthorized");
-        }
-
-        Long currentUserId = currentUserOptional.get().getId();
-        Friendship friendship = friendshipService.acceptFriendRequest(request.getRequestId(), currentUserId);
-        return ResponseEntity.ok(friendship);
-    }
-
-    @PostMapping("/reject")
-    public ResponseEntity<?> rejectFriendRequest(@RequestBody FriendRequestDto request) {
-        Optional<User> currentUserOptional = getCurrentUser();
-        if (currentUserOptional.isEmpty()) {
-            return ResponseEntity.status(401).body("Unauthorized");
-        }
-
-        Long currentUserId = currentUserOptional.get().getId();
-        friendshipService.rejectFriendRequest(request.getRequestId(), currentUserId);
-        return ResponseEntity.ok("Friend request rejected");
-    }
-
-    @DeleteMapping("/remove")
-    public ResponseEntity<?> removeFriend(@RequestBody FriendRequestDto request) {
-        Optional<User> currentUserOptional = getCurrentUser();
-        if (currentUserOptional.isEmpty()) {
-            return ResponseEntity.status(401).body("Unauthorized");
-        }
-
-        Long currentUserId = currentUserOptional.get().getId();
-        friendshipService.removeFriend(currentUserId, request.getFriendId());
-        return ResponseEntity.ok("Friend removed");
-    }
-
-    @GetMapping
-    public ResponseEntity<?> getFriends() {
-        Optional<User> currentUserOptional = getCurrentUser();
-        if (currentUserOptional.isEmpty()) {
-            return ResponseEntity.status(401).body("Unauthorized");
-        }
-
-        Long currentUserId = currentUserOptional.get().getId();
-        List<User> friends = friendshipService.getFriends(currentUserId);
-        return ResponseEntity.ok(friends);
-    }
-
-    @GetMapping("/pending")
-    public ResponseEntity<?> getPendingFriendRequests() {
-        Optional<User> currentUserOptional = getCurrentUser();
-        if (currentUserOptional.isEmpty()) {
-            return ResponseEntity.status(401).body("Unauthorized");
-        }
-
-        Long currentUserId = currentUserOptional.get().getId();
-        List<Friendship> pendingRequests = friendshipService.getPendingFriendRequests(currentUserId);
-        return ResponseEntity.ok(pendingRequests);
+    public FriendshipController(FriendService friendService, AuthUtils authUtils) {
+        super(authUtils);
+        this.friendService = friendService;
     }
 
     /**
-     * Utility method to get the current authenticated user
+     * Sends a friend request to another user.
+     *
+     * @param recipientId the ID of the user to send the request to
+     * @return ResponseEntity containing the friend request
      */
-    private Optional<User> getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return Optional.empty();
-        }
+    @PostMapping("/requests")
+    public ResponseEntity<ApiResponse<FriendRequestDto>> sendFriendRequest(@RequestParam Long recipientId) {
+        return handleEntityAction(() -> friendService.sendFriendRequest(getLoggedInUser().getId(), recipientId),
+                "send", "friend request", "sent");
+    }
 
-        String username = authentication.getName();
-        return userService.findUserByUsername(username);
+    /**
+     * Accepts a friend request.
+     *
+     * @param requestId the ID of the friend request to accept
+     * @return ResponseEntity containing the friendship
+     */
+    @PostMapping("/requests/{requestId}/accept")
+    public ResponseEntity<ApiResponse<FriendResponseDto>> acceptFriendRequest(@PathVariable Long requestId) {
+        try {
+            return handleEntityAction(() -> friendService.acceptFriendRequest(getLoggedInUser().getId(), requestId),
+                    "accept", "Friend request", "accepted");
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse<>(false, "Friend request not found", null));
+        }
+    }
+
+    /**
+     * Rejects a friend request.
+     *
+     * @param requestId the ID of the friend request to reject
+     * @return ResponseEntity with a success message
+     */
+    @PostMapping("/requests/{requestId}/reject")
+    public ResponseEntity<ApiResponse<Void>> rejectFriendRequest(@PathVariable Long requestId) {
+        try {
+            return handleEntityAction(() -> {
+                friendService.rejectFriendRequest(getLoggedInUser().getId(), requestId);
+                return null;
+            }, "reject", "Friend request", "rejected");
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse<>(false, "Friend request not found", null));
+        }
+    }
+
+    /**
+     * Gets all pending friend requests for the current user.
+     *
+     * @return ResponseEntity containing the list of friend requests
+     */
+    @GetMapping("/requests/pending")
+    public ResponseEntity<ApiResponse<List<FriendRequestDto>>> getPendingFriendRequests() {
+        return handleEntityAction(() -> friendService.getPendingFriendRequests(getLoggedInUser().getId()),
+                "retrieve", "pending friend requests", "retrieved");
+    }
+
+    /**
+     * Gets all friends of the current user.
+     *
+     * @return ResponseEntity containing the list of friendships
+     */
+    @GetMapping("/friends")
+    public ResponseEntity<ApiResponse<List<FriendResponseDto>>> getFriends() {
+        return handleEntityAction(() -> friendService.getFriends(getLoggedInUser().getId()),
+                "retrieve", "friends", "retrieved");
     }
 }

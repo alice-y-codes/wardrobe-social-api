@@ -1,87 +1,82 @@
 package com.yalice.wardrobe_social_app.controllers;
 
-import com.yalice.wardrobe_social_app.dtos.CommentDto;
-import com.yalice.wardrobe_social_app.entities.Comment;
-import com.yalice.wardrobe_social_app.entities.User;
+import com.yalice.wardrobe_social_app.controllers.utilities.ApiResponse;
+import com.yalice.wardrobe_social_app.controllers.utilities.AuthUtils;
+import com.yalice.wardrobe_social_app.dtos.comment.CommentDto;
+import com.yalice.wardrobe_social_app.dtos.comment.CommentResponseDto;
 import com.yalice.wardrobe_social_app.interfaces.CommentService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
-import com.yalice.wardrobe_social_app.utilities.CurrentUser;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * Controller responsible for handling comment-related operations.
- * Provides endpoints for adding, deleting, and fetching comments.
  */
 @RestController
-@RequestMapping("/api/feed")
-public class CommentController {
+@RequestMapping("/api/comments")
+public class CommentController extends ApiBaseController {
 
     private final CommentService commentService;
-    private final CurrentUser currentUser;
 
-    /**
-     * Constructor for CommentController.
-     *
-     * @param commentService Service for comment-related operations
-     * @param userService Service for user-related operations
-     */
     @Autowired
-    public CommentController(CommentService commentService, UserService userService) {
+    public CommentController(CommentService commentService, AuthUtils authUtils) {
+        super(authUtils);
         this.commentService = commentService;
-        this.currentUser = new CurrentUser(userService);
     }
 
     /**
-     * Adds a comment to a specific post.
-     *
-     * @param postId the ID of the post to comment on
-     * @param commentDto the content of the comment
-     * @return ResponseEntity containing the added comment
+     * Creates a new comment for a post.
      */
-    @PostMapping("/{postId}/comments")
-    public ResponseEntity<?> addComment(@PathVariable Long postId, @RequestBody CommentDto commentDto) {
-        // Get the current authenticated user or throw UnauthorizedAccessException
-        User user = currentUser.getCurrentUserOrElseThrow();
-
-        Long currentUserId = user.getId();
-        Comment comment = commentService.addComment(postId, currentUserId, commentDto.getContent());
-        return ResponseEntity.ok(comment);
+    @PostMapping("/posts/{postId}")
+    public ResponseEntity<ApiResponse<CommentResponseDto>> createComment(
+            @PathVariable Long postId,
+            @RequestBody CommentDto commentDto) {
+        return handleEntityAction(
+                () -> commentService.createComment(getLoggedInUser().getId(), postId, commentDto),
+                "create", "Comment", "created");
     }
 
     /**
-     * Deletes a specific comment from a post.
-     *
-     * @param postId the ID of the post from which the comment is being deleted
-     * @param commentId the ID of the comment to be deleted
-     * @return ResponseEntity with a success message
+     * Updates an existing comment.
      */
-    @DeleteMapping("/{postId}/comments/{commentId}")
-    public ResponseEntity<?> deleteComment(@PathVariable Long postId, @PathVariable Long commentId) {
-        // Get the current authenticated user or throw UnauthorizedAccessException
-        User user = currentUser.getCurrentUserOrElseThrow();
-
-        Long currentUserId = user.getId();
-        commentService.deleteComment(commentId, currentUserId);
-        return ResponseEntity.ok("Comment deleted");
+    @PutMapping("/{commentId}")
+    public ResponseEntity<ApiResponse<CommentResponseDto>> updateComment(
+            @PathVariable Long commentId,
+            @RequestBody CommentDto commentDto) {
+        return handleEntityAction(
+                () -> commentService.updateComment(getLoggedInUser().getId(), commentId, commentDto),
+                "update", "Comment", "updated");
     }
 
     /**
-     * Retrieves all comments for a specific post.
-     *
-     * @param postId the ID of the post
-     * @param pageable the pagination information
-     * @return ResponseEntity containing a page of comments for the post
+     * Deletes a comment.
      */
-    @GetMapping("/{postId}/comments")
-    public ResponseEntity<?> getPostComments(@PathVariable Long postId,
-                                             @PageableDefault(size = 20) Pageable pageable) {
-        Page<Comment> comments = commentService.getPostComments(postId, pageable);
-        return ResponseEntity.ok(comments);
+    @DeleteMapping("/{commentId}")
+    public ResponseEntity<ApiResponse<Void>> deleteComment(@PathVariable Long commentId) {
+        return handleVoidAction(
+                () -> commentService.deleteComment(getLoggedInUser().getId(), commentId),
+                "delete", "Comment", "deleted");
+    }
+
+    /**
+     * Gets all comments for a specific post.
+     */
+    @GetMapping("/posts/{postId}/comments")
+    public ResponseEntity<ApiResponse<List<CommentResponseDto>>> getPostComments(@PathVariable Long postId) {
+        return handleEntityRetrieval(
+                () -> commentService.getPostComments(postId),
+                "Comments for post");
+    }
+
+    /**
+     * Gets a specific comment by ID.
+     */
+    @GetMapping("/{commentId}")
+    public ResponseEntity<ApiResponse<CommentResponseDto>> getComment(@PathVariable Long commentId) {
+        return handleEntityRetrieval(
+                () -> commentService.getComment(commentId),
+                "Comment");
     }
 }

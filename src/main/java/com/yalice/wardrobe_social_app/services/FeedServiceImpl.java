@@ -1,16 +1,18 @@
 package com.yalice.wardrobe_social_app.services;
 
+import com.yalice.wardrobe_social_app.dtos.feed.FeedItemResponseDto;
+import com.yalice.wardrobe_social_app.dtos.friendship.FriendResponseDto;
 import com.yalice.wardrobe_social_app.entities.Post;
-import com.yalice.wardrobe_social_app.enums.PostVisibility;
 import com.yalice.wardrobe_social_app.entities.User;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
 import com.yalice.wardrobe_social_app.interfaces.FeedService;
-import com.yalice.wardrobe_social_app.interfaces.FriendshipService;
-import com.yalice.wardrobe_social_app.interfaces.UserService;
-import com.yalice.wardrobe_social_app.repositories.CommentRepository;
-import com.yalice.wardrobe_social_app.repositories.LikeRepository;
+import com.yalice.wardrobe_social_app.interfaces.FriendService;
+import com.yalice.wardrobe_social_app.interfaces.UserSearchService;
+import com.yalice.wardrobe_social_app.mappers.FeedItemMapper;
 import com.yalice.wardrobe_social_app.repositories.PostRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.yalice.wardrobe_social_app.services.helpers.BaseService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,67 +20,81 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
-public class FeedServiceImpl implements FeedService {
+@RequiredArgsConstructor
+public class FeedServiceImpl extends BaseService implements FeedService {
 
-    private final PostRepository postRepository;
-    private final CommentRepository commentRepository;
-    private final LikeRepository likeRepository;
-    private final UserServiceImpl userService;
-    private final FriendshipService friendshipService;
+        private final PostRepository postRepository;
+        private final FriendService friendService;
+        private final UserSearchService userSearchService;
+        private final FeedItemMapper feedItemMapper;
 
-    @Autowired
-    public FeedServiceImpl(PostRepository postRepository, CommentRepository commentRepository,
-            LikeRepository likeRepository, UserServiceImpl userService,
-            FriendshipService friendshipService) {
-        this.postRepository = postRepository;
-        this.commentRepository = commentRepository;
-        this.likeRepository = likeRepository;
-        this.userService = userService;
-        this.friendshipService = friendshipService;
-    }
+        @Override
+        public List<FeedItemResponseDto> getFeed(Long userId, int page, int size) {
+                log.info("Fetching feed for userId={} (page={}, size={})", userId, page, size);
 
+                List<Long> friendIds = getFriendIds(userId);
+                Page<Post> posts = postRepository.findByProfileIdInOrderByCreatedAtDesc(
+                        friendIds, Pageable.ofSize(size).withPage(page)
+                );
 
-
-    @Override
-    public Page<Post> getUserFeed(Long userId, Pageable pageable) {
-        // Get the user's friends
-        List<User> friends = friendshipService.getFriends(userId);
-        List<Long> friendIds = friends.stream()
-                .map(User::getId)
-                .collect(Collectors.toList());
-
-        // Add the user's own ID to see their own posts
-        friendIds.add(userId);
-
-        // Get posts from friends and public posts
-        return postRepository.findFeedPostsForUser(friendIds, pageable);
-    }
-
-    @Override
-    public Page<Post> getUserPosts(Long userId, Long viewerId, Pageable pageable) {
-        if (!userService.findById(userId).isPresent()) {
-            throw new ResourceNotFoundException("User not found");
+                return mapToFeedResponse(posts);
         }
 
-        // Determine the visibility filter based on the relationship between user and viewer
-        boolean isViewerFriend = userId.equals(viewerId) || friendshipService.areFriends(userId, viewerId);
+        @Override
+        public List<FeedItemResponseDto> getFeedBySeason(Long userId, String season, int page, int size) {
+                log.info("Fetching seasonal feed for userId={} (season={}, page={}, size={})", userId, season, page, size);
 
-        // Query the database and filter posts at the query level as much as possible
-        Page<Post> userPosts;
-        if (isViewerFriend) {
-            // Retrieve public and friends-only posts for the user
-            userPosts = postRepository.findByUserIdAndVisibilityInOrderByCreatedAtDesc(
-                    userId, List.of(PostVisibility.PUBLIC, PostVisibility.FRIENDS_ONLY), pageable
-            );
-        } else {
-            // Retrieve only public posts for the user
-            userPosts = postRepository.findByUserIdAndVisibilityOrderByCreatedAtDesc(
-                    userId, PostVisibility.PUBLIC, pageable
-            );
+                List<Long> friendIds = getFriendIds(userId);
+                Page<Post> posts = postRepository.findByProfileIdInAndOutfitSeasonOrderByCreatedAtDesc(
+                        friendIds, season, Pageable.ofSize(size).withPage(page)
+                );
+
+                return mapToFeedResponse(posts);
         }
 
-        // Return the page of posts, which will already be filtered by visibility
-        return userPosts;
-    }
+        @Override
+        public List<FeedItemResponseDto> getFeedByCategory(Long userId, String category, int page, int size) {
+                log.info("Fetching category feed for userId={} (category={}, page={}, size={})", userId, category, page, size);
+
+                List<Long> friendIds = getFriendIds(userId);
+                Page<Post> posts = postRepository.findByProfileIdInAndOutfitCategoryOrderByCreatedAtDesc(
+                        friendIds, category, Pageable.ofSize(size).withPage(page)
+                );
+
+                return mapToFeedResponse(posts);
+        }
+
+        @Override
+        public Page<Post> getUserPosts(Long userId, Long viewerId, Pageable pageable) {
+                log.info("Fetching user posts for userId={} viewed by userId={}", userId, viewerId);
+
+                User user = userSearchService.getUserEntityById(userId);
+
+                if (user == null) {
+                        throw new ResourceNotFoundException("User not found with id: " + userId);
+                }
+
+                boolean isViewerFriend = userId.equals(viewerId) || friendService.areFriends(userId, viewerId);
+                List<Post.PostVisibility> visibility = isViewerFriend
+                        ? List.of(Post.PostVisibility.PUBLIC, Post.PostVisibility.FRIENDS_ONLY)
+                        : List.of(Post.PostVisibility.PUBLIC);
+
+                return postRepository.findByProfileIdAndVisibilityInOrderByCreatedAtDesc(userId, visibility, pageable);
+        }
+
+        private List<Long> getFriendIds(Long userId) {
+                List<Long> friendIds = friendService.getFriends(userId).stream()
+                        .map(FriendResponseDto::getUserId)
+                        .collect(Collectors.toList());
+                friendIds.add(userId);
+                return friendIds;
+        }
+
+        private List<FeedItemResponseDto> mapToFeedResponse(Page<Post> posts) {
+                return posts.stream()
+                        .map(feedItemMapper::toResponseDto)
+                        .collect(Collectors.toList());
+        }
 }

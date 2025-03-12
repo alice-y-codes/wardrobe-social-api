@@ -2,112 +2,87 @@ package com.yalice.wardrobe_social_app.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
- * Entity class representing a user in the wardrobe social application.
- * This class contains user information, authentication details, and
- * relationships
- * with other entities such as items, outfits, and social connections.
+ * Represents a user in the wardrobe social application, storing user
+ * authentication details
+ * and relationships with other entities such as profile, friend requests, and
+ * likes.
  */
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class User {
-    /** Unique identifier for the user. */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@SuperBuilder
+public class User extends BaseEntity {
 
-    /** Username of the user. */
-    @Column
+    /**
+     * The username of the user. This field must be unique.
+     */
+    @Column(nullable = false, unique = true)
     private String username;
 
-    /** Email address of the user. */
+    /**
+     * The email address of the user. This field must be unique.
+     */
     @Column(nullable = false, unique = true)
     private String email;
 
-    /** Encrypted password of the user. */
+    /**
+     * The encrypted password of the user.
+     */
     @Column(nullable = false)
     private String password;
 
-    /** Authentication provider used by the user. */
+    /**
+     * The authentication provider used by the user (e.g., Facebook, Google, Apple,
+     * or Local).
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Provider provider;
 
-    /** URL to the user's profile picture. */
-    @Column
-    private String profilePicture;
-
-    /** List of items owned by the user. */
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    @Builder.Default
-    private List<Item> items = new ArrayList<>();
-
-    /** List of outfits created by the user. */
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<Outfit> outfits = new ArrayList<>();
-
-    /** User's profile information. */
+    /**
+     * The profile associated with the user, which manages the wardrobe, outfits,
+     * and items.
+     */
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Profile profile;
 
-    /** List of friend requests sent by the user. */
-    @OneToMany(mappedBy = "requester", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    /**
+     * The friend requests sent by the user.
+     */
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
-    private List<Friendship> sentFriendRequests = new ArrayList<>();
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<Friendship> sentFriendRequests = new HashSet<>();
 
-    /** List of friend requests received by the user. */
-    @OneToMany(mappedBy = "recipient", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    /**
+     * The friend requests received by the user.
+     */
+    @OneToMany(mappedBy = "recipient", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
-    private List<Friendship> receivedFriendRequests = new ArrayList<>();
-
-    /** List of posts created by the user. */
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<Post> posts = new ArrayList<>();
-
-    /** List of comments made by the user. */
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<Comment> comments = new ArrayList<>();
-
-    /** List of likes given by the user. */
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<Like> likes = new ArrayList<>();
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<Friendship> receivedFriendRequests = new HashSet<>();
 
     /**
      * Enumeration of supported authentication providers.
      */
     public enum Provider {
-        /** Facebook authentication. */
         FACEBOOK,
-        /** Google authentication. */
         GOOGLE,
-        /** Apple authentication. */
         APPLE,
-        /** Local authentication. */
         LOCAL
     }
-
-    // TODO: Implement additional user profile fields
-    // private String bio;
-    // private List<String> socialMediaLinks;
-    // private String bodyType; // e.g., "petite", "athletic", "plus-size"
-    // private double height; // Height in centimeters or inches
-    // private double weight; // Weight in kilograms or pounds
-    // private String shoeSize; // Shoe size, could be a String for various sizing
-    // systems
-    // private String clothingSize; // Clothing size, e.g., "S", "M", "L", or
-    // specific measurements
 }
