@@ -5,6 +5,7 @@ import com.yalice.wardrobe_social_app.dtos.outfit.OutfitResponseDto;
 import com.yalice.wardrobe_social_app.entities.Item;
 import com.yalice.wardrobe_social_app.entities.Outfit;
 import com.yalice.wardrobe_social_app.entities.Profile;
+import com.yalice.wardrobe_social_app.interfaces.ImageService;
 import com.yalice.wardrobe_social_app.interfaces.ItemService;
 import com.yalice.wardrobe_social_app.interfaces.OutfitService;
 import com.yalice.wardrobe_social_app.mappers.OutfitMapper;
@@ -26,13 +27,16 @@ public class OutfitServiceImpl extends BaseService implements OutfitService {
     private final ItemService itemService;
     private final OutfitRepository outfitRepository;
     private final OutfitMapper outfitMapper;
+    private final ImageService imageService;
 
     public OutfitServiceImpl(OutfitRepository outfitRepository, ProfileRepository profileRepository,
-                             ItemService itemService, OutfitMapper outfitMapper) {
+            ItemService itemService, OutfitMapper outfitMapper,
+            ImageService imageService) {
         this.outfitRepository = outfitRepository;
         this.profileRepository = profileRepository;
         this.itemService = itemService;
         this.outfitMapper = outfitMapper;
+        this.imageService = imageService;
     }
 
     @Override
@@ -42,13 +46,20 @@ public class OutfitServiceImpl extends BaseService implements OutfitService {
 
         Profile profile = findProfileById(profileId);
 
-        Outfit outfit = buildOutfit(outfitDto, profile, image);
+        Outfit outfit = buildOutfit(outfitDto, profile, null);
+        outfit = outfitRepository.save(outfit);
 
-        Outfit savedOutfit = outfitRepository.save(outfit);
+        // Upload image after outfit is saved to get the ID
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = imageService.uploadImage(image, "outfit", outfit.getId());
+            outfit.setImageUrl(imageUrl);
+            outfit = outfitRepository.save(outfit);
+        }
 
-        logger.info("Outfit '{}' successfully created for profile '{}'.", outfit.getName(), profile.getUser().getUsername());
+        logger.info("Outfit '{}' successfully created for profile '{}'.", outfit.getName(),
+                profile.getUser().getUsername());
 
-        return outfitMapper.toResponseDto(savedOutfit);
+        return outfitMapper.toResponseDto(outfit);
     }
 
     @Override
@@ -58,7 +69,18 @@ public class OutfitServiceImpl extends BaseService implements OutfitService {
 
         Outfit outfit = findOutfitByIdAndProfile(outfitId, profileId);
 
-        updateOutfitFields(outfit, outfitDto, image);
+        // Delete old image if a new one is provided
+        if (image != null && !image.isEmpty() && outfit.getImageUrl() != null) {
+            imageService.deleteImage(outfit.getImageUrl());
+        }
+
+        updateOutfitFields(outfit, outfitDto);
+
+        // Upload new image if provided
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = imageService.uploadImage(image, "outfit", outfit.getId());
+            outfit.setImageUrl(imageUrl);
+        }
 
         Outfit updatedOutfit = outfitRepository.save(outfit);
 
@@ -72,7 +94,12 @@ public class OutfitServiceImpl extends BaseService implements OutfitService {
     public void deleteOutfit(Long profileId, Long outfitId) {
         logger.info("Deleting outfit with ID: {} for profile ID: {}", outfitId, profileId);
 
-        findOutfitByIdAndProfile(outfitId, profileId);
+        Outfit outfit = findOutfitByIdAndProfile(outfitId, profileId);
+
+        // Delete associated image if it exists
+        if (outfit.getImageUrl() != null) {
+            imageService.deleteImage(outfit.getImageUrl());
+        }
 
         outfitRepository.deleteById(outfitId);
 
@@ -176,20 +203,14 @@ public class OutfitServiceImpl extends BaseService implements OutfitService {
                 .season(outfitDto.getSeason())
                 .favorite(outfitDto.isFavorite())
                 .isPublic(outfitDto.isPublic())
-                .imageUrl(image != null && !image.isEmpty() ? "placeholder_url" : null) // Implement actual image logic
                 .build();
     }
 
-    private void updateOutfitFields(Outfit outfit, OutfitDto outfitDto, MultipartFile image) {
+    private void updateOutfitFields(Outfit outfit, OutfitDto outfitDto) {
         outfit.setName(outfitDto.getName());
         outfit.setDescription(outfitDto.getDescription());
         outfit.setSeason(outfitDto.getSeason());
         outfit.setFavorite(outfitDto.isFavorite());
         outfit.setPublic(outfitDto.isPublic());
-
-        if (image != null && !image.isEmpty()) {
-            // TODO: Implement image upload logic
-            outfit.setImageUrl("placeholder_url");
-        }
     }
 }

@@ -6,6 +6,7 @@ import com.yalice.wardrobe_social_app.entities.Item;
 import com.yalice.wardrobe_social_app.entities.Profile;
 import com.yalice.wardrobe_social_app.entities.Wardrobe;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
+import com.yalice.wardrobe_social_app.interfaces.ImageService;
 import com.yalice.wardrobe_social_app.interfaces.ItemService;
 import com.yalice.wardrobe_social_app.mappers.ItemMapper;
 import com.yalice.wardrobe_social_app.repositories.ItemRepository;
@@ -26,14 +27,18 @@ public class ItemServiceImpl extends BaseService implements ItemService {
     private final ProfileRepository profileRepository;
     private final WardrobeRepository wardrobeRepository;
     private final ItemMapper itemMapper;
+    private final ImageService imageService;
 
     public ItemServiceImpl(ItemRepository itemRepository,
-                           ProfileRepository profileRepository,
-                           WardrobeRepository wardrobeRepository, ItemMapper itemMapper) {
+            ProfileRepository profileRepository,
+            WardrobeRepository wardrobeRepository,
+            ItemMapper itemMapper,
+            ImageService imageService) {
         this.itemRepository = itemRepository;
         this.profileRepository = profileRepository;
         this.wardrobeRepository = wardrobeRepository;
         this.itemMapper = itemMapper;
+        this.imageService = imageService;
     }
 
     @Override
@@ -48,9 +53,16 @@ public class ItemServiceImpl extends BaseService implements ItemService {
 
         checkIfItemExistsInWardrobe(itemDto.getName(), wardrobeId);
 
-        Item item = buildItem(itemDto, profile, wardrobe, image);
-
+        Item item = buildItem(itemDto, profile, wardrobe, null);
         item = itemRepository.save(item);
+
+        // Upload image after item is saved to get the ID
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = imageService.uploadImage(image, "item", item.getId());
+            item.setImageUrl(imageUrl);
+            item = itemRepository.save(item);
+        }
+
         return itemMapper.toResponseDto(item);
     }
 
@@ -66,7 +78,18 @@ public class ItemServiceImpl extends BaseService implements ItemService {
         Item existingItem = findItemById(itemId);
         validateItemOwnership(existingItem, profileId);
 
+        // Delete old image if a new one is provided
+        if (image != null && !image.isEmpty() && existingItem.getImageUrl() != null) {
+            imageService.deleteImage(existingItem.getImageUrl());
+        }
+
         Item updatedItem = buildUpdatedItem(itemDto, image, existingItem);
+
+        // Upload new image if provided
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = imageService.uploadImage(image, "item", updatedItem.getId());
+            updatedItem.setImageUrl(imageUrl);
+        }
 
         itemRepository.saveAndFlush(updatedItem);
         return itemMapper.toResponseDto(updatedItem);
@@ -79,6 +102,11 @@ public class ItemServiceImpl extends BaseService implements ItemService {
 
         Item item = findItemById(itemId);
         validateItemOwnership(item, profileId);
+
+        // Delete associated image if it exists
+        if (item.getImageUrl() != null) {
+            imageService.deleteImage(item.getImageUrl());
+        }
 
         itemRepository.deleteById(itemId);
         logger.info("Item with ID '{}' deleted successfully.", itemId);
@@ -156,7 +184,6 @@ public class ItemServiceImpl extends BaseService implements ItemService {
                 .color(itemDto.getColor())
                 .wardrobe(wardrobe)
                 .profile(profile)
-                .imageUrl(image != null && !image.isEmpty() ? "placeholder_url" : null)  // Example placeholder for image
                 .build();
     }
 
@@ -179,12 +206,14 @@ public class ItemServiceImpl extends BaseService implements ItemService {
                 .category(itemDto.getCategory())
                 .size(itemDto.getSize())
                 .color(itemDto.getColor())
-                .imageUrl(image != null && !image.isEmpty() ? "placeholder_url" : existingItem.getImageUrl()) // Use existing image URL if no new image is provided
+                .imageUrl(image != null && !image.isEmpty() ? null : existingItem.getImageUrl()) // Will be set after
+                                                                                                 // upload
                 .build();
     }
 
     private Wardrobe findWardrobeByProfileId(Long profileId) {
         return wardrobeRepository.findByProfileId(profileId)
-                .orElseThrow(() -> new ResourceNotFoundException("Wardrobe not found for profile with ID: " + profileId));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Wardrobe not found for profile with ID: " + profileId));
     }
 }

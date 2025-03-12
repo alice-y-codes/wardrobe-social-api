@@ -6,6 +6,7 @@ import com.yalice.wardrobe_social_app.entities.*;
 import com.yalice.wardrobe_social_app.exceptions.PostAccessException;
 import com.yalice.wardrobe_social_app.exceptions.PostNotFoundException;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
+import com.yalice.wardrobe_social_app.interfaces.ImageService;
 import com.yalice.wardrobe_social_app.interfaces.OutfitService;
 import com.yalice.wardrobe_social_app.interfaces.ProfileService;
 import com.yalice.wardrobe_social_app.mappers.PostMapper;
@@ -19,6 +20,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
 
@@ -40,6 +43,8 @@ class PostServiceImplTest {
     private PostMapper postMapper;
     @Mock
     private PostServiceHelper postServiceHelper;
+    @Mock
+    private ImageService imageService;
 
     @InjectMocks
     private PostServiceImpl postService;
@@ -48,6 +53,7 @@ class PostServiceImplTest {
     private Post post;
     private Outfit outfit;
     private PostDto postDto;
+    private MockMultipartFile mockImage;
 
     private static final Long POST_ID = 1L;
     private static final Long PROFILE_ID = 1L;
@@ -80,34 +86,41 @@ class PostServiceImplTest {
         postDto.setContent("Test Content");
         postDto.setOutfitId(OUTFIT_ID);
         postDto.setVisibility("PUBLIC");
+
+        mockImage = new MockMultipartFile(
+                "image",
+                "test.jpg",
+                "image/jpeg",
+                "test image content".getBytes());
     }
 
     @Test
     void createPost_Success() {
         when(profileService.getProfileEntityById(PROFILE_ID)).thenReturn(profile);
         when(outfitService.getOutfitEntityById(OUTFIT_ID)).thenReturn(outfit);
+        when(imageService.uploadImage(any(MultipartFile.class), eq("post"), any(Long.class)))
+                .thenReturn("http://uploaded-image.url");
 
         // Strict matching with argThat
-        when(postRepository.save(argThat(post ->
-                post.getTitle().equals("Test Title") &&
-                        post.getContent().equals("Test Content") &&
-                        post.getVisibility() == Post.PostVisibility.PUBLIC
-        ))).thenReturn(post);
+        when(postRepository.save(argThat(post -> post.getTitle().equals("Test Title") &&
+                post.getContent().equals("Test Content") &&
+                post.getVisibility() == Post.PostVisibility.PUBLIC))).thenReturn(post);
 
         PostResponseDto mockPostResponseDto = createPostResponseDto();
         when(postMapper.toResponseDto(argThat(p -> p.getId().equals(POST_ID)))).thenReturn(mockPostResponseDto);
 
-        PostResponseDto postResponseDto = postService.createPost(PROFILE_ID, postDto);
+        PostResponseDto postResponseDto = postService.createPost(PROFILE_ID, postDto, mockImage);
 
         assertPostResponse(postResponseDto, POST_ID, "Test Title", "Test Content", "PUBLIC");
-        verify(postRepository).save(any(Post.class));
+        verify(postRepository, times(2)).save(any(Post.class));
+        verify(imageService).uploadImage(any(MultipartFile.class), eq("post"), any(Long.class));
     }
 
     @Test
     void createPost_ProfileNotFound() {
         when(profileService.getProfileEntityById(PROFILE_ID)).thenReturn(null);
 
-        assertThrows(ResourceNotFoundException.class, () -> postService.createPost(PROFILE_ID, postDto));
+        assertThrows(ResourceNotFoundException.class, () -> postService.createPost(PROFILE_ID, postDto, mockImage));
         verify(postRepository, never()).save(any(Post.class));
     }
 
@@ -116,7 +129,7 @@ class PostServiceImplTest {
         when(profileService.getProfileEntityById(PROFILE_ID)).thenReturn(profile);
         when(outfitService.getOutfitEntityById(OUTFIT_ID)).thenReturn(null);
 
-        assertThrows(ResourceNotFoundException.class, () -> postService.createPost(PROFILE_ID, postDto));
+        assertThrows(ResourceNotFoundException.class, () -> postService.createPost(PROFILE_ID, postDto, mockImage));
         verify(postRepository, never()).save(any(Post.class));
     }
 
@@ -172,23 +185,24 @@ class PostServiceImplTest {
         postResponseDto.setVisibility(mockPost.getVisibility().toString());
 
         when(postRepository.findById(POST_ID)).thenReturn(Optional.of(mockPost));
-        when(postRepository.save(argThat(post ->
-                post.getContent().equals("Updated Content") &&
-                        post.getVisibility() == Post.PostVisibility.PRIVATE
-        ))).thenReturn(mockPost);
+        when(imageService.uploadImage(any(MultipartFile.class), eq("post"), any(Long.class)))
+                .thenReturn("http://uploaded-image.url");
+        when(postRepository.save(argThat(post -> post.getContent().equals("Updated Content") &&
+                post.getVisibility() == Post.PostVisibility.PRIVATE))).thenReturn(mockPost);
         when(postMapper.toResponseDto(argThat(p -> p.getId().equals(mockPost.getId())))).thenReturn(postResponseDto);
 
-        PostResponseDto updatedPost = postService.updatePost(POST_ID, PROFILE_ID, updateDto);
+        PostResponseDto updatedPost = postService.updatePost(POST_ID, PROFILE_ID, updateDto, mockImage);
 
         assertPostResponse(updatedPost, POST_ID, "Updated Title", "Updated Content", "PRIVATE");
         verify(postRepository).save(any(Post.class));
+        verify(imageService).uploadImage(any(MultipartFile.class), eq("post"), any(Long.class));
     }
 
     @Test
     void updatePost_NotAuthorized() {
         when(postRepository.findById(POST_ID)).thenReturn(Optional.of(post));
 
-        assertThrows(PostAccessException.class, () -> postService.updatePost(POST_ID, 2L, postDto));
+        assertThrows(PostAccessException.class, () -> postService.updatePost(POST_ID, 2L, postDto, mockImage));
         verify(postRepository, never()).save(any(Post.class));
     }
 
@@ -258,7 +272,8 @@ class PostServiceImplTest {
         return postResponseDto;
     }
 
-    private void assertPostResponse(PostResponseDto postResponseDto, Long id, String title, String content, String visibility) {
+    private void assertPostResponse(PostResponseDto postResponseDto, Long id, String title, String content,
+            String visibility) {
         assertNotNull(postResponseDto);
         assertEquals(id, postResponseDto.getId());
         assertEquals(title, postResponseDto.getTitle());
