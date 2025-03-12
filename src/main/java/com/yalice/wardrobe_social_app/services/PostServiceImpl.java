@@ -9,6 +9,7 @@ import com.yalice.wardrobe_social_app.entities.Profile;
 import com.yalice.wardrobe_social_app.exceptions.PostAccessException;
 import com.yalice.wardrobe_social_app.exceptions.PostNotFoundException;
 import com.yalice.wardrobe_social_app.exceptions.ResourceNotFoundException;
+import com.yalice.wardrobe_social_app.interfaces.ImageService;
 import com.yalice.wardrobe_social_app.interfaces.OutfitService;
 import com.yalice.wardrobe_social_app.interfaces.PostService;
 import com.yalice.wardrobe_social_app.interfaces.ProfileService;
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class PostServiceImpl implements PostService {
@@ -33,25 +35,28 @@ public class PostServiceImpl implements PostService {
     private final OutfitService outfitService;
     private final PostServiceHelper postServiceHelper;
     private final PostMapper postMapper;
+    private final ImageService imageService;
 
     @Autowired
     public PostServiceImpl(PostRepository postRepository,
-                           LikeRepository likeRepository,
-                           ProfileService profileService,
-                           OutfitService outfitService,
-                           PostServiceHelper postServiceHelper,
-                           PostMapper postMapper) {
+            LikeRepository likeRepository,
+            ProfileService profileService,
+            OutfitService outfitService,
+            PostServiceHelper postServiceHelper,
+            PostMapper postMapper,
+            ImageService imageService) {
         this.postRepository = postRepository;
         this.likeRepository = likeRepository;
         this.profileService = profileService;
         this.outfitService = outfitService;
         this.postServiceHelper = postServiceHelper;
         this.postMapper = postMapper;
+        this.imageService = imageService;
     }
 
     @Override
     @Transactional
-    public PostResponseDto createPost(Long profileId, PostDto postDto) {
+    public PostResponseDto createPost(Long profileId, PostDto postDto, MultipartFile image) {
         logger.info("Creating post for profileId: {}", profileId);
 
         Profile profile = validateProfile(profileId);
@@ -60,13 +65,20 @@ public class PostServiceImpl implements PostService {
         Post post = Post.builder()
                 .profile(profile)
                 .title(postDto.getTitle())
-                .featureImage(postDto.getFeatureImage())
                 .outfit(outfit)
                 .content(postDto.getContent())
                 .visibility(Post.PostVisibility.valueOf(postDto.getVisibility()))
                 .build();
 
         post = postRepository.save(post);
+
+        // Upload image after post is saved to get the ID
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = imageService.uploadImage(image, "post", post.getId());
+            post.setFeatureImage(imageUrl);
+            post = postRepository.save(post);
+        }
+
         logger.info("Post created successfully with ID: {}", post.getId());
 
         return postMapper.toResponseDto(post);
@@ -85,11 +97,16 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public PostResponseDto updatePost(Long postId, Long profileId, PostDto postDto) {
+    public PostResponseDto updatePost(Long postId, Long profileId, PostDto postDto, MultipartFile image) {
         logger.info("Updating post with ID: {} for profileId: {}", postId, profileId);
 
         Post existingPost = validatePost(postId);
         validateOwnership(existingPost, profileId);
+
+        // Delete old image if a new one is provided
+        if (image != null && !image.isEmpty() && existingPost.getFeatureImage() != null) {
+            imageService.deleteImage(existingPost.getFeatureImage());
+        }
 
         existingPost.setContent(postDto.getContent());
         existingPost.setVisibility(Post.PostVisibility.valueOf(postDto.getVisibility()));
@@ -97,6 +114,12 @@ public class PostServiceImpl implements PostService {
         if (!existingPost.getOutfit().getId().equals(postDto.getOutfitId())) {
             Outfit newOutfit = validateOutfit(postDto.getOutfitId());
             existingPost.setOutfit(newOutfit);
+        }
+
+        // Upload new image if provided
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = imageService.uploadImage(image, "post", existingPost.getId());
+            existingPost.setFeatureImage(imageUrl);
         }
 
         Post updatedPost = postRepository.save(existingPost);
@@ -112,6 +135,11 @@ public class PostServiceImpl implements PostService {
 
         Post post = validatePost(postId);
         validateOwnership(post, profileId);
+
+        // Delete associated image if it exists
+        if (post.getFeatureImage() != null) {
+            imageService.deleteImage(post.getFeatureImage());
+        }
 
         postRepository.deleteById(postId);
         logger.info("Post with ID: {} deleted successfully", postId);

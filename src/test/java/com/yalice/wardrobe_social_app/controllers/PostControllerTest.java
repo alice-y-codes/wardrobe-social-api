@@ -16,8 +16,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.multipart.MultipartFile;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -72,16 +76,61 @@ class PostControllerTest {
                                 .visibility("PUBLIC")
                                 .build();
 
+                MockMultipartFile image = new MockMultipartFile(
+                                "image",
+                                "test.jpg",
+                                "image/jpeg",
+                                "test image content".getBytes());
+
+                MockMultipartFile jsonFile = new MockMultipartFile(
+                                "post",
+                                "",
+                                "application/json",
+                                objectMapper.writeValueAsString(postDto).getBytes());
+
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(postService.createPost(eq(1L), any(PostDto.class))).thenReturn(responseDto);
+                when(postService.createPost(eq(1L), any(PostDto.class), any(MultipartFile.class)))
+                                .thenReturn(responseDto);
 
-
-                mockMvc.perform(post("/api/feed/post")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(postDto)))
+                mockMvc.perform(multipart("/api/feed")
+                                .file(jsonFile)
+                                .file(image))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.success").value(true))
-                                .andExpect(jsonPath("$.data").exists())
+                                .andExpect(jsonPath("$.data.id").value(1L))
+                                .andExpect(jsonPath("$.data.title").value("Test Post"));
+        }
+
+        @Test
+        void createPost_NoImage() throws Exception {
+                PostDto postDto = PostDto.builder()
+                                .title("Test Post")
+                                .content("Test content")
+                                .outfitId(1L)
+                                .visibility("PUBLIC")
+                                .build();
+
+                PostResponseDto responseDto = PostResponseDto.builder()
+                                .id(1L)
+                                .title("Test Post")
+                                .content("Test content")
+                                .outfit(Outfit.builder().id(1L).build())
+                                .visibility("PUBLIC")
+                                .build();
+
+                MockMultipartFile jsonFile = new MockMultipartFile(
+                                "post",
+                                "",
+                                "application/json",
+                                objectMapper.writeValueAsString(postDto).getBytes());
+
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(postService.createPost(eq(1L), any(PostDto.class), eq(null))).thenReturn(responseDto);
+
+                mockMvc.perform(multipart("/api/feed")
+                                .file(jsonFile))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success").value(true))
                                 .andExpect(jsonPath("$.data.id").value(1L))
                                 .andExpect(jsonPath("$.data.title").value("Test Post"));
         }
@@ -119,15 +168,76 @@ class PostControllerTest {
                                 .visibility("PUBLIC")
                                 .build();
 
-                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(postService.updatePost(eq(1L), eq(1L), any(PostDto.class))).thenReturn(responseDto);
+                MockMultipartFile image = new MockMultipartFile(
+                                "image",
+                                "test.jpg",
+                                "image/jpeg",
+                                "test image content".getBytes());
 
-                mockMvc.perform(patch("/api/feed/{postId}", postId)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(postDto)))
+                MockMultipartFile jsonFile = new MockMultipartFile(
+                                "post",
+                                "",
+                                "application/json",
+                                objectMapper.writeValueAsString(postDto).getBytes());
+
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(postService.updatePost(eq(1L), eq(1L), any(PostDto.class), any(MultipartFile.class)))
+                                .thenReturn(responseDto);
+
+                MockMultipartHttpServletRequestBuilder builder = MockMvcRequestBuilders.multipart("/api/feed/{postId}",
+                                postId);
+                builder.with(request -> {
+                        request.setMethod("PATCH");
+                        return request;
+                });
+
+                mockMvc.perform(builder
+                                .file(jsonFile)
+                                .file(image))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.success").value(true))
-                                .andExpect(jsonPath("$.data").exists())
+                                .andExpect(jsonPath("$.data.id").value(1L))
+                                .andExpect(jsonPath("$.data.title").value("Updated Post"));
+        }
+
+        @Test
+        void updatePost_NoImage() throws Exception {
+                Long postId = 1L;
+                PostDto postDto = PostDto.builder()
+                                .title("Updated Post")
+                                .content("Updated content")
+                                .outfitId(1L)
+                                .visibility("PUBLIC")
+                                .build();
+
+                PostResponseDto responseDto = PostResponseDto.builder()
+                                .id(1L)
+                                .title("Updated Post")
+                                .content("Updated content")
+                                .outfit(Outfit.builder().id(1L).build())
+                                .visibility("PUBLIC")
+                                .build();
+
+                MockMultipartFile jsonFile = new MockMultipartFile(
+                                "post",
+                                "",
+                                "application/json",
+                                objectMapper.writeValueAsString(postDto).getBytes());
+
+                when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
+                when(postService.updatePost(eq(1L), eq(1L), any(PostDto.class), isNull())).thenReturn(responseDto);
+
+                MockMultipartHttpServletRequestBuilder builder = MockMvcRequestBuilders.multipart("/api/feed/{postId}",
+                                postId);
+                builder.with(request -> {
+                        request.setMethod("PATCH");
+                        return request;
+                });
+
+                mockMvc.perform(builder
+                                .file(jsonFile))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.success").value(true))
                                 .andExpect(jsonPath("$.data.id").value(1L))
                                 .andExpect(jsonPath("$.data.title").value("Updated Post"));
         }
@@ -143,12 +253,24 @@ class PostControllerTest {
                                 .build();
 
                 when(authUtils.getCurrentUserOrElseThrow()).thenReturn(testUser);
-                when(postService.updatePost(eq(1L), eq(1L), any(PostDto.class)))
+                when(postService.updatePost(eq(1L), eq(1L), any(PostDto.class), isNull()))
                                 .thenThrow(new ResourceNotFoundException("Post not found"));
 
-                mockMvc.perform(patch("/api/feed/{postId}", postId)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(postDto)))
+                MockMultipartFile jsonFile = new MockMultipartFile(
+                                "post",
+                                "",
+                                "application/json",
+                                objectMapper.writeValueAsString(postDto).getBytes());
+
+                MockMultipartHttpServletRequestBuilder builder = MockMvcRequestBuilders.multipart("/api/feed/{postId}",
+                                postId);
+                builder.with(request -> {
+                        request.setMethod("PATCH");
+                        return request;
+                });
+
+                mockMvc.perform(builder
+                                .file(jsonFile))
                                 .andExpect(status().isNotFound())
                                 .andExpect(jsonPath("$.success").value(false))
                                 .andExpect(jsonPath("$.message").value("Post not found"))
